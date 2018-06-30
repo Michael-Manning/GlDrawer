@@ -1,0 +1,17 @@
+-Textures
+-Text
+-True Embedded window panels
+-Remove shape from canvas by reference and by index
+-polygons
+-fix outlines
+-clear canvas
+-rainbowmode
+
+
+
+current shapeside codes:
+4 = quad
+2 = line
+1 = circle
+0 = sprite 
+-1 = text
