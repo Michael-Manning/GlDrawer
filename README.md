@@ -2,7 +2,7 @@
 Simple .net drawing and game creating interface. 
 
 Inspired by the GDIDrawer by Simon Walker which is a .Net wrapper for GDI to make programming assignments more interesting for NAIT students. 
-GLDrawer is a from-scratch creation using OpenGL4Csharp and Box2DNet. It is being made to contain all the features found in GDIDrawer, but with games in mind.
+GLDrawer is a from-scratch creation using Gl3w, GLFW, STB, and Box2DNet. It is being made to contain all the features found in GDIDrawer, but with games in mind.
 
 Differences from GDIDrawer include:
 - Higher performance
