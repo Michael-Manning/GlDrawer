@@ -1,0 +1,255 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>The Canvas &mdash; GLDrawer  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Canvas Window" href="basic-canvas.html" />
+    <link rel="prev" title="Quick Start" href="quickstart.html" /> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> GLDrawer
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">The Canvas</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="basic-canvas.html">Canvas Window</a></li>
+<li class="toctree-l2"><a class="reference internal" href="forms-canvas.html">Embedded Canvas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fields-canvas.html">Members</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="shapes.html">Shapes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="input.html">Input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vec2.html">Using vec2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="color.html">Color</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gameobject.html">GameObjects</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">GLDrawer</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>The Canvas</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/canvas.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="the-canvas">
+<span id="canvas-label"></span><h1>The Canvas<a class="headerlink" href="#the-canvas" title="Permalink to this headline">¶</a></h1>
+<p>A canvas is a virtual surface on which shapes can be drawn.
+This section describes How the canvas system works and the two ways in which you can create one.</p>
+<p><strong>Standalone window vs embedded</strong></p>
+<p>Just like in GDIDrawer, a canvas window is an actual, seperate window that contains nothing but a canvas.
+To get this window to appear, it’s common to start with console application and create it from there.</p>
+<p>An <em>embedded</em> window is exclusively for windows forms applications. It lets you create a canvas
+within a form instead of creating two separate windows.</p>
+<p><strong>A note about buffers</strong></p>
+<p>The canvas system in GLDrawer uses two different buffers.
+A buffer is a dynamic block of memory which is used to store the pixel values to display on screen.
+When you add normal shapes the the canvas, they are drawn to the <em>front buffer</em>. The front buffer is cleared every frame
+and all the shapes you’ve added to the screen are redrawn in case your changed something about them.</p>
+<p>The <em>Back Buffer</em> is shown behind the front buffer and is never redrawn unless done manually or if the window is reSized.
+The backBuffer is like Microsoft paint. Any pixels you change will stay that way, but if you change the same pixel twice, you lose the first one.</p>
+<p>You can also draw standard shapes to the back buffer. Adding shapes to the front buffer slows down your program the more you add because
+they all get redrawn every frame.
+shapes pasted to the back buffer are only ever drawn once, and will never slow down your program, no matter how many you add.
+The drawback is that you cannot move or change any shape once it’s been drawn to the backBuffer.</p>
+<a class="reference internal image-reference" href="_images/BBdemo.gif"><img alt="backBuffer demo" class="align-left" src="_images/BBdemo.gif" style="width: 650.0px; height: 450.0px;" /></a>
+<p>Adding thousands of shapes per second to the back buffer with no performance hit</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="basic-canvas.html">Canvas Window</a></li>
+<li class="toctree-l1"><a class="reference internal" href="forms-canvas.html">Embedded Canvas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fields-canvas.html">Members</a></li>
+</ul>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="basic-canvas.html" class="btn btn-neutral float-right" title="Canvas Window" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="quickstart.html" class="btn btn-neutral" title="Quick Start" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Michael Manning.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  <script type="text/javascript" src="_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

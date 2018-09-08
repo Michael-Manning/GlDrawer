@@ -7,7 +7,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Gl3DrawerCLR", "Gl3DrawerCL
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OpenGL3", "OpenGL3\OpenGL3.vcxproj", "{3007EE3B-C447-4992-8773-FF50C9BCB157}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GLDrawer", "GLDrawer\GLDrawer.csproj", "{C23ADDB4-EA76-4B3C-8B65-02D3CAB80BF2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GLDrawer", "GLDrawer\GLDrawer\GLDrawer.csproj", "{C23ADDB4-EA76-4B3C-8B65-02D3CAB80BF2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

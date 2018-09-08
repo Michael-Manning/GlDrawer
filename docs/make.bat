@@ -3,10 +3,10 @@
 pushd %~dp0
 
 REM Command file for Sphinx documentation
-
 if "%SPHINXBUILD%" == "" (
 	set SPHINXBUILD=sphinx-build
 )
+
 set SOURCEDIR=.
 set BUILDDIR=_build
 set SPHINXPROJ=GLDrawer
@@ -27,10 +27,13 @@ if errorlevel 9009 (
 )
 
 %SPHINXBUILD% -M %1 %SOURCEDIR% %BUILDDIR% %SPHINXOPTS%
+
 goto end
 
 :help
 %SPHINXBUILD% -M help %SOURCEDIR% %BUILDDIR% %SPHINXOPTS%
-
+make html
 :end
 popd
+
+pause
