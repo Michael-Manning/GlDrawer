@@ -6,7 +6,7 @@ Fortunatly, GLDrawer has built in functionality to expose the native window comp
 
 To insert a canvas in your form, open the designer first. Add a new panel which has the location and size of your desired canvas.
 
-.. image:: images/formsExample1.png
+.. image:: images/formsExample1.PNG
    :width: 1915px
    :height: 1074px
    :scale: 36 %
