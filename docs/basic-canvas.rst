@@ -22,13 +22,13 @@ If you would prefer to control when this happens, you can define your canvas on 
 
 The canvas window can be closed with the ".closed()" function.
 
-.. image:: images/simplewindow.PNG
-   :width: 500px
-   :height: 500px
-   :scale: 70 %
+.. image:: images/simplewindow.png
+   :width: 1002px
+   :height: 1045px
+   :scale: 45 %
    :alt: window example
    :align: left
 
-
+|
 
 A standard canvas window with 10,000 rectangles
