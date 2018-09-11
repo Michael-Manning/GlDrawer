@@ -30,8 +30,8 @@ namespace GLDrawer
         /// Text and Sprite contain the only supplimentary data which are their filepaths and the text to be rasterized.
         /// See GL3DrawerCLR.h, and link.h for more details
         /// </summary>
-        public vec2 Position { get => rect.Pos; set => rect.Pos = value; }
-        public vec2 Scale { get => rect.Scale; set => rect.Scale = value; }
+        public vec2 Position { get => new vec2(rect.Pos.x, rect.Pos.y); set => rect.Pos = new GL3DrawerCLR.vec2(value.x, value.y); }
+        public vec2 Scale { get => new vec2(rect.Scale.x, rect.Scale.y); set => rect.Scale = new GL3DrawerCLR.vec2(value.x, value.y); }
         public virtual float Angle { get => rect.Angle; set => rect.Angle = value; }
         public Color FillColor { get => rect.Color; set => rect.Color = value; }
         public Color BorderColor { get => rect.BorderColor; set => rect.BorderColor = value; }
@@ -56,7 +56,7 @@ namespace GLDrawer
         public Rectangle(vec2 position, vec2 scale, Color? fillColor = null, float borderWidth = 0, Color? borderColor = null, float angle = 0, float rotationSpeed = 0)
         {
 
-            rect = new Rect(position, scale, angle, checkNullC(fillColor), checkNullC(borderColor), borderWidth, rotationSpeed);
+            rect = new Rect(position.x, position.y, scale.x, scale.y, angle, checkNullC(fillColor), checkNullC(borderColor), borderWidth, rotationSpeed);
         }
         ~Rectangle()
         {
@@ -67,7 +67,7 @@ namespace GLDrawer
     {
         public Ellipse(vec2 position, vec2 scale, Color? fillColor = null, float borderWidth = 0, Color? borderColor = null, float angle = 0, float rotationSpeed = 0)
         {
-            rect = new Rect(position, scale, angle, checkNullC(fillColor), checkNullC(borderColor), borderWidth, rotationSpeed, 1);
+            rect = new Rect(position.x, position.y, scale.x, scale.y, angle, checkNullC(fillColor), checkNullC(borderColor), borderWidth, rotationSpeed, 1);
         }
         ~Ellipse()
         {
@@ -140,7 +140,7 @@ namespace GLDrawer
         public Line(vec2 start, vec2 end, float thickness, Color? fillColor = null, float borderWidth = 0, Color? borderColor = null, float rotationSpeed = 0)
         {
             //position, scale, and angle are calulated afterwards
-            rect = new Rect(new vec2(), new vec2(), 0f, checkNullC(fillColor), checkNullC(borderColor), borderWidth, 0f); 
+            rect = new Rect(0,0,0,0, 0f, checkNullC(fillColor), checkNullC(borderColor), borderWidth, 0f); 
             Start = start;
             End = end;
             Thickness = thickness;
@@ -149,7 +149,7 @@ namespace GLDrawer
         //UNTESTED!
         public Line(vec2 StartPosition, float length, float thickness, float angle, Color? fillColor = null, float borderWidth = 0, Color? borderColor = null, float rotationSpeed = 0)
         {
-            rect = new Rect(new vec2(), new vec2(), angle, checkNullC(fillColor), checkNullC(borderColor), borderWidth, 0f);
+            rect = new Rect(0, 0, 0, 0, angle, checkNullC(fillColor), checkNullC(borderColor), borderWidth, 0f);
             Start = StartPosition;
             End = StartPosition + new vec2((float)Math.Cos(angle) * length, (float)Math.Sin(angle) * length);
             Thickness = thickness;
@@ -176,7 +176,7 @@ namespace GLDrawer
         }
         public Polygon(vec2 position, vec2 scale, int sideCount, Color? fillColor = null, float borderWidth = 0, Color? borderColor = null, float angle = 0, float rotationSpeed = 0)
         {           
-            rect = new Rect(position, scale, angle, checkNullC(fillColor), checkNullC(borderColor), borderWidth, rotationSpeed, sideCount);
+            rect = new Rect(position.x, position.y, scale.x, scale.y, angle, checkNullC(fillColor), checkNullC(borderColor), borderWidth, rotationSpeed, sideCount);
             SideCount = sideCount;
         }
         ~Polygon()
@@ -187,7 +187,7 @@ namespace GLDrawer
     public class Text : Shape
     {
         //these variables could be easily made public with some flags to recreate the backend bitmap
-        private JustificationType Justification;
+        public JustificationType Justification { get => (JustificationType)rect.justification; set => rect.justification = (int)value; }
         private Rectangle Bound;
 
         public string Body { get => rect.text; set => rect.text = value; }
@@ -195,7 +195,10 @@ namespace GLDrawer
 
         public Text(vec2 position, float Height, string text, Color? color = null, JustificationType justification = JustificationType.Center, Rect FixedBound = null, string font = "c:\\windows\\fonts\\times.ttf", float angle = 0, float rotationSpeed = 0)
         {
-            rect = new Rect(text, position, Height, checkNullC(color), 0, font, angle, rotationSpeed);
+            if(FixedBound == null)
+                rect = new Rect( text, position.x, position.y, Height, checkNullC(color), (int)justification, font, angle, rotationSpeed);
+            else
+                rect = new Rect(text, position.x, position.y, Height, checkNullC(color), (int)justification, FixedBound, font, angle, rotationSpeed);
         }
         ~Text()
         {
@@ -208,7 +211,7 @@ namespace GLDrawer
         public Sprite(string filePath, vec2 position, vec2 scale, Color? Tint = null, float borderWidth = 0, Color? borderColor = null, float angle = 0, float rotationSpeed = 0)
         {
             FilePath = filePath;
-            rect = new Rect(filePath, position, scale, angle, checkNullC(Tint), checkNullC(borderColor), borderWidth, rotationSpeed);
+            rect = new Rect(filePath, position.x, position.y, scale.x, scale.y, angle, checkNullC(Tint), checkNullC(borderColor), borderWidth, rotationSpeed);
         }
         ~Sprite()
         {

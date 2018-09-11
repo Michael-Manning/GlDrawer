@@ -9,16 +9,16 @@
 using namespace std;
 using namespace glm;
 
-
 #define TEXTFILE 256;
 
 struct fontDat {
 	unsigned char bitmapBuffer[512 * 512];
-	vec2 uvOffset[95];
-	vec2 uvScale[95];
-	vec2 quadScale[95];
-	float alignment[95];
-	float tallestLetter = 0;
+	vec2 uvOffset[95]; //location of the letter within the generated bitmap
+	vec2 uvScale[95]; //size ofthe letter within the bitmap
+	vec2 quadScale[95]; //size the letter should be displayed
+	float alignment[95]; //vertical offset of each letter
+	float tallestLetter = 0; //tallest letter in pixels
+	float alignmentOffset = 0; //pixels in which the tallest letter sets below the alignemt. Required for precise global positioning
 	float spaceOff;
 	int justification;
 	GLuint id;
@@ -32,7 +32,6 @@ public:
 	vec2 pos;
 	vec2 scale;
 	float angle;
-	mat4 transform;
 
 	vec4 color;
 	vec4 borderColor;
@@ -42,7 +41,7 @@ public:
 	int sides, justification;
 	bool hidden;
 
-	//temp
+	//to be offloaded:
 	const char* path;
 	string text;
 	int textLength;
@@ -59,7 +58,7 @@ public:
 
 struct extraData {
 	GLuint id; 	//sprite texture only
-	int fd; //fond data
+	int fd; //font data
 
 	extraData() {
 		id = -1;
@@ -79,12 +78,15 @@ public :
 	void focus();
 	int loadShader(const char * vertexFilename, const char * fragmentFilename); //part of the canvas class to link the packed shaders boolean
 	HWND getNativeHWND();
-	//void loadFont();
-
-	//rect * addEllipse(rect e);
+	void drawFont(rect * r, int index);
 
 	int resolutionWidth;
 	int resolutionHeight;
+	float aspect; //canvas aspect ratio
+	vec2 resolutionV2f; //resolution as a vecc2
+	vec2 prevWindowSize; //used to detect window resizing
+	bool windowSizeChanged = false;
+	float currTime; //latest GLFW time response
 	float prevTime;
 	float currentFPS;
 	float LastRenderTime;
@@ -93,18 +95,25 @@ public :
 	bool closeFlag = false; //for indicating that a clean up happened, and to indicate one should happen
 	bool Cleaned = false; //to prevent multiple cleanups
 	bool clearColorFlag = false; //resets the back buffer in the next from if true
+	bool debugMode = false;
+	rect infoRect; //used as a font to display debug info on the canvas
+	float debugTimer; //used to time frequency of debug information updates
+	float debugUpdateFreq = 0.2; //how many seconds to wait between info updates
+	void updateDebugInfo();
+	vec3 getPixel(int x, int y);
+	std::string debugString;
 	
 	int RectShaderProgram, CircleShaderProgram, PolygonShaderProgram, TextureShaderProgram;
 	
 	vector<rect*> rectBuffer;
 	vector<extraData> eDataBuffer;
+	vector<rect*> removalBuffer;
 
 	vector<rect*> rects;
 
 	//rects to be drawn to the buffer (cleared evert frame)
 	vector<rect> BBQue;
 	vector<extraData> eData;
-	//vector<GLuint> ids;
 	vector<fontDat> fonts;
 
 	vec4 backCol;
@@ -113,17 +122,6 @@ public :
 	GLuint VBO, VAO, EBO;
 	GLuint texture;
 	GLuint textureId;
-
-	GLuint RxformUniformLocation;
-	GLuint RColorUniformLocation;
-	GLuint RaspectUniformLocation;
-	GLuint RshapeScaleUniformLocation;
-
-	GLuint ExformUniformLocation;
-	GLuint EshapeScaleUniformLocation;
-	GLuint EColorUniformLocation;
-	GLuint EaspectUniformLocation;
-	GLuint EbordWidthUniformLocation;
 
 	GLuint PxformUniformLocation;
 	GLuint PshapeScaleUniformLocation;
@@ -137,13 +135,10 @@ public :
 	GLuint PUVposUniformLocation;
 	GLuint PtimeUniformLocation;
 
-	GLuint TxformUniformLocation;
-	GLuint TColorUniformLocation;
-	GLuint TaspectUniformLocation;
-	GLuint TshapeScaleUniformLocation;
-	GLuint TtextureScaleUniformLocation;
-	GLuint TUVscaleUniformLocation;
-	GLuint TUVposUniformLocation;
+	GLuint PmPosUniformLocation;
+	GLuint PmScaleUniformLocation;
+	GLuint PmRotUniformLocation;
+
 
 	void addRect(rect * r);
 	void setBBPixel(vec2 pixel, vec4 col);

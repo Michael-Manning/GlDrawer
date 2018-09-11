@@ -15,7 +15,6 @@ namespace GLDrawerTests
     public partial class TestForm : Form
     {
         colorwheel wheel = new colorwheel(); //color picker
-        textForm tform = new textForm();
 
         //references for the preview of each shape
         Ellipse prevElip;
@@ -91,12 +90,18 @@ namespace GLDrawerTests
                 fonts[i] = fonts[i].Substring(17, fonts[i].Length - 21);
             }
 
+            comboBox1.SelectedIndex = 1;
+            comboBox1.SelectedIndexChanged += delegate
+            {
+                prevText.Justification = (JustificationType)comboBox1.SelectedIndex;
+            };
+
             comboBox2.Items.AddRange(fonts);
             comboBox2.SelectedIndex = fonts.ToList().IndexOf("times");
             comboBox2.SelectedIndexChanged += delegate
             {
                 Program.previewCan.RemoveShape(prevText);
-                prevText = Program.previewCan.Add(new Text(new vec2(0, 0), 20, richTextBox1.Text, Color.Invisible, font: (string)("c:\\windows\\fonts\\" + comboBox2.SelectedItem + ".ttf"))) as Text;
+                prevText = Program.previewCan.Add(new Text(Program.previewCan.Centre, 20, richTextBox1.Text, Color.Invisible, (JustificationType)comboBox1.SelectedIndex, font: (string)("c:\\windows\\fonts\\" + comboBox2.SelectedItem + ".ttf"))) as Text;
                 selectText();
             };
         }
@@ -115,7 +120,7 @@ namespace GLDrawerTests
                 return;
             }
             hidePreview();
-            selected.Position = selected == prevText ? new vec2(0, 217 - (int)trackBar1.Value/2) : previewCenter;
+            selected.Position = previewCenter;
             selected.FillColor = panel5.BackColor;
             selected.BorderColor = panel6.BackColor;
             selected.BorderWidth = trackBar2.Value;         
@@ -220,7 +225,7 @@ namespace GLDrawerTests
         }
         void DrawText(vec2 pos, GLCanvas ca)
         {
-            Text txt = Program.can.Add(new Text(pos, prevText.Scale.y, prevText.Body, prevText.FillColor, angle: prevText.Angle, font: prevText.Font)) as Text;
+            Text txt = Program.can.Add(new Text(pos, prevText.Scale.y, prevText.Body, prevText.FillColor, prevText.Justification, angle: prevText.Angle, font: prevText.Font)) as Text;
             shapes.Add(txt);
             lbAdd("Text (" + txt.Position.x + ", " + txt.Position.y + ")");
         }

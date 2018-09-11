@@ -5,7 +5,7 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{C23ADDB4-EA76-4B3C-8B65-02D3CAB80BF2}</ProjectGuid>
-    <OutputType>Exe</OutputType>
+    <OutputType>WinExe</OutputType>
     <RootNamespace>GLDrawer</RootNamespace>
     <AssemblyName>GLDrawer</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
@@ -82,6 +82,7 @@
     <Compile Include="colorwheel.Designer.cs">
       <DependentUpon>colorwheel.cs</DependentUpon>
     </Compile>
+    <Compile Include="demos.cs" />
     <Compile Include="Input.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -91,12 +92,6 @@
     </Compile>
     <Compile Include="TestForm.Designer.cs">
       <DependentUpon>TestForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="textForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="textForm.Designer.cs">
-      <DependentUpon>textForm.cs</DependentUpon>
     </Compile>
   </ItemGroup>
   <ItemGroup>
@@ -110,9 +105,6 @@
     </EmbeddedResource>
     <EmbeddedResource Include="TestForm.resx">
       <DependentUpon>TestForm.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="textForm.resx">
-      <DependentUpon>textForm.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>

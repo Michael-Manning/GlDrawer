@@ -1,18 +1,11 @@
--Textures
 -Text
--True Embedded window panels
 -Remove shape from canvas by reference and by index
 -polygons
 -fix outlines
 -clear canvas
--rainbowmode
 -impliment inverted Y
 -impliment scale
--impliment extrainfo
 -create implicit comversion between keys and keycode
--create implicit comversion between vec2 and Pointf / Point
--move the old vec2 extension methods into the stuct
-
 
 current shapeside codes:
 4 = quad

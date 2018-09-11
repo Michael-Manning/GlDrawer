@@ -25,8 +25,9 @@ namespace GLDrawer
         public string WindowTitle { get => gldw.title; set => gldw.title = value; }
         public bool InvertedYAxis = false;
         public float Scale = 1;
-        public bool ExtraInfo; //impliment
+        public bool ExtraInfo { set => gldw.titleDetails = value; }
         public bool Vsync; //impliment
+        public vec2 Centre { get => new vec2(Width / 2, Height / 2); }
 
         /// <summary>
         /// Forces the back buffer to be a solid color, even if the window is resized
@@ -43,8 +44,6 @@ namespace GLDrawer
         private static Thread mainThread;
         private static bool initialised = false;
 
-        private List<Shape> canvasBuffer = new List<Shape>();//shapes should go to the buffer so they can be added to the canvas in a thread safe way
-        private List<Shape> canvasRemovalBuffer = new List<Shape>();
         private bool NullRemovalFlag = false; //used for thread safe garbage collection
 
         //Maintains the drawing thread. Both actions are run from the other thread, but "init" is only runs once
@@ -100,16 +99,19 @@ namespace GLDrawer
         /// <param name="title">Name of the window title</param>
         /// <param name="BackColor">Background color of the canvas</param>
         /// <param name="borderless">Wether or not the window is borderless</param>
+        /// <param name="TitleDetails">Displays render time, FPS, and shape count in the title</param>
         /// <param name="VSync">Limits the framerate to 60fps and waits for vertical screen synchronization</param>
-        public GLCanvas(int width = 800, int height = 600, string title = "Canvas Window", Color? BackColor = null, bool borderless = false, bool VSync = true)
+        /// <param name="debugMode">Display rendering information on top of the canvas</param>
+        public GLCanvas(int width = 800, int height = 600, string title = "Canvas Window", Color? BackColor = null, bool TitleDetails = false, bool borderless = false, bool VSync = true, bool debugMode = false)
         {
             Width = width;
             Height = height;
             gldw = new GLDWrapper(usePackedShaders);
             gldw.title = title;
+            gldw.titleDetails = TitleDetails;
            loop(delegate
            {
-               gldw.createCanvas(Width, Height, borderless, BackColor == null ? Color.Black : (Color)BackColor, VSync);
+               gldw.createCanvas(Width, Height, borderless, BackColor == null ? Color.Black : (Color)BackColor, VSync, debugMode);
                setInputCallbacks();
            },
            delegate 
@@ -122,8 +124,15 @@ namespace GLDrawer
         [DllImport("user32.dll")]
         static extern IntPtr SetParent(IntPtr hWndChild, IntPtr hWndNewParent);
         IntPtr panelHandle;
-
-        public GLCanvas(Form form, Panel panel, Color? BackColor = null, bool VSync = true)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="form">The Windows Form to embed the canvas window</param>
+        /// <param name="panel">the panel to replace with the canvas</param>
+        /// <param name="BackColor">Background color of the canvas</param>
+        /// <param name="VSync">Limits the framerate to 60fps and waits for vertical screen synchronization</param>
+        /// <param name="debugMode">Display rendering information on top of the canvas</param>
+        public GLCanvas(Form form, Panel panel, Color? BackColor = null, bool VSync = true, bool debugMode = false)
         {        
             Width = panel.Width;
             Height = panel.Height;
@@ -133,7 +142,7 @@ namespace GLDrawer
             
             loop(delegate
            {
-               gldw.createCanvas(Width, Height,true, BackColor == null ? Color.LightGray : (Color)BackColor, VSync);
+               gldw.createCanvas(Width, Height,true, BackColor == null ? Color.LightGray : (Color)BackColor, VSync, debugMode);
                setInputCallbacks();
 
                SetParent(gldw.getNativeHWND(), panelHandle);
@@ -158,17 +167,9 @@ namespace GLDrawer
             iTime = timer.ElapsedMilliseconds;
             iDeltaTime = iTime - lastTime;
             lastTime = iTime;
+
             Update.Invoke();
-            foreach(Shape s in canvasBuffer.ToList())
-            {
-                gldw.addRect(s.rect);
-                canvasBuffer.Remove(s);
-            }
-            foreach(Shape s in canvasRemovalBuffer.ToList())
-            {
-                gldw.removeRect(s.rect);
-                canvasRemovalBuffer.Remove(s);
-            }
+
             if (NullRemovalFlag)
             {
                 gldw.cleaarNullRects();
@@ -202,7 +203,7 @@ namespace GLDrawer
         public Rectangle AddRectangle(float XStart, float YStart, float Width, float Height, Color? FillColor = null, float BorderThickness = 0, Color? BorderColor = null, float Angle = 0, float RotationSpeed = 0)
         {
             Rectangle r = new Rectangle(new vec2(XStart + Width / 2f, YStart + Height / 2f), new vec2(Width, Height), FillColor, BorderThickness, BorderColor, Angle, RotationSpeed);
-            canvasBuffer.Add(r);
+            gldw.addRect(r.rect);
             return r;
         }
         /// <summary>
@@ -220,7 +221,7 @@ namespace GLDrawer
         public Rectangle AddCenteredRectangle(float Xpos, float Ypos, float Width, float Height, Color? FillColor = null, float BorderThickness = 0, Color? BorderColor = null, float Angle = 0, float RotationSpeed = 0)
         {
             Rectangle r = new Rectangle(new vec2(Xpos, Ypos), new vec2(Width, Height), FillColor, BorderThickness, BorderColor, Angle, RotationSpeed);
-            canvasBuffer.Add(r); 
+            gldw.addRect(r.rect);
             return r;
         }
         /// <summary>
@@ -238,7 +239,7 @@ namespace GLDrawer
         public Ellipse AddEllipse(float XStart, float YStart, float Width, float Height, Color? FillColor = null, float BorderThickness = 0, Color? BorderColor = null, float Angle = 0, float RotationSpeed = 0)
         {
             Ellipse e = new Ellipse(new vec2(XStart + Width / 2f, YStart + Height / 2f), new vec2(Width, Height), FillColor, BorderThickness, BorderColor, Angle, RotationSpeed);
-            canvasBuffer.Add(e);
+            gldw.addRect(e.rect);
             return e;
         }
         /// <summary>
@@ -256,7 +257,7 @@ namespace GLDrawer
         public Ellipse AddCenteredEllipse(float Xpos, float Ypos, float Width, float Height, Color? FillColor = null, float BorderThickness = 0, Color? BorderColor = null, float Angle = 0, float RotationSpeed = 0)
         {
             Ellipse e = new Ellipse(new vec2(Xpos, Ypos), new vec2(Width, Height), FillColor, BorderThickness, BorderColor, Angle, RotationSpeed);
-            canvasBuffer.Add(e);
+            gldw.addRect(e.rect);
             return e;
         }
         /// <summary>
@@ -274,7 +275,7 @@ namespace GLDrawer
         public Line AddLine(float XStart, float YStart, float XEnd, float YEnd, float Thickness, Color? LineColor = null, float BorderThickness = 0, Color? BorderColor = null, float RotationSpeed = 0)
         {
             Line l = new Line(new vec2(XStart, YStart), new vec2(XEnd, YEnd), Thickness, LineColor, BorderThickness, BorderColor, RotationSpeed);
-            canvasBuffer.Add(l);
+            gldw.addRect(l.rect);
             return l;
         }
         /// <summary>
@@ -291,13 +292,13 @@ namespace GLDrawer
         public Line AddLine(vec2 StartPos, float Length, float Angle, float Thickness, Color? LineColor = null, float BorderThickness = 0, Color? BorderColor = null, float RotationSpeed = 0)
         {
             Line l = new Line(StartPos, Length, Thickness, Angle, LineColor, BorderThickness, BorderColor, RotationSpeed);
-            canvasBuffer.Add(l);
+            gldw.addRect(l.rect);
             return l;
         }
         public Polygon AddCenteredPolygon(float Xpos, float Ypos, float Width, float Height, int SideCount, Color? FillColor = null, float BorderThickness = 0, Color? BorderColor = null, float Angle = 0, float RotationSpeed = 0)
         {
             Polygon p = new Polygon(new vec2(Xpos, Ypos), new vec2(Width, Height), SideCount, FillColor, BorderThickness, BorderColor, Angle, RotationSpeed);
-            canvasBuffer.Add(p);
+            gldw.addRect(p.rect);
             return p;
         }
         /// <summary>
@@ -317,7 +318,7 @@ namespace GLDrawer
         public Sprite AddCenteredSprite(string FilePath, float Xpos, float Ypos, float Width, float Height, Color? FillColor = null, float BorderThickness = 0, Color? BorderColor = null, float Angle = 0, float RotationSpeed = 0)
         {
             Sprite s = new Sprite(FilePath, new vec2(Xpos, Ypos), new vec2(Width, Height), FillColor, BorderThickness, BorderColor, Angle, RotationSpeed);
-            canvasBuffer.Add(s);
+            gldw.addRect(s.rect);
             return s;
         }
         /// <summary>
@@ -337,18 +338,17 @@ namespace GLDrawer
         public Sprite AddSprite(string FilePath, float XStart, float YStart, float Width, float Height, Color? FillColor = null, float BorderThickness = 0, Color? BorderColor = null, float Angle = 0, float RotationSpeed = 0)
         {
             Sprite s = new Sprite(FilePath, new vec2(XStart + Width / 2f, YStart + Height / 2f), new vec2(Width, Height), FillColor, BorderThickness, BorderColor, Angle, RotationSpeed);
-            canvasBuffer.Add(s);
+            gldw.addRect(s.rect);
             return s;
         }
         public Shape Add(Shape shape)
         {
-            canvasBuffer.Add(shape);
+            gldw.addRect(shape.rect);
             return shape;
         }
         public void RemoveShape(Shape s)
         {
-            if (s != null)
-                canvasRemovalBuffer.Add(s);//gldw.removeRect(s.rect);
+            gldw.removeRect(s.rect);
         }
         public void SendBack(Shape s)
         {
@@ -382,6 +382,9 @@ namespace GLDrawer
         {
             return s;
         }
+        public Color getPixel(int x, int y) => gldw.getPixel(x, y);
+        public Color getPixel(vec2 pixel) => gldw.getPixel((int)pixel.x, (int)pixel.y);
+
         //when a refrence to an added shape is deleted, it may not stop drawing until this is called
         public void Refresh() => NullRemovalFlag = true;
         //{
@@ -433,14 +436,16 @@ namespace GLDrawer
         {
             return new GL3DrawerCLR.vec2(v.x, v.y);
         }
-        public static implicit operator vec2(GL3DrawerCLR.vec2 v)
-        {
-            return new vec2(v.x, v.y);
-        }
+        //public static implicit operator vec2(GL3DrawerCLR.vec2 v)
+        //{
+        //    return new vec2(v.x, v.y);
+        //}
 
         public float Length(vec2 Target)
         {
-            return (float)Math.Sqrt(Math.Pow(x - Target.x, 2) + Math.Pow(y - Target.y, 2));
+            float a = x - Target.x;
+            float b = y - Target.y;
+            return (float)Math.Sqrt(a*a + b*b);
         }
 
         public override bool Equals(Object obj)
@@ -455,6 +460,32 @@ namespace GLDrawer
         {
             float distance = (float)Math.Sqrt(this.x * this.x + this.y * this.y);
             return new vec2(this.x / distance, this.y / distance);
+        }
+        public vec2 lerp(vec2 target, float time)
+        {
+            float retX = x * time + target.x * (1 - time);
+            float retY = y * time + target.y * (1 - time);
+            return new vec2(retX, retY);
+        }
+        //implicit vec2 to PointF
+        public static implicit operator System.Drawing.PointF(vec2 v)
+        {
+            return new System.Drawing.PointF(v.x, v.y);
+        }
+        //implicit PointF to vec2
+        public static implicit operator vec2(System.Drawing.PointF p)
+        {
+            return new vec2(p.X, p.Y);
+        }
+        //implicit vec2 to Point
+        public static implicit operator System.Drawing.Point(vec2 v)
+        {
+            return new System.Drawing.Point((int)v.x, (int)v.y);
+        }
+        //implicit Point to vec2
+        public static implicit operator vec2(System.Drawing.Point p)
+        {
+            return new vec2(p.X, p.Y);
         }
         //equals
         public static bool operator ==(vec2 a, vec2 b)
@@ -693,12 +724,6 @@ namespace GLDrawer
     }
     public static partial class ExtentionMethods
     {
-        public static vec2 lerp(this vec2 first, vec2 second, float time)
-        {
-            float retX = first.x * time + second.x * (1 - time);
-            float retY = first.y * time + second.y * (1 - time);
-            return new vec2(retX, retY);
-        }
         /// <summary>
         /// Limits a float between two values
         /// </summary>

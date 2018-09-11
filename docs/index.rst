@@ -6,7 +6,7 @@
 Welcome to GLDrawer's documentation
 =====================================
 GLDrawer is a simple drawing and game engine which has been modeled closely after GDIDrawer.
-It is can be used in nearly all the same ways as it's predecessor, but runs faster and has many more featues.
+It is can be used in nearly all the same ways as it's predecessor, but runs faster and has many more features.
 
 More than a drawing library
 *********************************

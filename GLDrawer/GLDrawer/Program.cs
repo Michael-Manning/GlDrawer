@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using GLDrawer;
 using System.Windows.Forms;
+using Demos;
 
 namespace GLDrawerTests
 {
@@ -21,15 +22,11 @@ namespace GLDrawerTests
         [STAThread]
         static void Main(string[] args)
         {
-            //can = new GLCanvas();
-            //  can.Add(new Text(new vec2(200, 200), 20, "Fancy Text", new Color(255, 255)));
-            // can.AddCenteredEllipse(100, 100, 100, 100, Color.White);
-
             Application.EnableVisualStyles();
 
             TestForm tform = new TestForm();
 
-            can = new GLCanvas(tform, tform.surface);
+            can = new GLCanvas(tform, tform.surface, debugMode: true);
 
             previewCan = new GLCanvas(tform, tform.preview, BackColor: tform.BackColor);
 

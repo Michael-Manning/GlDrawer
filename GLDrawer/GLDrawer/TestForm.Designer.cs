@@ -56,19 +56,20 @@
             this.rbRect = new System.Windows.Forms.RadioButton();
             this.rbElip = new System.Windows.Forms.RadioButton();
             this.tabPage2 = new System.Windows.Forms.TabPage();
+            this.textBox1 = new System.Windows.Forms.TextBox();
             this.button2 = new System.Windows.Forms.Button();
             this.tabPage3 = new System.Windows.Forms.TabPage();
+            this.comboBox2 = new System.Windows.Forms.ComboBox();
+            this.comboBox1 = new System.Windows.Forms.ComboBox();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.richTextBox1 = new System.Windows.Forms.RichTextBox();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.panel1 = new System.Windows.Forms.Panel();
-            this.textBox1 = new System.Windows.Forms.TextBox();
-            this.comboBox1 = new System.Windows.Forms.ComboBox();
-            this.comboBox2 = new System.Windows.Forms.ComboBox();
+            this.checkBox2 = new System.Windows.Forms.CheckBox();
+            this.checkBox1 = new System.Windows.Forms.CheckBox();
             this.label2 = new System.Windows.Forms.Label();
             this.trackBar3 = new System.Windows.Forms.TrackBar();
-            this.checkBox1 = new System.Windows.Forms.CheckBox();
-            this.checkBox2 = new System.Windows.Forms.CheckBox();
+            this.label7 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.trackBar1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackBar2)).BeginInit();
             this.tabControl1.SuspendLayout();
@@ -347,6 +348,14 @@
             this.tabPage2.Text = "Sprite";
             this.tabPage2.UseVisualStyleBackColor = true;
             // 
+            // textBox1
+            // 
+            this.textBox1.Enabled = false;
+            this.textBox1.Location = new System.Drawing.Point(7, 14);
+            this.textBox1.Name = "textBox1";
+            this.textBox1.Size = new System.Drawing.Size(340, 26);
+            this.textBox1.TabIndex = 1;
+            // 
             // button2
             // 
             this.button2.Location = new System.Drawing.Point(7, 58);
@@ -358,8 +367,9 @@
             // 
             // tabPage3
             // 
-            this.tabPage3.Controls.Add(this.comboBox2);
             this.tabPage3.Controls.Add(this.comboBox1);
+            this.tabPage3.Controls.Add(this.label7);
+            this.tabPage3.Controls.Add(this.comboBox2);
             this.tabPage3.Controls.Add(this.tableLayoutPanel1);
             this.tabPage3.Controls.Add(this.richTextBox1);
             this.tabPage3.Location = new System.Drawing.Point(4, 29);
@@ -369,6 +379,28 @@
             this.tabPage3.TabIndex = 2;
             this.tabPage3.Text = "Text";
             this.tabPage3.UseVisualStyleBackColor = true;
+            // 
+            // comboBox2
+            // 
+            this.comboBox2.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboBox2.FormattingEnabled = true;
+            this.comboBox2.Location = new System.Drawing.Point(173, 18);
+            this.comboBox2.Name = "comboBox2";
+            this.comboBox2.Size = new System.Drawing.Size(158, 28);
+            this.comboBox2.TabIndex = 5;
+            // 
+            // comboBox1
+            // 
+            this.comboBox1.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboBox1.FormattingEnabled = true;
+            this.comboBox1.Items.AddRange(new object[] {
+            "Left",
+            "Centre",
+            "Right"});
+            this.comboBox1.Location = new System.Drawing.Point(93, 18);
+            this.comboBox1.Name = "comboBox1";
+            this.comboBox1.Size = new System.Drawing.Size(74, 28);
+            this.comboBox1.TabIndex = 4;
             // 
             // tableLayoutPanel1
             // 
@@ -420,31 +452,23 @@
             this.panel1.Size = new System.Drawing.Size(354, 366);
             this.panel1.TabIndex = 16;
             // 
-            // textBox1
+            // checkBox2
             // 
-            this.textBox1.Enabled = false;
-            this.textBox1.Location = new System.Drawing.Point(7, 14);
-            this.textBox1.Name = "textBox1";
-            this.textBox1.Size = new System.Drawing.Size(340, 26);
-            this.textBox1.TabIndex = 1;
+            this.checkBox2.AutoSize = true;
+            this.checkBox2.Location = new System.Drawing.Point(309, 11);
+            this.checkBox2.Name = "checkBox2";
+            this.checkBox2.Size = new System.Drawing.Size(22, 21);
+            this.checkBox2.TabIndex = 14;
+            this.checkBox2.UseVisualStyleBackColor = true;
             // 
-            // comboBox1
+            // checkBox1
             // 
-            this.comboBox1.FormattingEnabled = true;
-            this.comboBox1.Location = new System.Drawing.Point(15, 18);
-            this.comboBox1.Name = "comboBox1";
-            this.comboBox1.Size = new System.Drawing.Size(148, 28);
-            this.comboBox1.TabIndex = 4;
-            this.comboBox1.Text = "Left justification";
-            // 
-            // comboBox2
-            // 
-            this.comboBox2.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.comboBox2.FormattingEnabled = true;
-            this.comboBox2.Location = new System.Drawing.Point(173, 18);
-            this.comboBox2.Name = "comboBox2";
-            this.comboBox2.Size = new System.Drawing.Size(158, 28);
-            this.comboBox2.TabIndex = 5;
+            this.checkBox1.AutoSize = true;
+            this.checkBox1.Location = new System.Drawing.Point(113, 10);
+            this.checkBox1.Name = "checkBox1";
+            this.checkBox1.Size = new System.Drawing.Size(22, 21);
+            this.checkBox1.TabIndex = 13;
+            this.checkBox1.UseVisualStyleBackColor = true;
             // 
             // label2
             // 
@@ -468,23 +492,14 @@
             this.trackBar3.TabIndex = 11;
             this.trackBar3.TickFrequency = 5;
             // 
-            // checkBox1
+            // label7
             // 
-            this.checkBox1.AutoSize = true;
-            this.checkBox1.Location = new System.Drawing.Point(113, 10);
-            this.checkBox1.Name = "checkBox1";
-            this.checkBox1.Size = new System.Drawing.Size(22, 21);
-            this.checkBox1.TabIndex = 13;
-            this.checkBox1.UseVisualStyleBackColor = true;
-            // 
-            // checkBox2
-            // 
-            this.checkBox2.AutoSize = true;
-            this.checkBox2.Location = new System.Drawing.Point(309, 11);
-            this.checkBox2.Name = "checkBox2";
-            this.checkBox2.Size = new System.Drawing.Size(22, 21);
-            this.checkBox2.TabIndex = 14;
-            this.checkBox2.UseVisualStyleBackColor = true;
+            this.label7.AutoSize = true;
+            this.label7.Location = new System.Drawing.Point(3, 21);
+            this.label7.Name = "label7";
+            this.label7.Size = new System.Drawing.Size(93, 20);
+            this.label7.TabIndex = 6;
+            this.label7.Text = "Justification";
             // 
             // TestForm
             // 
@@ -511,6 +526,7 @@
             this.tabPage2.ResumeLayout(false);
             this.tabPage2.PerformLayout();
             this.tabPage3.ResumeLayout(false);
+            this.tabPage3.PerformLayout();
             this.panel1.ResumeLayout(false);
             this.panel1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.trackBar3)).EndInit();
@@ -559,5 +575,6 @@
         private System.Windows.Forms.TrackBar trackBar3;
         private System.Windows.Forms.CheckBox checkBox1;
         private System.Windows.Forms.CheckBox checkBox2;
+        private System.Windows.Forms.Label label7;
     }
 }

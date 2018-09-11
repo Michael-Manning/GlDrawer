@@ -54,7 +54,8 @@ namespace GLDrawer
         bool leftLifted = true, rightLifted = true;
         private void MouseCallback(int btn, int action, int mods)
         {
-            iMousePosition = gldw.Input.getMousePos();
+            GL3DrawerCLR.vec2 v = gldw.Input.getMousePos();
+            iMousePosition = new vec2(v.x, v.y);
             if (btn == 0 && action == 1)
             {
                 if (leftLifted)
@@ -95,7 +96,8 @@ namespace GLDrawer
         }
         private void MouseMoveCallback()
         {
-            iMousePosition = gldw.Input.getMousePos();
+            GL3DrawerCLR.vec2 v = gldw.Input.getMousePos();
+            iMousePosition = new vec2(v.x, v.y);
             MouseMove.Invoke(MousePosition, this);
             MouseMoveScaled.Invoke(MousePositionScaled, this);
         }
@@ -366,7 +368,7 @@ namespace GLDrawer
             MENUE = 348
         };
 
-        //I'm not proud of this, but it only really exsists prove GLDrawer constains every input function found in GDIDrawer 
+        //I'm not proud of this, but it only really exsists prove GLDrawer contains every input function found in GDIDrawer 
         Keys intToKeys(int key)
         {
             Keys code = Keys.KeyCode;
