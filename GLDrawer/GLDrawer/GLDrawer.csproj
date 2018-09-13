@@ -5,7 +5,7 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{C23ADDB4-EA76-4B3C-8B65-02D3CAB80BF2}</ProjectGuid>
-    <OutputType>WinExe</OutputType>
+    <OutputType>Library</OutputType>
     <RootNamespace>GLDrawer</RootNamespace>
     <AssemblyName>GLDrawer</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
