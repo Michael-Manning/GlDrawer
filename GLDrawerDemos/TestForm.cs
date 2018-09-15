@@ -10,7 +10,7 @@ using System.Windows.Forms;
 using GLDrawer;
 using System.IO;
 
-namespace GLDrawerTests
+namespace GLDrawerDemos
 {
     public partial class TestForm : Form
     {
@@ -24,6 +24,7 @@ namespace GLDrawerTests
         int clicknum = 0; //lines require 2 clicks
         Sprite prevSprite;
         Text prevText;
+        JustificationType selectedJustification = JustificationType.Center;
         Shape selected;
 
         bool init = false;
@@ -80,7 +81,7 @@ namespace GLDrawerTests
                 if (tabControl1.SelectedIndex == 1 && prevSprite != null)
                     selectSprite();
                 if (tabControl1.SelectedIndex == 2)
-                    selectText();
+                    selectText();                
             };
 
             //list of all ttf filepaths
@@ -90,21 +91,38 @@ namespace GLDrawerTests
                 fonts[i] = fonts[i].Substring(17, fonts[i].Length - 21);
             }
 
-            comboBox1.SelectedIndex = 1;
-            comboBox1.SelectedIndexChanged += delegate
-            {
-                prevText.Justification = (JustificationType)comboBox1.SelectedIndex;
+            leftRadio.CheckedChanged += delegate {
+                if (leftRadio.Checked)
+                {
+                    selectedJustification = JustificationType.Left;
+                    recreateText();
+                }};
+            centRadio.CheckedChanged += delegate {
+                if (centRadio.Checked)
+                {
+                    selectedJustification = JustificationType.Center;
+                    recreateText();
+                }
             };
+            rightRadio.CheckedChanged += delegate {
+                if (rightRadio.Checked)
+                {
+                    selectedJustification = JustificationType.Right;
+                    recreateText();
+                } };
 
             comboBox2.Items.AddRange(fonts);
             comboBox2.SelectedIndex = fonts.ToList().IndexOf("times");
-            comboBox2.SelectedIndexChanged += delegate
-            {
-                Program.previewCan.RemoveShape(prevText);
-                prevText = Program.previewCan.Add(new Text(Program.previewCan.Centre, 20, richTextBox1.Text, Color.Invisible, (JustificationType)comboBox1.SelectedIndex, font: (string)("c:\\windows\\fonts\\" + comboBox2.SelectedItem + ".ttf"))) as Text;
-                selectText();
-            };
+            comboBox2.SelectedIndexChanged += delegate { recreateText(); };
         }
+
+        void recreateText()
+        {
+            Program.previewCan.RemoveShape(prevText);
+            prevText = Program.previewCan.Add(new Text(Program.previewCan.Centre, richTextBox1.Text, 20, Color.Invisible, selectedJustification, font: (string)("c:\\windows\\fonts\\" + comboBox2.SelectedItem + ".ttf"))) as Text;
+            selectText();
+        }
+
         public void updatePreview() {
             if (!init)
             {
@@ -114,7 +132,7 @@ namespace GLDrawerTests
                 prevRect = Program.previewCan.AddCenteredRectangle(110, 110, 210, 210, Color.Invisible, trackBar2.Value, Color.Invisible);
                 prevLine = Program.previewCan.AddCenteredRectangle(110, 110, 1000, 100, Color.Invisible, trackBar2.Value, Color.Invisible);
                 prevPoly = Program.previewCan.AddCenteredPolygon(110, 110, 210, 210, (int)numericUpDown1.Value, Color.Invisible, trackBar2.Value, Color.Invisible);
-                prevText = Program.previewCan.Add(new Text(new vec2(0,0), 20, richTextBox1.Text, Color.Invisible)) as Text;
+                prevText = Program.previewCan.Add(new Text(new vec2(0,0), richTextBox1.Text, 20, Color.Invisible)) as Text;
                 selectCirc();                                                                                                            
                                                                                                                                          
                 return;
@@ -225,7 +243,7 @@ namespace GLDrawerTests
         }
         void DrawText(vec2 pos, GLCanvas ca)
         {
-            Text txt = Program.can.Add(new Text(pos, prevText.Scale.y, prevText.Body, prevText.FillColor, prevText.Justification, angle: prevText.Angle, font: prevText.Font)) as Text;
+            Text txt = Program.can.Add(new Text(pos, prevText.Body, prevText.Scale.y,  prevText.FillColor, prevText.Justification, angle: prevText.Angle, font: prevText.Font)) as Text;
             shapes.Add(txt);
             lbAdd("Text (" + txt.Position.x + ", " + txt.Position.y + ")");
         }
@@ -256,7 +274,6 @@ namespace GLDrawerTests
             if (tLine != null)
                 tLine.End = pos;
         }
-
         //adds items to the listbox thread independantly
         void lbAdd(string text)
         {
@@ -266,14 +283,16 @@ namespace GLDrawerTests
             }));
         }
 
-        //remove from canvasa button
+        //remove from canvas button
         private void button1_Click(object sender, EventArgs e)
         {
             if (listBox1.SelectedIndex == -1)
                 return;
+            Shape toRemove = shapes[listBox1.SelectedIndex];
+            Program.can.RemoveShape(toRemove);
             shapes.RemoveAt(listBox1.SelectedIndex);
             listBox1.Items.RemoveAt(listBox1.SelectedIndex);
-            Program.can.Refresh();
+           // Program.can.Refresh();
         }
 
         //order object forward button

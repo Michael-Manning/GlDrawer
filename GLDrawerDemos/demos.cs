@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using GLDrawer;
 
-namespace Demos
+namespace GLDrawerDemos
 {
     static class demos
     {
@@ -18,6 +18,8 @@ namespace Demos
         public static void groupAdd()
         {
             can = new GLCanvas(1200, 600, TitleDetails: true, VSync: true);
+            can.simpleBackBuffer = true;
+
             for (int i = 0; i < 1200; i++)
                 for (int j = 0; j < 6; j++)
                     can.AddCenteredEllipse(i, 50 + j * 100, 100, 100, Color.Random);
@@ -28,13 +30,14 @@ namespace Demos
         /// </summary>
         public static void fastRemoval()
         {
-            can = new GLCanvas(800, 600, TitleDetails: true, VSync: false);
+            can = new GLCanvas(800, 600, TitleDetails: true, VSync: false); //good to test with vsync both off and on
+            can.simpleBackBuffer = true;
 
-            Shape t = can.Add(new Text(new vec2(40, 300), 70, "Epilepsy Warning!", Color.White));
+            Shape t = can.AddCenteredText("Epilepsy warning!", 70f);
             Thread.Sleep(2000);
             can.RemoveShape(t);
 
-            int delay = 10;
+            int delay = 5;
             for (int i = 0; i < 10000; i++)
             {
                 Ellipse A = can.AddCenteredEllipse(200,300, 300, 300, Color.Random);
@@ -49,7 +52,9 @@ namespace Demos
         public static void imageLoadingAbuse(string filepath)
         {
             can = new GLCanvas(800, 800, TitleDetails: true, VSync: false);
-            int delay = 10000;
+            can.simpleBackBuffer = true;
+
+            int delay = 1000;
 
             Sprite s = new Sprite(filepath, can.Centre, new vec2(800, 800));  //can.AddCenteredSprite(filepath, 400, 400, 800, 800);
 
@@ -59,6 +64,46 @@ namespace Demos
                 Thread.Sleep(delay);
                 can.RemoveShape(s);
                 Thread.Sleep(delay);
+            }
+        }
+
+        private static Ellipse[] Xe = new Ellipse[26];
+        private static Ellipse[] Ye = new Ellipse[20];
+        public static void backBufferShapes()
+        {
+            can = new GLCanvas(1300, 900, TitleDetails: true, VSync: true);
+            can.Width = 1400;
+
+            for (int i = 0; i < 1400; i++)
+            {
+                for (int j = 0; j < 900; j++)
+                {
+                    can.SetBBPixel(i, j, Color.Random);
+                }
+            }
+
+            for (int i = 0; i < Ye.Length; i++)
+                Ye[i] = new Ellipse(new vec2(-50, 50 * i), new vec2(51), Color.Rainbow);
+            for (int i = 0; i < Xe.Length; i++)
+                Xe[i] = new Ellipse(new vec2(50 * i, 0), new vec2(51), Color.Rainbow);
+            can.Update += Can_Update;
+        }
+
+        private static void Can_Update()
+        {
+            vec2 disp = new vec2((float)Math.Sin(can.Time) * 2f, (float)(Math.Cos(can.Time * 2f) * 1.5f)) + new vec2(0.6f, 0.4f);
+            disp *= 30 * can.DeltaTime;
+            for (int i = 0; i < Ye.Length; i++)
+            {
+                Ye[i].Position += disp;
+                can.SetBBShape(Ye[i]);
+            }
+
+
+            for (int i = 0; i < Xe.Length; i++)
+            {
+                Xe[i].Position += disp;
+                can.SetBBShape(Xe[i]);
             }
         }
     }

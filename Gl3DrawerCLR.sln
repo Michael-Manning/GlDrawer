@@ -9,6 +9,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OpenGL3", "OpenGL3\OpenGL3.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GLDrawer", "GLDrawer\GLDrawer\GLDrawer.csproj", "{C23ADDB4-EA76-4B3C-8B65-02D3CAB80BF2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GLDrawerDemos", "GLDrawerDemos\GLDrawerDemos.csproj", "{C75A0DAE-100A-481A-AB00-B6D1F9E2F55A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,12 +47,24 @@ Global
 		{C23ADDB4-EA76-4B3C-8B65-02D3CAB80BF2}.Debug|x64.Build.0 = Debug|Any CPU
 		{C23ADDB4-EA76-4B3C-8B65-02D3CAB80BF2}.Debug|x86.ActiveCfg = Debug|x86
 		{C23ADDB4-EA76-4B3C-8B65-02D3CAB80BF2}.Debug|x86.Build.0 = Debug|x86
-		{C23ADDB4-EA76-4B3C-8B65-02D3CAB80BF2}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C23ADDB4-EA76-4B3C-8B65-02D3CAB80BF2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C23ADDB4-EA76-4B3C-8B65-02D3CAB80BF2}.Release|Any CPU.ActiveCfg = Release|x86
+		{C23ADDB4-EA76-4B3C-8B65-02D3CAB80BF2}.Release|Any CPU.Build.0 = Release|x86
 		{C23ADDB4-EA76-4B3C-8B65-02D3CAB80BF2}.Release|x64.ActiveCfg = Release|Any CPU
 		{C23ADDB4-EA76-4B3C-8B65-02D3CAB80BF2}.Release|x64.Build.0 = Release|Any CPU
 		{C23ADDB4-EA76-4B3C-8B65-02D3CAB80BF2}.Release|x86.ActiveCfg = Release|x86
 		{C23ADDB4-EA76-4B3C-8B65-02D3CAB80BF2}.Release|x86.Build.0 = Release|x86
+		{C75A0DAE-100A-481A-AB00-B6D1F9E2F55A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C75A0DAE-100A-481A-AB00-B6D1F9E2F55A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C75A0DAE-100A-481A-AB00-B6D1F9E2F55A}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{C75A0DAE-100A-481A-AB00-B6D1F9E2F55A}.Debug|x64.Build.0 = Debug|Any CPU
+		{C75A0DAE-100A-481A-AB00-B6D1F9E2F55A}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{C75A0DAE-100A-481A-AB00-B6D1F9E2F55A}.Debug|x86.Build.0 = Debug|Any CPU
+		{C75A0DAE-100A-481A-AB00-B6D1F9E2F55A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C75A0DAE-100A-481A-AB00-B6D1F9E2F55A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C75A0DAE-100A-481A-AB00-B6D1F9E2F55A}.Release|x64.ActiveCfg = Release|Any CPU
+		{C75A0DAE-100A-481A-AB00-B6D1F9E2F55A}.Release|x64.Build.0 = Release|Any CPU
+		{C75A0DAE-100A-481A-AB00-B6D1F9E2F55A}.Release|x86.ActiveCfg = Release|Any CPU
+		{C75A0DAE-100A-481A-AB00-B6D1F9E2F55A}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

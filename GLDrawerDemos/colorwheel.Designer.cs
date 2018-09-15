@@ -1,7 +1,7 @@
 ﻿using GLDrawer;
 using Cyotek.Windows.Forms;
 
-namespace GLDrawerTests
+namespace GLDrawerDemos
 {
     partial class colorwheel
     {

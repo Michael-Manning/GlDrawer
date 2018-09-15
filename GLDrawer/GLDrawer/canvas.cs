@@ -14,83 +14,152 @@ using System.Drawing;
 
 namespace GLDrawer
 {
+    /// <summary>
+    /// Canvas element and window that can render shapes within it
+    /// </summary>
     public partial class GLCanvas
     {
         private bool usePackedShaders = true; //set this as true to compile the last packed version of the shaders into the executable/DLL (see shaders.h for more info)
-        private float iTime, iDeltaTime, lastTime;
 
-        public long Time { get => Time; }
-        public long DeltaTime { get => DeltaTime; }
-        public int Width, Height; //make these responsive properties
+        private float iTime, iDeltaTime, lastTime;
+        /// <summary>time in seconds since canvas creation</summary>
+        public float Time { get => iTime; }
+        /// <summary>time in seconds of the last frame time</summary>
+        public float DeltaTime { get => iDeltaTime; }
+        /// <summary>text to display on the window title</summary>
         public string WindowTitle { get => gldw.title; set => gldw.title = value; }
-        public bool InvertedYAxis = false;
-        public float Scale = 1;
+        /// <summary>wether 0 on the y axis starts from the top or bottom</summary>
+        private bool InvertedYAxis = false; //unimplimented for public use as of now
+        /// <summary>multiplier for all shape coordinates</summary>
+        public int Scale = 1;
+        /// <summary>wether to display debug info next to the title</summary>
         public bool ExtraInfo { set => gldw.titleDetails = value; }
-        public bool Vsync; //impliment
+        /// <summary>center coordinate of the canvas</summary>
         public vec2 Centre { get => new vec2(Width / 2, Height / 2); }
+        /// <summary>number of shapes being drawn on the canvas</summary>
+        public int shapeCount { get => gldw.shapeCount; }
+        public bool VSync { get; private set; } //these four are set at initialization
+        public bool DebugMode { get; private set; }
+        public bool Borderless { get; private set; }
+        public bool AutoRender { get; private set; }
+        /// <summary>ignors back buffer tools and keeps it a solid color</summary>
+        public bool simpleBackBuffer = false;
+        private Color iBackColor; //the back color is never changed internally and needs to be saved before initialization
+        public Color BackColor
+        {
+            get => iBackColor;
+            set
+            {
+                iBackColor = value;
+                if(gldw != null)
+                {
+                    gldw.backColor = value;
+                    gldw.clearBB();
+                }
+            }
+        }
+
+        //getting the window size is not thread safe due to pointers, furthermore, changing window size at runtime, (especially from c#)
+        //can cause severe memory issues. especially with the internal setpixel texture buffer. The main thread needs to be frozen for one frame update to handle the change size
+        private int iWidth, iHeight;
+        /// <summary>width of the canvas/window</summary>
+        public int Width {
+            get => iWidth;
+            set
+            {
+                gldw.width = value;
+                frozen = true;
+                while (frozen) { }
+            }
+        }
+        /// <summary>height of the canvas/window</summary>
+        public int Height
+        {
+            get => iHeight;
+            set
+            {
+                gldw.height = value;
+                frozen = true;
+                while (frozen) { }
+            }
+        }
 
         /// <summary>
-        /// Forces the back buffer to be a solid color, even if the window is resized
+        /// an event which occurs once per frame update
         /// </summary>
-        public bool simpleBackBuffer = false;
         public event Action Update = delegate { };
 
+
         private GLDWrapper gldw;
-        private Stopwatch timer;
-        private static List<Action> mainLoops = new List<Action>();
-        private static List<GLDWrapper> activeCanvases = new List<GLDWrapper>(); //list for reference only
-        private static List<Action> preLoops = new List<Action>();
+        private Form iform;
+        private Panel ipanel;
+        private bool embedded = false;
+        private bool initialized;
+        private bool NullRemovalFlag = false; //used for thread safe garbage collection
+        private bool frozen = false; //used to emergency freeze the main thread in case of runtime memory alocation such as a window resize
+        private bool renderNextFrame = true; //tracks manual rendering
+
+        private static List<GLCanvas> activeCanvases = new List<GLCanvas>();
         private static Thread loopthread;
         private static Thread mainThread;
-        private static bool initialised = false;
+        private static bool threadsInitialized = false;
 
-        private bool NullRemovalFlag = false; //used for thread safe garbage collection
-
-        //Maintains the drawing thread. Both actions are run from the other thread, but "init" is only runs once
-        private void loop(Action init, Action mainloop, GLDWrapper can)
+        private void startCanvas(GLCanvas canvas)
         {
-            preLoops.Add(init);
-            mainLoops.Add(mainloop);
-            activeCanvases.Add(can);
-            if (!initialised)
+            activeCanvases.Add(canvas);
+            if (!threadsInitialized)
             {
                 mainThread = Thread.CurrentThread;
-                initialised = true;
-                loopthread = new Thread(new ThreadStart(delegate
-                {
-                    while (true)
-                    {
-                        //if the end of the main program is reached, all the canvas windows should close
-                        if (!mainThread.IsAlive)
-                            for (int i = 0; i < activeCanvases.Count; i++)
-                                activeCanvases[i].shouldClose = true;
+                threadsInitialized = true;
+                loopthread = new Thread(new ThreadStart(threadLoop));
 
-                        //when all canvasas are closed, the thread is aborted
-                        if (activeCanvases.Count == 0)
-                            Thread.CurrentThread.Abort();
-
-                        for (int i = 0; i < preLoops.Count; i++)
-                            preLoops[i]();
-                        preLoops.Clear();
-
-                        //canvasas that have closed are simply removed from the update list
-                        for (int i = 0; i < mainLoops.Count; i++)
-                        {
-
-                            if (activeCanvases[i].shouldClose)
-                            {
-                                mainLoops.RemoveAt(i);
-                                activeCanvases.RemoveAt(i);
-                                continue;
-                            }
-                            mainLoops[i]();
-                        }
-                    }
-                        
-                }));
                 loopthread.Start();
-            }    
+            }
+
+            //it's a bad idea to continue before the canvas is initialized
+            while (gldw == null || !gldw.initialized)
+            {
+                Thread.Sleep(1);
+            }
         }
+        private static void threadLoop()
+        {
+            while (true)
+            {
+                //if the end of the main program is reached, all the canvas windows should close
+                if (!mainThread.IsAlive)
+                    for (int i = 0; i < activeCanvases.Count; i++)
+                        activeCanvases[i].gldw.shouldClose = true;
+
+                //when all canvasas are closed, the thread is aborted
+                if (activeCanvases.Count == 0)
+                    Thread.CurrentThread.Abort();
+
+                //canvasas that have closed are simply removed from the update list
+                for (int i = 0; i < activeCanvases.Count; i++)
+                {
+                    GLCanvas can = activeCanvases[i];
+                    if (!can.initialized)
+                    {
+                        if (can.embedded)
+                        {
+                            can.gldw.createCanvas(can.iWidth, can.iHeight, true, can.BackColor, true, can.DebugMode);
+                            SetParent(can.gldw.getNativeHWND(), can.panelHandle);
+                        }
+                        else
+                            can.gldw.createCanvas(can.iWidth, can.iHeight, can.Borderless, can.BackColor, can.VSync, can.DebugMode);
+                        can.Initialize();
+                    }
+                    if (can.gldw.shouldClose)
+                    {
+                        activeCanvases.RemoveAt(i);
+                        continue;
+                    }
+                    can.mainLoop();
+                }
+            }
+        }
+
         /// <summary>
         /// Creates a new window with a GLCanvas
         /// </summary>
@@ -98,88 +167,105 @@ namespace GLDrawer
         /// <param name="height">Height of the window</param>
         /// <param name="title">Name of the window title</param>
         /// <param name="BackColor">Background color of the canvas</param>
-        /// <param name="borderless">Wether or not the window is borderless</param>
         /// <param name="TitleDetails">Displays render time, FPS, and shape count in the title</param>
-        /// <param name="VSync">Limits the framerate to 60fps and waits for vertical screen synchronization</param>
+        /// <param name="VSync">Limits the framerate to 60fps and waits for vertical screen synchronization. Set to false for uncapped framerate</param>
+        /// <param name="autoRender">wether to automatically render objects on the canvas each frame</param>
         /// <param name="debugMode">Display rendering information on top of the canvas</param>
-        public GLCanvas(int width = 800, int height = 600, string title = "Canvas Window", Color? BackColor = null, bool TitleDetails = false, bool borderless = false, bool VSync = true, bool debugMode = false)
+        /// <param name="borderless">Wether or not the window is borderless</param>
+        public GLCanvas(int width = 800, int height = 600, string title = "Canvas Window", Color? BackColor = null, bool TitleDetails = true, bool VSync = true, bool autoRender = true, bool debugMode = false, bool borderless = false)
         {
-            Width = width;
-            Height = height;
             gldw = new GLDWrapper(usePackedShaders);
             gldw.title = title;
             gldw.titleDetails = TitleDetails;
-           loop(delegate
-           {
-               gldw.createCanvas(Width, Height, borderless, BackColor == null ? Color.Black : (Color)BackColor, VSync, debugMode);
-               setInputCallbacks();
-           },
-           delegate 
-           {
-               mainLoop();
-           }, gldw);
+            iWidth = width;
+            iHeight = height;
+            this.VSync = VSync;
+            Borderless = borderless;
+            DebugMode = debugMode;
+            iBackColor = BackColor == null ? Color.Black : (Color)BackColor;
+            AutoRender = autoRender;
+            renderNextFrame = autoRender;
+
+            startCanvas(this);
         }
 
         //allows the native HWND process from a GLFW window to be embedded into a windows forms parnel
         [DllImport("user32.dll")]
         static extern IntPtr SetParent(IntPtr hWndChild, IntPtr hWndNewParent);
         IntPtr panelHandle;
+
         /// <summary>
-        /// 
+        /// Creates a canvas which is embedded into a windows forms panal.
+        /// VSync is forced on as windows likes to run forms in no more than 60 FPS
         /// </summary>
         /// <param name="form">The Windows Form to embed the canvas window</param>
         /// <param name="panel">the panel to replace with the canvas</param>
         /// <param name="BackColor">Background color of the canvas</param>
-        /// <param name="VSync">Limits the framerate to 60fps and waits for vertical screen synchronization</param>
+        /// <param name="autoRender">wether to automatically render objects on the canvas each frame </param>
         /// <param name="debugMode">Display rendering information on top of the canvas</param>
-        public GLCanvas(Form form, Panel panel, Color? BackColor = null, bool VSync = true, bool debugMode = false)
+        public GLCanvas(Form form, Panel panel, Color? BackColor = null, bool autoRender = true, bool debugMode = false)
         {        
-            Width = panel.Width;
-            Height = panel.Height;
             gldw = new GLDWrapper(usePackedShaders);
+            iHeight = panel.Height;
+            iWidth = panel.Width;
             form.FormClosed += delegate { Close(); }; //close the canvas when the parent form is closed
             panelHandle = panel.Handle;
-            
-            loop(delegate
-           {
-               gldw.createCanvas(Width, Height,true, BackColor == null ? Color.LightGray : (Color)BackColor, VSync, debugMode);
-               setInputCallbacks();
+            this.VSync = true;
+            Borderless = true;
+            DebugMode = debugMode;
+            iform = form;
+            ipanel = panel;
+            iBackColor = BackColor == null ? Color.Black : (Color)BackColor;
+            embedded = true;
+            AutoRender = autoRender;
+            renderNextFrame = autoRender;
 
-               SetParent(gldw.getNativeHWND(), panelHandle);
-           },
-           delegate 
-           {
-               mainLoop();
-           }, gldw);
-
+            startCanvas(this);
         }
         //C++ backend needs to know where to trigger input events
-        private void setInputCallbacks()
+        private void Initialize()
         {
             gldw.Input.setMouseCallback(MouseCallback);
             gldw.Input.setKeyCallback(KeyCallback);
             gldw.Input.setMouseMoveCallback(MouseMoveCallback);
-            timer = new Stopwatch();
-            timer.Start();
+            initialized = true;
         }
         private void mainLoop()
-        {   
-            iTime = timer.ElapsedMilliseconds;
+        {
+            iTime = gldw.ellapsedTime;
             iDeltaTime = iTime - lastTime;
             lastTime = iTime;
 
             Update.Invoke();
+            MouseScrollDirection = 0;
 
             if (NullRemovalFlag)
             {
-                gldw.cleaarNullRects();
+                gldw.clearNullRects();
                 GC.Collect();
                 NullRemovalFlag = false;
             }
 
             if (simpleBackBuffer)
                 gldw.clearBB();
-            gldw.mainloop();
+
+            //needs to be very spesific due to threads
+            if (!AutoRender)
+            {
+                if (renderNextFrame)
+                {
+                    gldw.mainloop(true);
+                    renderNextFrame = false;
+                }
+                else
+                    gldw.mainloop(false);
+            }
+            else
+                gldw.mainloop(true);
+
+            iWidth = gldw.width;
+            iHeight = gldw.height;
+            frozen = false;
         }
 
         //shortcut for converting null colors to transparent colors for default parameters
@@ -200,8 +286,13 @@ namespace GLDrawer
         /// <param name="BorderColor">Border Color</param>
         /// <param name="Angle">Rotation around the center point in radians</param> 
         /// <param name="RotationSpeed">Speed of the rotation animation in radians per frame</param> 
+        /// <returns>a copy of the added shape</returns>
         public Rectangle AddRectangle(float XStart, float YStart, float Width, float Height, Color? FillColor = null, float BorderThickness = 0, Color? BorderColor = null, float Angle = 0, float RotationSpeed = 0)
         {
+            XStart *= Scale;
+            YStart *= Scale;
+            Width *= Scale;
+            Height *= Scale;
             Rectangle r = new Rectangle(new vec2(XStart + Width / 2f, YStart + Height / 2f), new vec2(Width, Height), FillColor, BorderThickness, BorderColor, Angle, RotationSpeed);
             gldw.addRect(r.rect);
             return r;
@@ -218,8 +309,13 @@ namespace GLDrawer
         /// <param name="BorderColor">Color of the outside border</param>
         /// <param name="Angle">Rotation around the center point in radians</param> 
         /// <param name="RotationSpeed">Speed of the rotation animation in radians per frame</param> 
+        /// <returns>a copy of the added shape</returns>
         public Rectangle AddCenteredRectangle(float Xpos, float Ypos, float Width, float Height, Color? FillColor = null, float BorderThickness = 0, Color? BorderColor = null, float Angle = 0, float RotationSpeed = 0)
         {
+            Xpos *= Scale;
+            Ypos *= Scale;
+            Width *= Scale;
+            Height *= Scale;
             Rectangle r = new Rectangle(new vec2(Xpos, Ypos), new vec2(Width, Height), FillColor, BorderThickness, BorderColor, Angle, RotationSpeed);
             gldw.addRect(r.rect);
             return r;
@@ -236,8 +332,13 @@ namespace GLDrawer
         /// <param name="BorderColor">Border Color</param>
         /// <param name="Angle">Rotation around the center point in radians</param> 
         /// <param name="RotationSpeed">Speed of the rotation animation in radians per frame</param> 
+        /// <returns>a copy of the added shape</returns>
         public Ellipse AddEllipse(float XStart, float YStart, float Width, float Height, Color? FillColor = null, float BorderThickness = 0, Color? BorderColor = null, float Angle = 0, float RotationSpeed = 0)
         {
+            XStart *= Scale;
+            YStart *= Scale;
+            Width *= Scale;
+            Height *= Scale;
             Ellipse e = new Ellipse(new vec2(XStart + Width / 2f, YStart + Height / 2f), new vec2(Width, Height), FillColor, BorderThickness, BorderColor, Angle, RotationSpeed);
             gldw.addRect(e.rect);
             return e;
@@ -254,8 +355,13 @@ namespace GLDrawer
         /// <param name="BorderColor">Color of the outside border</param>
         /// <param name="Angle">Rotation around the center point in radians</param> 
         /// <param name="RotationSpeed">Speed of the rotation animation in radians per frame</param> 
+        /// <returns>a copy of the added shape</returns>
         public Ellipse AddCenteredEllipse(float Xpos, float Ypos, float Width, float Height, Color? FillColor = null, float BorderThickness = 0, Color? BorderColor = null, float Angle = 0, float RotationSpeed = 0)
         {
+            Xpos *= Scale;
+            Ypos *= Scale;
+            Width *= Scale;
+            Height *= Scale;
             Ellipse e = new Ellipse(new vec2(Xpos, Ypos), new vec2(Width, Height), FillColor, BorderThickness, BorderColor, Angle, RotationSpeed);
             gldw.addRect(e.rect);
             return e;
@@ -272,8 +378,13 @@ namespace GLDrawer
         /// <param name="BorderThickness">Thickness of the outside border</param>
         /// <param name="BorderColor">Color of the outside border</param>
         /// <param name="RotationSpeed">Speed of the rotation animation in radians per frame</param> 
+        /// <returns>a copy of the added shape</returns>
         public Line AddLine(float XStart, float YStart, float XEnd, float YEnd, float Thickness, Color? LineColor = null, float BorderThickness = 0, Color? BorderColor = null, float RotationSpeed = 0)
         {
+            XStart *= Scale;
+            YStart *= Scale;
+            XEnd *= Scale;
+            YEnd *= Scale;
             Line l = new Line(new vec2(XStart, YStart), new vec2(XEnd, YEnd), Thickness, LineColor, BorderThickness, BorderColor, RotationSpeed);
             gldw.addRect(l.rect);
             return l;
@@ -289,14 +400,35 @@ namespace GLDrawer
         /// <param name="BorderThickness">Thickness of the outside border</param>>
         /// <param name="BorderColor">Color of the outside border</param>
         /// <param name="RotationSpeed">Speed of the rotation animation in radians per frame</param> 
+        /// <returns>a copy of the added shape</returns>
         public Line AddLine(vec2 StartPos, float Length, float Angle, float Thickness, Color? LineColor = null, float BorderThickness = 0, Color? BorderColor = null, float RotationSpeed = 0)
         {
+            StartPos *= Scale;
+            Length *= Scale;
             Line l = new Line(StartPos, Length, Thickness, Angle, LineColor, BorderThickness, BorderColor, RotationSpeed);
             gldw.addRect(l.rect);
             return l;
         }
+        /// <summary>
+        /// Add a centered polygon to the canvas
+        /// </summary>
+        /// <param name="Xpos">X Coordinate of Polygon center point</param>
+        /// <param name="Ypos">Y Coordinate of Polygon center point</param>>
+        /// <param name="Width">Width of the Polygon</param>
+        /// <param name="Height">Height of the Polygon</param>
+        /// <param name="SideCount">number of sides of the Polygon</param>
+        /// <param name="FillColor">Inside color of the Polygon</param>
+        /// <param name="BorderThickness">Thickness of the outside border</param>>
+        /// <param name="BorderColor">Color of the outside border</param>
+        /// <param name="Angle">Rotation around the center point in radians</param> 
+        /// <param name="RotationSpeed">Speed of the rotation animation in radians per frame</param> 
+        /// <returns>a copy of the added shape</returns>
         public Polygon AddCenteredPolygon(float Xpos, float Ypos, float Width, float Height, int SideCount, Color? FillColor = null, float BorderThickness = 0, Color? BorderColor = null, float Angle = 0, float RotationSpeed = 0)
         {
+            Xpos *= Scale;
+            Ypos *= Scale;
+            Width *= Scale;
+            Height *= Scale;
             Polygon p = new Polygon(new vec2(Xpos, Ypos), new vec2(Width, Height), SideCount, FillColor, BorderThickness, BorderColor, Angle, RotationSpeed);
             gldw.addRect(p.rect);
             return p;
@@ -317,6 +449,10 @@ namespace GLDrawer
         /// <returns>Reference to the added sprite</returns>
         public Sprite AddCenteredSprite(string FilePath, float Xpos, float Ypos, float Width, float Height, Color? FillColor = null, float BorderThickness = 0, Color? BorderColor = null, float Angle = 0, float RotationSpeed = 0)
         {
+            Xpos *= Scale;
+            Ypos *= Scale;
+            Width *= Scale;
+            Height *= Scale;
             Sprite s = new Sprite(FilePath, new vec2(Xpos, Ypos), new vec2(Width, Height), FillColor, BorderThickness, BorderColor, Angle, RotationSpeed);
             gldw.addRect(s.rect);
             return s;
@@ -337,67 +473,220 @@ namespace GLDrawer
         /// <returns>Reference to the added sprite</returns>
         public Sprite AddSprite(string FilePath, float XStart, float YStart, float Width, float Height, Color? FillColor = null, float BorderThickness = 0, Color? BorderColor = null, float Angle = 0, float RotationSpeed = 0)
         {
+            XStart *= Scale;
+            YStart *= Scale;
+            Width *= Scale;
+            Height *= Scale;
             Sprite s = new Sprite(FilePath, new vec2(XStart + Width / 2f, YStart + Height / 2f), new vec2(Width, Height), FillColor, BorderThickness, BorderColor, Angle, RotationSpeed);
             gldw.addRect(s.rect);
             return s;
         }
+        /// <summary>
+        /// Adds Text in the center of the canvas
+        /// </summary>
+        /// <param name="text">text to add</param>
+        /// <param name="textHeight">size of the tallest letter</param>
+        /// <param name="TextColor">color of the text (defaults to white)<</param>
+        /// <param name="justification">justification based on the longest line of text</param>
+        /// <param name="fontFilepath">path to a truetype font file to use</param>
+        /// <returns>a copy of the added shape</returns>
+        public Text AddCenteredText(string text, float textHeight, Color ? TextColor = null, JustificationType justification = JustificationType.Center, string fontFilepath  = "c:\\windows\\fonts\\times.ttf")
+        {
+            Text t = new Text(this.Centre, text, textHeight, TextColor == null ? Color.White : TextColor, justification, fontFilepath);
+            gldw.addRect(t.rect);
+            return t;
+        }
+        /// <summary>
+        /// Adds Text Centered anywhere on the canvas
+        /// </summary>
+        /// <param name="text">text to add</param>
+        /// <param name="textHeight">size of the tallest letter</param>
+        /// <param name="Xpos">Horizontal center of the text</param>
+        /// <param name="Ypos">Vertical center of the text</param>
+        /// <param name="TextColor">color of the text (defaults to white)</param>
+        /// <param name="justification">justification based on the longest line of text</param>
+        /// <param name="fontFilepath">path to a truetype font file to use</param>
+        /// <returns>a copy of the added shape</returns>
+        public Text AddCenteredText(string text, float textHeight, float Xpos, float Ypos, Color? TextColor = null, JustificationType justification = JustificationType.Center, string fontFilepath = "c:\\windows\\fonts\\times.ttf")
+        {
+            Xpos *= Scale;
+            Ypos *= Scale;
+            Text t = new Text(new vec2(Xpos, Ypos), text, textHeight, TextColor == null ? Color.White : TextColor, justification, fontFilepath);
+            gldw.addRect(t.rect);
+            return t;
+        }
+        /// <summary>
+        /// Adds text to the canvas, linked to and restricted by a bounding rectangle 
+        /// </summary>
+        /// <param name="text">text to add</param>
+        /// <param name="textHeight">size of the tallest letter</param>
+        /// <param name="BoundingRect">reference rectangle to restrict te text witin</param>
+        /// <param name="TextColor">color of the text (defaults to white)</param>
+        /// <param name="justification">justification based on the longest line of text</param>
+        /// <param name="fontFilepath">path to a truetype font file to use</param>
+        /// <returns>a copy of the added shape</returns>
+        public Text AddText(string text, float textHeight, Rectangle BoundingRect, Color? TextColor = null, JustificationType justification = JustificationType.Center, string fontFilepath = "c:\\windows\\fonts\\times.ttf")
+        {
+            Text t = new Text(text, textHeight, BoundingRect, TextColor == null ? Color.White : TextColor, justification, fontFilepath);
+            gldw.addRect(t.rect);
+            return t;
+        }
+        /// <summary>
+        /// Adds text to the canvas, restricted by a described bounding rectangle, the reference to which can be retrieved as a property
+        /// </summary>
+        /// <param name="text">text to add</param>
+        /// <param name="textHeight">size of the tallest letter</param>
+        /// <param name="XStart">X start position of the bounding box</param>
+        /// <param name="YStart">Y starat position of the bounding box</param>
+        /// <param name="width">width of the bounding box</param>
+        /// <param name="height">heigt of te bounding box</param>
+        /// <param name="TextColor">color of the text (defaults to white)</param>
+        /// <param name="justification">justification based on the longest line of text</param>
+        /// <param name="fontFilepath">path to a truetype font file to use</param>
+        /// <returns>a copy of the added shape</returns>
+        public Text AddText(string text, float textHeight, int XStart, int YStart, int width, int height, Color? TextColor = null, JustificationType justification = JustificationType.Center, string fontFilepath = "c:\\windows\\fonts\\times.ttf")
+        {
+            XStart *= Scale;
+            YStart *= Scale;
+            Width *= Scale;
+            Height *= Scale;
+            Rectangle BoundingRect = new Rectangle(new vec2(XStart + width, YStart + height) / 2f, new vec2(width, height));
+            Text t = new Text(text, textHeight, BoundingRect, TextColor == null ? Color.White : TextColor, justification, fontFilepath);
+            gldw.addRect(t.rect);
+            return t;
+        }
+
         public Shape Add(Shape shape)
         {
             gldw.addRect(shape.rect);
             return shape;
         }
-        public void RemoveShape(Shape s)
+        //// <summary>renders all shapes to the screen</summary>
+        public void Render() => renderNextFrame = true;
+        /// <summary>stops drawaing a shape on the canvas</summary>
+        public void RemoveShape(Shape s) => gldw.removeRect(s.rect);
+        /// <summary>displays a shape one index behind other shapes on the canvas</summary>
+        public void SendBackward(Shape shape)
         {
-            gldw.removeRect(s.rect);
-        }
-        public void SendBack(Shape s)
-        {
+            if (!gldw.checkLoaded(shape.rect))
+                throw new ArgumentException("Shape was not found on / wasn't added to the canvas", "shape");
 
+            int shapeIndex = gldw.getRectIndex(shape.rect);
+            if (shapeIndex > 0)
+                gldw.swapOrder(shapeIndex, shapeIndex - 1);
         }
-        public void SendForward(Shape s)
+        /// <summary>displays a shape one index in front of the other shapes on the canvas</summary>
+        public void SendForward(Shape shape)
         {
+            if (!gldw.checkLoaded(shape.rect))
+                throw new ArgumentException("Shape was not found on / wasn't added to the canvas", "shape");
 
+            int shapeIndex = gldw.getRectIndex(shape.rect);
+            if(shapeIndex < shapeCount -1)
+                gldw.swapOrder(shapeIndex, shapeIndex +1);
         }
-        public void SendToBack(Shape s)
+        /// <summary>sets a shape to be drawn behind every other shape on the canvas</summary>
+        public void SendToBack(Shape shape)
         {
+            if (!gldw.checkLoaded(shape.rect))
+                throw new ArgumentException("Shape was not found on / wasn't added to the canvas", "shape");
 
+            int shapeIndex = gldw.getRectIndex(shape.rect);
+            for (int i = shapeIndex; i > 0; i--)
+                gldw.swapOrder(i, i - 1);
         }
-        public void SendToFront(Shape s)
+        /// <summary>sets a shape to be drawn in front of every other shape on the canvas</summary>
+        public void SendToFront(Shape shape)
         {
+            if (!gldw.checkLoaded(shape.rect))
+                throw new ArgumentException("Shape was not found on / wasn't added to the canvas", "shape");
 
+            int max = shapeCount; //CLR properties are slow
+            int shapeIndex = gldw.getRectIndex(shape.rect);
+
+            for (int i = shapeIndex; i < max-1; i++)
+                gldw.swapOrder(i, i + 1);
         }
+        /// <summary>
+        /// swaps the drawing order of two shapes and which will apear in front of the other
+        /// </summary>
+        /// <param name="IndexA">order of the first shape is drawn to the canvas</param>
+        /// <param name="IndexB">order of the second shape is drawn to the canvas</param>
         public void SwapDrawOrder(int IndexA, int IndexB)
         {
+            int max = shapeCount; //CLR properties are slow
+            if (IndexA > max || IndexA < 0)
+                throw new ArgumentOutOfRangeException("IndexA", IndexA, "Shape index was out of canvas range (0 - " + max + ")");
+            if (IndexB > max || IndexB < 0)
+                throw new ArgumentOutOfRangeException("IndexB", IndexB, "Shape index was out of canvas range (0 - " + max + ")");
+
             gldw.swapOrder(IndexA, IndexB);
         }
-        public void SetBBPixel(int x, int y, Color color)
+        /// <summary>swaps the drawing order of two shapes and which will apear in front of the other</summary>
+        public void SwapDrawOrder(Shape shapeA, Shape shapeB)
         {
+            if (!gldw.checkLoaded(shapeA.rect))
+                throw new ArgumentException("Shape A was not found on / wasn't added to the canvas", "shapeA");
+            if (!gldw.checkLoaded(shapeB.rect))
+                throw new ArgumentException("Shape B was not found on / wasn't added to the canvas", "shapeB");
+            gldw.swapOrder(gldw.getRectIndex(shapeA.rect), gldw.getRectIndex(shapeB.rect));
+        }
+        /// <summary>sets the color of a single pixel on theh back buffer</summary>
+        public void SetBBPixel(int x, int y, Color color)
+        { 
             if (x < 0 || x > Width) 
                 throw new ArgumentException("X coordinate must be a positive number less than the canvas width", "x");
             if (y < 0 || y > Height)
                 throw new ArgumentException("Y coordinate must be a positive number less than the canvas height", "y");
             gldw.setBBpixel(x, y, color);
         }
-        public Shape SetBBShape(Shape s)
+        /// <summary>draws a whole shape to the back buffer</summary>
+        public Shape SetBBShape(Shape shape)
         {
-            return s;
+            gldw.setBBShape(shape.rect);
+            return shape;
         }
-        public Color getPixel(int x, int y) => gldw.getPixel(x, y);
+        /// <summary>gets the color of a single pixel on the canvas</summary>
         public Color getPixel(vec2 pixel) => gldw.getPixel((int)pixel.x, (int)pixel.y);
+        /// <summary>gets the color of a single pixel on the canvas</summary>
+        public Color getPixel(int x, int y)
+        {
+            if (x < 0 || x > Width)
+                throw new ArgumentException("X coordinate must be a positive number less than the canvas width", "x");
+            if (y < 0 || y > Height)
+                throw new ArgumentException("Y coordinate must be a positive number less than the canvas height", "y");
 
-        //when a refrence to an added shape is deleted, it may not stop drawing until this is called
+            return gldw.getPixel(x, y);
+        }
+
+
+        /// <summary>removes shapes with now references from the canvas</summary>
         public void Refresh() => NullRemovalFlag = true;
-        //{
-        //    gldw.cleaarNullRects();
-        //    GC.Collect();
-        //}
+
+        /// <summary>
+        /// sets the upper-left corner location of the window on the screen 
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        public void SetWindowPosition(int x, int y)
+        {
+            if (x < 0)
+                throw new ArgumentException("X coordinate must be a positive number", "x");
+            if (y < 0)
+                throw new ArgumentException("Y coordinate must be a positive number", "y");
+            gldw.setPos(x, y);
+        }
+
+        /// <summary>closes the canvas</summary>
         public void Close()
         {
             gldw.shouldClose = true;
             //gldw.dispose();
         }
-        public Color BackBufferColor { get => gldw.backColor; set => gldw.backColor = value; }
+        /// <summary>sets every pixel on the back buffer to the back buffer color</summary>
         public void ClearBackBuffer() => gldw.clearBB();
+        /// <summary>removes all shapes from the canvas</summary>
+        public void Clear() => gldw.clearShapes();
         ~GLCanvas()
         {
             gldw.dispose();
@@ -420,27 +709,18 @@ namespace GLDrawer
         }
 
         public static vec2 Zero { get { return new vec2(0); } }
+        /// <summary>vec2 withlargest possible values</summary>
         public static vec2 Max { get { return new vec2(float.MaxValue); } }
+        /// <summary>vec2 with abolute values of x and y</summary>
         public vec2 Abs { get { return new vec2(Math.Abs(x), Math.Abs(y)); } }
-
-        public GL3DrawerCLR.vec2 ImplicitConversion
-        {
-            get => default(GL3DrawerCLR.vec2);
-            set
-            {
-            }
-        }
 
         //implicit vec2 to Gl3DrawerCLR vec2 convertion which is implcitly converted to glm vec2 internally
         public static implicit operator GL3DrawerCLR.vec2(vec2 v)
         {
             return new GL3DrawerCLR.vec2(v.x, v.y);
         }
-        //public static implicit operator vec2(GL3DrawerCLR.vec2 v)
-        //{
-        //    return new vec2(v.x, v.y);
-        //}
 
+        /// <summary>gets the distance from the target</summary>
         public float Length(vec2 Target)
         {
             float a = x - Target.x;
@@ -456,11 +736,13 @@ namespace GLDrawer
         {
             return x.GetHashCode() ^ y.GetHashCode();
         }
+        /// <summary>returns a directional vector from 0,0 with a radius of 1.0</summary>
         public vec2 Normalize()
         {
             float distance = (float)Math.Sqrt(this.x * this.x + this.y * this.y);
             return new vec2(this.x / distance, this.y / distance);
         }
+        /// <summary>linear interpolation between vectors</summary>
         public vec2 lerp(vec2 target, float time)
         {
             float retX = x * time + target.x * (1 - time);
@@ -553,9 +835,7 @@ namespace GLDrawer
         private static Random rnd = new Random();
         private bool RainbowMode;
 
-        /// <summary>
-        /// creates a new color from RGB and Alpha values
-        /// </summary>
+        /// <summary>creates a new color from RGB and Alpha values </summary>
         public Color(int r, int g, int b, int a = 255) : this()
         {
             R = r;
@@ -564,9 +844,7 @@ namespace GLDrawer
             A = a;
             RainbowMode = false;
         }
-        /// <summary>
-        /// creates a monochrome color 
-        /// </summary>
+        /// <summary> creates a monochrome color </summary>
         public Color(int rgb = 255, int a = 255) : this()
         {
             R = rgb;
@@ -603,9 +881,7 @@ namespace GLDrawer
                 return c;
             }
         }
-        /// <summary>
-        /// A random opaque color
-        /// </summary>
+        /// <summary> A random opaque color </summary>
         public static Color Random { get => new Color(rnd.Next(0, 255), rnd.Next(0, 255), rnd.Next(0, 255)); }
 
         //just in case you're used to system.drawing
@@ -613,6 +889,7 @@ namespace GLDrawer
         {
             return new Color(r, g, b, a);
         }
+        /// <summary>Averages the rgb values together</summary>
         public void SetMonochrome()
         {
             this = new Color((R + G + B)/3, A);
@@ -722,6 +999,7 @@ namespace GLDrawer
             return new Color(x.R / val, x.G / val, x.B / val);
         }
     }
+    //might be confusing
     public static partial class ExtentionMethods
     {
         /// <summary>

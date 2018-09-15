@@ -84,6 +84,7 @@ const vec3 rectVertices[] = {
 };
 
 void BaseGLD::addRect(rect * r) {
+	while (rectCopyFlag) {}
 	rectBuffer.push_back(r);
 	eDataBuffer.push_back(extraData());
 }
@@ -97,7 +98,7 @@ vec4 RandColor() {
 
 #pragma endregion
 
-const char * defaultFilepath = ""; //use if the shader folder is outside of the bin directory
+const char * defaultFilepath = "../data/"; //use if the shader folder is outside of the bin directory
 
 int BaseGLD::loadShader(const char * vertexFilename, const char * fragmentFilename) {
 
@@ -178,31 +179,35 @@ void BaseGLD::cleanup() {
 	if (Cleaned)
 		return;
 
-	//commented as a result of a new error
-//	gl(DeleteVertexArrays(1, &VAO));
-	//gl(DeleteBuffers(1, &VBO));
-	//gl(DeleteBuffers(1, &EBO));
-	//gl(DeleteTextures(1, &textureId));
-	//gl(DeleteFramebuffers(1, &fboId));
-	
-	//for (int i = 0; i < eData.size(); i++)
-	//	if (eData[i].id > 0)
-	//		gl(DeleteTextures(1, &eData[i].id));
-	//for (int i = 0; i < fonts.size(); i++)
-	//	if (fonts[i].id > 0)
-	//		gl(DeleteTextures(1, &fonts[i].id));
-	
+	delete setPixelData;
 	rects.clear();
 	eData.clear();
 	fonts.clear();
 	glfwTerminate();
-	closeFlag = true;
 	Cleaned = true;
 }
+void BaseGLD::setWindowSize(int w, int h) {
+	glfwSetWindowSize(window, w, h);
+}
+
 void BaseGLD::swapOrder(int a, int b) {
-	rect* temp = rects[a];
-	rects[a] = rects[b];
-	rects[b] = temp;
+	{
+		rect* temp = rects[a];
+		rects[a] = rects[b];
+		rects[b] = temp;
+	}
+	{
+		extraData temp = eData[a];
+		eData[a] = eData[b];
+		eData[b] = temp;
+	}
+
+}
+int BaseGLD::getDrawIndex(rect * r) {
+	for (int i = 0; i < rects.size(); i++)
+		if (rects[i] == r)
+			return i;
+	return -1;
 }
 void BaseGLD::removeNullShapes() {
 	for (int i = 0; i < rects.size(); i++)
@@ -238,6 +243,15 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
 }
 void mouseMoveCallback(GLFWwindow* window, double x, double y) {
 	static_cast<BaseGLD*>(glfwGetWindowUserPointer(window))->Input->onCursor();
+}
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+	static_cast<BaseGLD*>(glfwGetWindowUserPointer(window))->Input->onMouse(3, (int)yoffset, 0);
+}
+//unexpected resize + set pixel = death
+void window_size_callback(GLFWwindow* window, int width, int height) {
+	BaseGLD * base = static_cast<BaseGLD*>(glfwGetWindowUserPointer(window));
+	base->windowSizeChanged = true;
 }
 rect::rect() {
 	pos = vec2();
@@ -295,11 +309,46 @@ rect::rect(const char* filePath, string Text, int length, vec2 Pos, float Scale,
 HWND BaseGLD::getNativeHWND() {
 	return glfwGetWin32Window(window);
 }
+
+void genFramBuffer(GLuint * textID, GLuint * fboID, int width, int height) {
+	glGenTextures(1, textID);
+	glGenFramebuffers(1, fboID);
+	{
+		gl(BindTexture(GL_TEXTURE_2D, *textID));
+		defer(glBindTexture(GL_TEXTURE_2D, 0));
+		gl(TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+		gl(TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
+		gl(TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+		gl(TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+		gl(TexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0));
+
+		gl(BindFramebuffer(GL_FRAMEBUFFER, *fboID));
+		defer(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+
+		// attach the texture to FBO color attachment point
+		gl(FramebufferTexture2D(GL_FRAMEBUFFER,        // 1. fbo target: GL_FRAMEBUFFER 
+			GL_COLOR_ATTACHMENT0,  // 2. attachment point
+			GL_TEXTURE_2D,         // 3. tex target: GL_TEXTURE_2D
+			*textID,             // 4. tex ID
+			0));                    // 5. mipmap level: 0(base)
+
+								   // check FBO status
+		GLenum status = gl(CheckFramebufferStatus(GL_FRAMEBUFFER));
+		assert(status == GL_FRAMEBUFFER_COMPLETE);
+
+		gl(BindTexture(GL_TEXTURE_2D, *textID));
+		gl(TexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0));
+		gl(BindTexture(GL_TEXTURE_2D, 0));
+
+		gl(BindFramebuffer(GL_FRAMEBUFFER, *fboID));
+
+		gl(ClearColor(0.0f, 0.0f, 0.0f, 1.0f));
+		gl(Clear(GL_COLOR_BUFFER_BIT));
+	}
+}
+
 int BaseGLD::createCanvas(int width, int height, bool borderd, vec3 backcol, bool Vsync)
 {
-
-#pragma region setup
-
 	resolutionWidth = width;
 	resolutionHeight = height;
 	
@@ -345,14 +394,18 @@ int BaseGLD::createCanvas(int width, int height, bool borderd, vec3 backcol, boo
 	glfwSetKeyCallback(window, KeyCallback);
 	glfwSetMouseButtonCallback(window, mouseButtonCallback);
 	glfwSetCursorPosCallback(window, mouseMoveCallback);
+	glfwSetWindowSizeCallback(window, window_size_callback);
+	glfwSetScrollCallback(window, scroll_callback);
 
 	//If the program is being run from the CLR program, packed shaders will be turned on. 
 	//the sources are from shaders.h which is automatically generated from the original .glsl files
 	if (usePackedShaders) {
 		PolygonShaderProgram = loadShader(RectVert, PolygonFrag);
+		fboShaderProgram = loadShader(RectVert, TextureFrag);
 	}
 	else {
 		PolygonShaderProgram = loadShader("RectVertex", "PolygonFragment");
+		fboShaderProgram = loadShader("RectVertex", "TextureFragment");
 	}
 
 	gl(GenVertexArrays(1, &VAO));
@@ -377,72 +430,54 @@ int BaseGLD::createCanvas(int width, int height, bool borderd, vec3 backcol, boo
 	gl(Enable(GL_BLEND));
 	gl(BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 
-#pragma endregion
-
+	//polygon shader uniforms
 	PxformUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "xform"));
 	PshapeScaleUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "shapeScale"));
 	PColorUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "Color"));
 	PbordColorUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "bordColor"));
 	PsideCountUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "sideCount"));
 	PborderWidthUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "bordWidth"));
-	PaspectUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "aspect"));
 	PtextureUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "Text"));
-	PUVscaleUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "scaleOffset"));
-	PUVposUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "posOffset"));
 	PtimeUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "iTime"));
 
 	PmPosUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "position"));
 	PmScaleUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "scale"));
 	PmRotUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "rotation"));
+	PUVscaleUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "scaleOffset"));
+	PUVposUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "posOffset"));
+	PaspectUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "aspect"));
+
+	//fbo shader uniforms
+	FtextureUniformLocation = gl(GetUniformLocation(fboShaderProgram, "Text"));
+
+	FmPosUniformLocation = gl(GetUniformLocation(fboShaderProgram, "position"));
+	FmScaleUniformLocation = gl(GetUniformLocation(fboShaderProgram, "scale"));
+	FmRotUniformLocation = gl(GetUniformLocation(fboShaderProgram, "rotation"));
+	FUVscaleUniformLocation = gl(GetUniformLocation(fboShaderProgram, "scaleOffset"));
+	FUVposUniformLocation = gl(GetUniformLocation(fboShaderProgram, "posOffset"));
+	FaspectUniformLocation = gl(GetUniformLocation(fboShaderProgram, "aspect"));
 
 	if(!Vsync)
 		glfwSwapInterval(0);
 
-	glGenTextures(1, &textureId);
-	glGenFramebuffers(1, &fboId);	
-	{
-		glBindTexture(GL_TEXTURE_2D, textureId);
-		defer(glBindTexture(GL_TEXTURE_2D, 0));
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, resolutionWidth, resolutionHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-
-		glBindFramebuffer(GL_FRAMEBUFFER, fboId);
-		defer(glBindFramebuffer(GL_FRAMEBUFFER, 0));
-
-		// attach the texture to FBO color attachment point
-		glFramebufferTexture2D(GL_FRAMEBUFFER,        // 1. fbo target: GL_FRAMEBUFFER 
-			GL_COLOR_ATTACHMENT0,  // 2. attachment point
-			GL_TEXTURE_2D,         // 3. tex target: GL_TEXTURE_2D
-			textureId,             // 4. tex ID
-			0);                    // 5. mipmap level: 0(base)
-
-								   // check FBO status
-		GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-		assert(status == GL_FRAMEBUFFER_COMPLETE);
-
-		gl(BindTexture(GL_TEXTURE_2D, textureId));
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, resolutionWidth, resolutionHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-		gl(BindTexture(GL_TEXTURE_2D, 0));
-
-		glBindFramebuffer(GL_FRAMEBUFFER, fboId);
-
-		gl(ClearColor(backCol.r, backCol.g, backCol.b, 1.0f));
-		gl(Clear(GL_COLOR_BUFFER_BIT));
-	}
+	genFramBuffer(&fboTextIdA, &fboIdA, width, height);
+	genFramBuffer(&fboTextIdB, &fboIdB, width, height);
 
 	//used to display debug information on the canvas.
 	if (debugMode) {
 		infoRect = rect("c:\\windows\\fonts\\arial.ttf", "test info", 6, vec2(170, resolutionV2f.y - 20), 20, 0, NULL, 0, vec4(1));
-		addRect(&infoRect);
+	//	addRect(&infoRect);
 	}
+	setPixelData = new unsigned char[width * height * 4];
+	clearSetPixelData();
 
     prevTime = (float)glfwGetTime();
 	return 0;
 }
-
+void BaseGLD::clearSetPixelData() {
+	for (int i = 0; i < resolutionWidth * resolutionHeight * 4; i++)
+		setPixelData[i] = 0;
+}
 
 /* My best explenation/guess about what is goin on here:
 The font textures are rasterized using stb truetype. stbtt also provides data on how to make actually use of the font texture,
@@ -502,6 +537,7 @@ fontDat::fontDat(const char * filepath) {
 	spaceOff = tallestLetter / 3;
 	id = -1;
 }
+//this could be moved into the constuctor
 void fontDat::loadTexture(){
 	gl(GenTextures(1, &id));
 	gl(BindTexture(GL_TEXTURE_2D, id));
@@ -510,13 +546,22 @@ void fontDat::loadTexture(){
 	// can free temp_bitmap at this point
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 }
+void BaseGLD::checkFont(extraData * ed, rect r) {
+	if (ed->fd)
+		return;
+	for (int i = 0; i < fonts.size(); i++)
+	{
+		if (fonts[i].filePath == r.path) {
+			ed->fd = i;
+			return;
+		}
+	}
+	fonts.push_back(fontDat(r.path));
+	fonts[fonts.size() - 1].loadTexture();
+	ed->fd = fonts.size() - 1;
+}
 
-//unsigned char ttfBuffer[1 << 20];
-//unsigned char tempBitmap[512 * 512];
-//float tallestLetter = 0;
-//stbtt_bakedchar cdata[96];// ASCII 32..126 is 95 glyphs
-//stbtt_fontinfo font;
-
+//this could be moved into the img constructor, same as font
 void loadTexture(const char * path, GLuint * id) {
 
 	stbi_set_flip_vertically_on_load(true);
@@ -537,49 +582,222 @@ void loadTexture(const char * path, GLuint * id) {
 	
 	stbi_image_free(image);
 }
-
-void BaseGLD::setBBPixel(vec2 pix, vec4 col) {
-
-	BBQue.push_back(rect(pix, vec2(100.0, 100.0), 0, col));
+void BaseGLD::checkImg(extraData * ed, rect r) {
+	if (ed->id != -1)
+		return;
+	for (int i = 0; i < imgs.size(); i++)
+	{
+		if (imgs[i].filePath == r.path) {
+			ed->id = i;
+			return;
+		}
+	}
+	imgs.push_back(imgDat(r.path));
+	ed->id = imgs.size() - 1;
+}
+imgDat::imgDat(const char * FilePath) {
+	filePath = FilePath;
+	loadTexture(FilePath, &ID);
 }
 
+void BaseGLD::setBBPixel(int x, int y, vec4 col) {
+	while (setPixelCopyFlag) {
 
+	}
+	int gridX = x * 4;
+	int gridY = resolutionWidth * y * 4;
+	setPixelData[gridY + gridX] = col.r * 255;
+	setPixelData[gridY + gridX + 1] = col.g * 255;
+	setPixelData[gridY + gridX + 2] = col.b * 255;
+	setPixelData[gridY + gridX + 3] = col.a * 255;
+	setPixelFlag = true;
+}
+void BaseGLD::setBBShape(rect r) {
+	BBQue.push_back(r);
+}
 
-void BaseGLD::mainloop() {
+void BaseGLD::setPolygonUniforms(rect * r) {
+
+	gl(Uniform4f(PColorUniformLocation, r->color.r, r->color.g, r->color.b, r->color.a));
+	gl(Uniform1i(PsideCountUniformLocation, r->sides));
+	gl(Uniform1f(PborderWidthUniformLocation, r->borderW));
+	gl(Uniform4f(PbordColorUniformLocation, r->borderColor.r, r->borderColor.g, r->borderColor.b, r->borderColor.a));
+	gl(Uniform2f(PshapeScaleUniformLocation, r->scale.x, r->scale.y));
+	gl(Uniform1f(PtimeUniformLocation, currTime));
+
+	//transform
+	gl(Uniform2f(PmScaleUniformLocation, r->scale.x / resolutionV2f.x, r->scale.y / resolutionV2f.y));
+	gl(Uniform2f(PmPosUniformLocation, r->pos.x / resolutionV2f.x * 2.0f - 1.0f, r->pos.y / resolutionV2f.y * 2.0f - 1.0f));
+	gl(Uniform1f(PmRotUniformLocation, r->angle - r->rotSpeed * currTime));
+
+	gl(Uniform2f(PUVscaleUniformLocation, 0.5f, 0.5f));
+	gl(Uniform2f(PUVposUniformLocation, 0.5f, 0.5f));
+}
+
+void BaseGLD::mainloop(bool render) {
+	Input->clearStates();
+	glfwPollEvents();
+
 	if (glfwWindowShouldClose(window) || closeFlag) {
 		cleanup();
 		return;
 	}
 
-		glfwMakeContextCurrent(window);
-		if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-			glfwSetWindowShouldClose(window, true);
+	glfwMakeContextCurrent(window);
+	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+		glfwSetWindowShouldClose(window, true);
+		cleanup();
+		return;
+	}
 
+	currTime = (float)glfwGetTime();
+	const float deltaTime = currTime - prevTime;
+	LastRenderTime = floorf(deltaTime * 1000); //possibly reduntant variable
+	currentFPS = 1.0f / deltaTime;
+	prevTime = currTime;
 
-		currTime = (float)glfwGetTime();
-		const float deltaTime = currTime - prevTime;
-		LastRenderTime = floorf(deltaTime * 1000); //possibly reduntant variable
-	    currentFPS = 1.0f / deltaTime;
-		prevTime = currTime;
-
-		glfwGetWindowSize(window, &resolutionWidth, &resolutionHeight);
-	    resolutionV2f = vec2((float)resolutionWidth, (float)resolutionHeight);
-		aspect = resolutionV2f.y / resolutionV2f.x;
-
-		if (resolutionV2f != prevWindowSize) {
-			windowSizeChanged = true;
-			prevWindowSize = resolutionV2f;
-		}
+	glfwGetWindowSize(window, &resolutionWidth, &resolutionHeight);
+	resolutionV2f = vec2((float)resolutionWidth, (float)resolutionHeight);
+	aspect = resolutionV2f.y / resolutionV2f.x;
 		
+	gl(Viewport(0, 0, resolutionWidth, resolutionHeight));
 
-		gl(BindTexture(GL_TEXTURE_2D, textureId));
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, resolutionWidth, resolutionHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+	//if the window size is changed, the back buffer and setpixel buffer needs to be re-created 
+	if (windowSizeChanged) {
+		gl(DeleteTextures(1, &fboTextIdA));
+		gl(DeleteTextures(1, &fboTextIdB));
+		gl(DeleteFramebuffers(1, &fboTextIdA));
+		gl(DeleteFramebuffers(1, &fboTextIdB));
+
+		genFramBuffer(&fboTextIdA, &fboIdA, resolutionWidth, resolutionHeight);
+		genFramBuffer(&fboTextIdB, &fboIdB, resolutionWidth, resolutionHeight);
+
+		delete setPixelData;
+		setPixelData = new unsigned char[resolutionWidth * resolutionHeight * 4];
+		clearSetPixelData();
+	}
+
+	//bind the back writing buffer
+	gl(BindTexture(GL_TEXTURE_2D, 0));
+	gl(BindFramebuffer(GL_FRAMEBUFFER, fboIdA));
+
+	//clear the buffer
+	if (clearColorFlag || windowSizeChanged) {
+		gl(ClearColor(backCol.r, backCol.g, backCol.b, 1.0f));
+		gl(Clear(GL_COLOR_BUFFER_BIT));
+		clearColorFlag = false;
+		if(render)
+			setBBShape(rect(resolutionV2f / 2.0f, resolutionV2f * 2.0f, 0, vec4(backCol.r, backCol.g, backCol.b, 1), vec4(), 0, 0));
+	}
+
+	//draw shapes to the back buffer
+	gl(BindVertexArray(VAO));
+	gl(UseProgram(PolygonShaderProgram));
+	if (render) {
+		vector<rect> BBQueCopy = BBQue;//copy first for Thread safety
+		BBQue.clear();
+		for (int i = 0; i < BBQueCopy.size(); i++)
+		{
+			rect * r = &BBQueCopy[i];
+			setPolygonUniforms(r);
+			gl(DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
+
+		}
+		BBQueCopy.clear();
+	}
+
+	//with the writing buffer still bound, create a texture from the setpixel data buffer and paste it to the back buffer
+	if (setPixelFlag && render) {
+		setPixelCopyFlag = true; //pause other thread while pixels are coppied to buffer
+		gl(BindVertexArray(VAO));
+		gl(UseProgram(fboShaderProgram));
+
+		gl(GenTextures(1, &setPixelDataID));
+		gl(BindTexture(GL_TEXTURE_2D, setPixelDataID));
+		gl(TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT));
+		gl(TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT));
+		gl(TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
+		gl(TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+		gl(TexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, resolutionWidth, resolutionHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, setPixelData));
+
+		gl(Uniform2f(FmScaleUniformLocation, 1.0, 1.0f));
+		gl(Uniform2f(FmPosUniformLocation, 0, 0));
+		gl(Uniform1f(FmRotUniformLocation, 0.0f));
+
+		gl(Uniform2f(FUVscaleUniformLocation, 0.5f, 0.5f));
+		gl(Uniform2f(FUVposUniformLocation, 0.5f, 0.5f));
+		gl(Uniform1f(FaspectUniformLocation, aspect));
+
+		gl(DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
 		gl(BindTexture(GL_TEXTURE_2D, 0));
+		gl(DeleteTextures(1, &setPixelDataID));
+		clearSetPixelData();
+		setPixelFlag = false;
+		setPixelCopyFlag = false; //resume other thread
+	}
 
-		glBindFramebuffer(GL_FRAMEBUFFER, fboId);
+	//transfer the back write buffer to the read buffer
+	{
+		gl(BindVertexArray(VAO));
+		gl(UseProgram(fboShaderProgram));
+
+		gl(BindFramebuffer(GL_FRAMEBUFFER, fboIdB));
 		gl(Viewport(0, 0, resolutionWidth, resolutionHeight));
 
-		//transfer object buffer to canvas list
+		gl(ActiveTexture(GL_TEXTURE0 + 0));
+		gl(BindTexture(GL_TEXTURE_2D, fboTextIdA));
+
+		//transform
+		gl(Uniform2f(FmScaleUniformLocation, 1.0, 1.0f));
+		gl(Uniform2f(FmPosUniformLocation, 0, 0));
+		gl(Uniform1f(FmRotUniformLocation, 0.0f));
+
+		gl(Uniform2f(FUVscaleUniformLocation, 0.5f, 0.5f));
+		gl(Uniform2f(FUVposUniformLocation, 0.5f, 0.5f));
+		gl(Uniform1f(FaspectUniformLocation, aspect));
+
+		gl(DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
+		gl(BindTexture(GL_TEXTURE_2D, 0));
+
+		gl(UseProgram(0));
+		gl(BindVertexArray(0));
+	}
+
+	//transform the back buffer and draw it as a background for the front buffer
+	{
+		gl(BindFramebuffer(GL_FRAMEBUFFER, 0));
+		gl(Disable(GL_CULL_FACE));
+		gl(Viewport(0, 0, resolutionWidth, resolutionHeight));
+
+		gl(BindVertexArray(VAO));
+		gl(UseProgram(PolygonShaderProgram));
+		gl(Uniform1f(PaspectUniformLocation, aspect));
+
+		gl(ActiveTexture(GL_TEXTURE0 + 0));
+		gl(BindTexture(GL_TEXTURE_2D, fboTextIdB));
+
+		gl(Uniform4f(PColorUniformLocation, 1.0f, 1.0f, 1.0f, 1.0f));
+		gl(Uniform1i(PsideCountUniformLocation, 0));
+		gl(Uniform1f(PborderWidthUniformLocation, 0));
+		gl(Uniform2f(PshapeScaleUniformLocation, 1.0f, 1.0f));
+
+		//transform
+		gl(Uniform2f(PmScaleUniformLocation, 1.0, 1.0f));
+		gl(Uniform2f(PmPosUniformLocation, 0, 0));
+		gl(Uniform1f(PmRotUniformLocation, 0.0f));
+
+		gl(Uniform2f(PUVscaleUniformLocation, 0.5f, 0.5f));
+		gl(Uniform2f(PUVposUniformLocation, 0.5f, 0.5f));
+
+		gl(DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
+		gl(BindTexture(GL_TEXTURE_2D, 0));
+		gl(UseProgram(0));
+		gl(BindVertexArray(0));
+	}
+
+	if (render) {
+		//thread safe transfer object buffer to canvas draw list
+		rectCopyFlag = true;
 		for (int i = 0; i < rectBuffer.size(); i++)
 			rects.push_back(rectBuffer[i]);
 		rectBuffer.clear();
@@ -587,7 +805,8 @@ void BaseGLD::mainloop() {
 		for (int i = 0; i < eDataBuffer.size(); i++)
 			eData.push_back(eDataBuffer[i]);
 		eDataBuffer.clear();
-		
+
+		//thread safe removal of shapes
 		for (int i = 0; i < rects.size(); i++)
 		{
 			for (int j = 0; j < removalBuffer.size(); j++)
@@ -598,166 +817,70 @@ void BaseGLD::mainloop() {
 				}
 			}
 		}
+		removalBuffer.clear();
+		if (clearShapeFlag) {
+			rects.clear();
+			eData.clear();
+			clearShapeFlag = false;
+		}
+		rectCopyFlag = false;
+	}
 
-		//draw back buffer and add stuff to it
-		gl(BindVertexArray(VAO));
-		gl(UseProgram(PolygonShaderProgram));
-		gl(Uniform1f(PaspectUniformLocation, aspect));
-		for (int i = 0; i < BBQue.size(); i++)
-		{
-			rect * r = &BBQue[i];
 
-			gl(Uniform4f(PColorUniformLocation, r->color.r, r->color.g, r->color.b, r->color.a));
-			gl(Uniform1i(PsideCountUniformLocation, r->sides));
-			gl(Uniform1f(PborderWidthUniformLocation, r->borderW));
-			gl(Uniform4f(PbordColorUniformLocation, r->borderColor.r, r->borderColor.g, r->borderColor.b, r->borderColor.a));
-			gl(Uniform2f(PshapeScaleUniformLocation, r->scale.x, r->scale.y));
-			gl(Uniform1f(PtimeUniformLocation, currTime));
+	//Draw everything else
+	gl(BindVertexArray(VAO));
+	gl(UseProgram(PolygonShaderProgram));
+	gl(Uniform1f(PaspectUniformLocation, aspect));
 
-			//transform
-			gl(Uniform2f(PmScaleUniformLocation, r->scale.x / resolutionV2f.x, r->scale.y / resolutionV2f.y));
-			gl(Uniform2f(PmPosUniformLocation, r->pos.x / resolutionV2f.x * 2.0f - 1.0f, r->pos.y / resolutionV2f.y * 2.0f - 1.0f));
-			gl(Uniform1f(PmRotUniformLocation, r->angle - r->rotSpeed * currTime));
+	for (int i = 0; i < rects.size(); ++i)
+	{
+		rect * r = rects[i];
+		if (r->hidden)
+			continue;
 
-			gl(Uniform2f(PUVscaleUniformLocation, 0.5f, 0.5f));
-			gl(Uniform2f(PUVposUniformLocation, 0.5f, 0.5f));
+		//draw as a font
+		if (r->sides == -1) {
+			drawFont(r, &eData[i]);
+		}
+		//draw as a texture
+		else if (!r->sides) {
+			checkImg(&eData[i], *r);
+
+			gl(BindTexture(GL_TEXTURE_2D, imgs[eData[i].id].ID));
+			gl(Uniform1i(PtextureUniformLocation, 0));
+			setPolygonUniforms(r);
 			gl(DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
-
-
 		}
-		if (clearColorFlag || windowSizeChanged) {
-			gl(ClearColor(backCol.r, backCol.g, backCol.b, 1.0f));
-			gl(Clear(GL_COLOR_BUFFER_BIT));
-			clearColorFlag = false;
-		}
-		gl(UseProgram(0));
-		gl(BindVertexArray(0));
-
-		gl(BindFramebuffer(GL_FRAMEBUFFER, 0));
-		gl(Disable(GL_CULL_FACE));
-		gl(Viewport(0, 0, resolutionWidth, resolutionHeight));
-
-
-		{
-			gl(BindVertexArray(VAO));
-			gl(UseProgram(PolygonShaderProgram));
-			gl(Uniform1f(PaspectUniformLocation, aspect));
-
-			gl(ActiveTexture(GL_TEXTURE0 + 0));
-			gl(BindTexture(GL_TEXTURE_2D, textureId));
-
-			gl(Uniform4f(PColorUniformLocation, 1.0f, 1.0f, 1.0f, 1.0f));
-			gl(Uniform1i(PsideCountUniformLocation, 0));
-			gl(Uniform1f(PborderWidthUniformLocation, 0));
-			gl(Uniform2f(PshapeScaleUniformLocation, 1.0f, 1.0f));
-
-			//transform
-			gl(Uniform2f(PmScaleUniformLocation, 1.0, 1.0f));
-			gl(Uniform2f(PmPosUniformLocation, 0, 0));
-			gl(Uniform1f(PmRotUniformLocation, 0.0f));
-
-			gl(Uniform2f(PUVscaleUniformLocation, 0.5f, 0.5f));
-			gl(Uniform2f(PUVposUniformLocation, 0.5f, 0.5f));
-
+		//draw as a polygon
+		else {
+			setPolygonUniforms(r);
 			gl(DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
-			gl(BindTexture(GL_TEXTURE_2D, 0));
-			gl(UseProgram(0));
-			gl(BindVertexArray(0));
 		}
+		gl(BindTexture(GL_TEXTURE_2D, 0));
+	}
+	if (debugMode) {
+		infoRect.pos = vec2(170, resolutionV2f.y - 30);
 
-//Draw everything else
-			gl(BindVertexArray(VAO));
-			gl(UseProgram(PolygonShaderProgram));
-			gl(Uniform1f(PaspectUniformLocation, aspect));
+		infoRect.text = debugString;
+		drawFont(&infoRect, &infoData);
+	}
+	gl(UseProgram(0));
+	gl(BindVertexArray(0));
+	
+	windowSizeChanged = false;
 
-			for (int i = 0; i < rects.size(); ++i)
-			{
-				rect * r = rects[i];
-				if (r->hidden)
-					continue;
-				//double timer = 0;
-				//timer = glfwGetTime();
+	glfwSwapBuffers(window);
 
+	updateDebugInfo();
 
-				//draw as a font
-				if ( r->sides == -1) {
-					drawFont(r, i);
-				}
-				//draw as a texture
-				else if (!r->sides) {
-					if (eData[i].id == -1)
-						loadTexture(r->path, &eData[i].id);
-
-					gl(BindTexture(GL_TEXTURE_2D, eData[i].id));
-					gl(Uniform1i(PtextureUniformLocation, 0));			
-
-					gl(Uniform4f(PColorUniformLocation, r->color.r, r->color.g, r->color.b, r->color.a));
-					gl(Uniform1i(PsideCountUniformLocation, r->sides));
-					gl(Uniform1f(PborderWidthUniformLocation, r->borderW));
-					gl(Uniform4f(PbordColorUniformLocation, r->borderColor.r, r->borderColor.g, r->borderColor.b, r->borderColor.a));
-					gl(Uniform2f(PshapeScaleUniformLocation, r->scale.x, r->scale.y));
-					gl(Uniform1f(PtimeUniformLocation, currTime));
-
-					//transform
-					gl(Uniform2f(PmScaleUniformLocation, r->scale.x / resolutionV2f.x, r->scale.y / resolutionV2f.y));
-					gl(Uniform2f(PmPosUniformLocation, r->pos.x / resolutionV2f.x * 2.0f - 1.0f, r->pos.y / resolutionV2f.y * 2.0f - 1.0f));
-					gl(Uniform1f(PmRotUniformLocation, r->angle - r->rotSpeed * currTime));
-
-					gl(Uniform2f(PUVscaleUniformLocation, 0.5f, 0.5f));
-					gl(Uniform2f(PUVposUniformLocation, 0.5f, 0.5f));
-
-					gl(DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
-				}
-				//draw as a polygon
-				else {
-
-					gl(Uniform4f(PColorUniformLocation, r->color.r, r->color.g, r->color.b, r->color.a));
-					gl(Uniform1i(PsideCountUniformLocation, r->sides));
-					gl(Uniform1f(PborderWidthUniformLocation, r->borderW));
-					gl(Uniform4f(PbordColorUniformLocation, r->borderColor.r, r->borderColor.g, r->borderColor.b, r->borderColor.a));
-					gl(Uniform2f(PshapeScaleUniformLocation, r->scale.x, r->scale.y));
-					gl(Uniform1f(PtimeUniformLocation, currTime));
-
-					//transform
-					gl(Uniform2f(PmScaleUniformLocation, r->scale.x / resolutionV2f.x, r->scale.y / resolutionV2f.y));
-					gl(Uniform2f(PmPosUniformLocation, r->pos.x / resolutionV2f.x * 2.0f - 1.0f, r->pos.y / resolutionV2f.y * 2.0f - 1.0f));
-					gl(Uniform1f(PmRotUniformLocation, r->angle - r->rotSpeed * currTime));
-
-					gl(Uniform2f(PUVscaleUniformLocation, 0.5f,0.5f));
-					gl(Uniform2f(PUVposUniformLocation, 0.5f, 0.5f));
-
-
-					gl(DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
-				}	
-				gl(BindTexture(GL_TEXTURE_2D, 0));
-
-				if (debugMode ) {
-					infoRect.pos = vec2(170, resolutionV2f.y - 30);
-				
-					infoRect.text = debugString;
-					drawFont(&infoRect, 0);
-				}
-			}
-			gl(UseProgram(0));
-			gl(BindVertexArray(0));
-
-		//reset on frame key presses
-	    Input->clearStates();
-
-		glfwSwapBuffers(window);
-		glfwPollEvents();
-
-		updateDebugInfo();
-
-		if(titleDetails)
-			glfwSetWindowTitle(window, (title + debugString).c_str());
-		else
-			glfwSetWindowTitle(window, title);
-		windowSizeChanged = false;
+	if(titleDetails)
+		glfwSetWindowTitle(window, (title + debugString).c_str());
+	else
+		glfwSetWindowTitle(window, title);
 }
 
 //ready for a huge optimization. %90 of this can be calulated in the vertex shader
-void BaseGLD::drawFont(rect * r, int i) {
+void BaseGLD::drawFont(rect * r, extraData * fontData) {
 
 	gl(Uniform4f(PColorUniformLocation, r->color.r, r->color.g, r->color.b, r->color.a));
 	gl(Uniform1i(PsideCountUniformLocation, r->sides));
@@ -765,9 +888,9 @@ void BaseGLD::drawFont(rect * r, int i) {
 	gl(Uniform4f(PbordColorUniformLocation, r->borderColor.r, r->borderColor.g, r->borderColor.b, r->borderColor.a));
 	gl(Uniform2f(PshapeScaleUniformLocation, r->scale.x, r->scale.y));
 	gl(Uniform1f(PtimeUniformLocation, currTime));
-
-	checkFont(&eData[i], *r); //checks if this ttf file already loaded into canvas memory
-	fontDat * selected = &fonts[eData[i].fd];
+	
+	checkFont(fontData, *r); //checks if this ttf file already loaded into canvas memory
+	fontDat * selected = &fonts[(*fontData).fd];
 
 	gl(BindTexture(GL_TEXTURE_2D, selected->id));
 	gl(Uniform1i(PtextureUniformLocation, 0));
@@ -896,7 +1019,7 @@ vec3 BaseGLD::getPixel(int x, int y){
 }
 
 void BaseGLD::updateDebugInfo() {
-	if (debugTimer < currTime - debugUpdateFreq)
+	if (debugTimer < currTime - debugUpdateFreq || debugTimer == 0)
 		debugTimer = currTime;
 	else
 		return;

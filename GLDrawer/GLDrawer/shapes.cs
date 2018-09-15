@@ -186,19 +186,27 @@ namespace GLDrawer
     }
     public class Text : Shape
     {
-        //these variables could be easily made public with some flags to recreate the backend bitmap
         public JustificationType Justification { get => (JustificationType)rect.justification; set => rect.justification = (int)value; }
-        private Rectangle Bound;
-
         public string Body { get => rect.text; set => rect.text = value; }
         public string Font { get => rect.filepath; }
+        public Rectangle BoundingRect { get; private set; }
 
-        public Text(vec2 position, float Height, string text, Color? color = null, JustificationType justification = JustificationType.Center, Rect FixedBound = null, string font = "c:\\windows\\fonts\\times.ttf", float angle = 0, float rotationSpeed = 0)
+        //with bound
+        public Text(string text, float Height, Rectangle FixedBound, Color? color = null, JustificationType justification = JustificationType.Center,  string font = "c:\\windows\\fonts\\times.ttf", float angle = 0, float rotationSpeed = 0)
         {
-            if(FixedBound == null)
-                rect = new Rect( text, position.x, position.y, Height, checkNullC(color), (int)justification, font, angle, rotationSpeed);
-            else
-                rect = new Rect(text, position.x, position.y, Height, checkNullC(color), (int)justification, FixedBound, font, angle, rotationSpeed);
+            if (!System.IO.File.Exists(font))
+                throw new ArgumentException("ttf file was not found", "font");
+
+            BoundingRect = FixedBound;
+                rect = new Rect(text,  Height, checkNullC(color), (int)justification, FixedBound.rect, font, angle, rotationSpeed);          
+        }
+        //without bound
+        public Text(vec2 position, string text, float Height, Color? color = null, JustificationType justification = JustificationType.Center, string font = "c:\\windows\\fonts\\times.ttf", float angle = 0, float rotationSpeed = 0)
+        {
+            if (!System.IO.File.Exists(font))
+                throw new ArgumentException("ttf file was not found", "font");
+
+            rect = new Rect(text, position.x, position.y, Height, checkNullC(color), (int)justification, font, angle, rotationSpeed);
         }
         ~Text()
         {

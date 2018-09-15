@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using GLDrawer;
 
-namespace GLDrawerTests
+namespace GLDrawerDemos
 {
     public delegate void setCol(Color col);
     public partial class colorwheel : Form

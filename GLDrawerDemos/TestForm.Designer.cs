@@ -1,4 +1,5 @@
-﻿namespace GLDrawerTests
+﻿
+namespace GLDrawerDemos
 {
     partial class TestForm
     {
@@ -59,8 +60,10 @@
             this.textBox1 = new System.Windows.Forms.TextBox();
             this.button2 = new System.Windows.Forms.Button();
             this.tabPage3 = new System.Windows.Forms.TabPage();
+            this.rightRadio = new System.Windows.Forms.RadioButton();
+            this.centRadio = new System.Windows.Forms.RadioButton();
+            this.leftRadio = new System.Windows.Forms.RadioButton();
             this.comboBox2 = new System.Windows.Forms.ComboBox();
-            this.comboBox1 = new System.Windows.Forms.ComboBox();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.richTextBox1 = new System.Windows.Forms.RichTextBox();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
@@ -69,7 +72,6 @@
             this.checkBox1 = new System.Windows.Forms.CheckBox();
             this.label2 = new System.Windows.Forms.Label();
             this.trackBar3 = new System.Windows.Forms.TrackBar();
-            this.label7 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.trackBar1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackBar2)).BeginInit();
             this.tabControl1.SuspendLayout();
@@ -367,8 +369,9 @@
             // 
             // tabPage3
             // 
-            this.tabPage3.Controls.Add(this.comboBox1);
-            this.tabPage3.Controls.Add(this.label7);
+            this.tabPage3.Controls.Add(this.rightRadio);
+            this.tabPage3.Controls.Add(this.centRadio);
+            this.tabPage3.Controls.Add(this.leftRadio);
             this.tabPage3.Controls.Add(this.comboBox2);
             this.tabPage3.Controls.Add(this.tableLayoutPanel1);
             this.tabPage3.Controls.Add(this.richTextBox1);
@@ -380,6 +383,43 @@
             this.tabPage3.Text = "Text";
             this.tabPage3.UseVisualStyleBackColor = true;
             // 
+            // rightRadio
+            // 
+            this.rightRadio.Appearance = System.Windows.Forms.Appearance.Button;
+            this.rightRadio.AutoSize = true;
+            this.rightRadio.Location = new System.Drawing.Point(101, 14);
+            this.rightRadio.Name = "rightRadio";
+            this.rightRadio.Size = new System.Drawing.Size(33, 30);
+            this.rightRadio.TabIndex = 8;
+            this.rightRadio.TabStop = true;
+            this.rightRadio.Text = "->";
+            this.rightRadio.UseVisualStyleBackColor = true;
+            // 
+            // centRadio
+            // 
+            this.centRadio.Appearance = System.Windows.Forms.Appearance.Button;
+            this.centRadio.AutoSize = true;
+            this.centRadio.Checked = true;
+            this.centRadio.Location = new System.Drawing.Point(58, 14);
+            this.centRadio.Name = "centRadio";
+            this.centRadio.Size = new System.Drawing.Size(37, 30);
+            this.centRadio.TabIndex = 7;
+            this.centRadio.TabStop = true;
+            this.centRadio.Text = "><";
+            this.centRadio.UseVisualStyleBackColor = true;
+            // 
+            // leftRadio
+            // 
+            this.leftRadio.Appearance = System.Windows.Forms.Appearance.Button;
+            this.leftRadio.AutoSize = true;
+            this.leftRadio.Location = new System.Drawing.Point(19, 14);
+            this.leftRadio.Name = "leftRadio";
+            this.leftRadio.Size = new System.Drawing.Size(33, 30);
+            this.leftRadio.TabIndex = 6;
+            this.leftRadio.TabStop = true;
+            this.leftRadio.Text = "<-";
+            this.leftRadio.UseVisualStyleBackColor = true;
+            // 
             // comboBox2
             // 
             this.comboBox2.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
@@ -388,19 +428,6 @@
             this.comboBox2.Name = "comboBox2";
             this.comboBox2.Size = new System.Drawing.Size(158, 28);
             this.comboBox2.TabIndex = 5;
-            // 
-            // comboBox1
-            // 
-            this.comboBox1.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.comboBox1.FormattingEnabled = true;
-            this.comboBox1.Items.AddRange(new object[] {
-            "Left",
-            "Centre",
-            "Right"});
-            this.comboBox1.Location = new System.Drawing.Point(93, 18);
-            this.comboBox1.Name = "comboBox1";
-            this.comboBox1.Size = new System.Drawing.Size(74, 28);
-            this.comboBox1.TabIndex = 4;
             // 
             // tableLayoutPanel1
             // 
@@ -492,15 +519,6 @@
             this.trackBar3.TabIndex = 11;
             this.trackBar3.TickFrequency = 5;
             // 
-            // label7
-            // 
-            this.label7.AutoSize = true;
-            this.label7.Location = new System.Drawing.Point(3, 21);
-            this.label7.Name = "label7";
-            this.label7.Size = new System.Drawing.Size(93, 20);
-            this.label7.TabIndex = 6;
-            this.label7.Text = "Justification";
-            // 
             // TestForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
@@ -570,11 +588,12 @@
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.TextBox textBox1;
         private System.Windows.Forms.ComboBox comboBox2;
-        private System.Windows.Forms.ComboBox comboBox1;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.TrackBar trackBar3;
         private System.Windows.Forms.CheckBox checkBox1;
         private System.Windows.Forms.CheckBox checkBox2;
-        private System.Windows.Forms.Label label7;
+        private System.Windows.Forms.RadioButton rightRadio;
+        private System.Windows.Forms.RadioButton centRadio;
+        private System.Windows.Forms.RadioButton leftRadio;
     }
 }

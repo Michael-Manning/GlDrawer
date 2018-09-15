@@ -1,18 +1,13 @@
 ﻿
 Things left to work on for version 1.0:
 
--Finish text formating
 -increase font resolution
--make custom color wheel
 -complete standard caanvas function per gdidrawer
--fix reordering issues
--fix texture removal issues
 -finish polygons
 -fix border bleeding in shader
--fix outer anti ailiasing with rectangles
--aadd aaditional texture featuers such aas tilling *
+-add outer anti ailiasing with rectangles
 -add color tinting for sprites
-
+-update docs
 
 things to test:
 

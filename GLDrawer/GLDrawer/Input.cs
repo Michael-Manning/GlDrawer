@@ -14,6 +14,7 @@ namespace GLDrawer
     {
         //most of these events have been included to copy GLDrawer functionality which is why forms keys are being used
         public delegate void GLMouseEvent(vec2 Position, GLCanvas Canvas);
+        public delegate void GLScrollEvent(int Delta, GLCanvas Canvas);
         public delegate void GLKeyEvent(Keys Code, GLCanvas Canvas);
         public event GLMouseEvent MouseLeftClick = delegate { };
         public event GLMouseEvent MouseRightClick = delegate { };
@@ -25,6 +26,7 @@ namespace GLDrawer
         public event GLMouseEvent MouseRightReleaseScaled = delegate { };
         public event GLMouseEvent MouseMove = delegate { };
         public event GLMouseEvent MouseMoveScaled = delegate { };
+        public event GLScrollEvent MouseScrolled = delegate { };
         public event GLKeyEvent KeyDown = delegate { };
         public event GLKeyEvent KeyUp = delegate { };
 
@@ -33,6 +35,9 @@ namespace GLDrawer
         private vec2 iMousePosition = vec2.Zero;
         public vec2 MousePosition { get { return checkInvert(iMousePosition); } }
         public vec2 MousePositionScaled { get { return checkInvert(MousePosition) / Scale; } }
+        public bool MouseLeftState { get => !leftLifted; }
+        public bool MouseRightState { get => !rightLifted; }
+        public int MouseScrollDirection { get; private set; }
 
         public void KeyCallback(int key, int action, int scancode)
         {
@@ -56,6 +61,12 @@ namespace GLDrawer
         {
             GL3DrawerCLR.vec2 v = gldw.Input.getMousePos();
             iMousePosition = new vec2(v.x, v.y);
+            if(btn == 3)
+            {
+                MouseScrolled.Invoke(action, this);
+                MouseScrollDirection = action;
+                return;
+            }
             if (btn == 0 && action == 1)
             {
                 if (leftLifted)
@@ -73,6 +84,7 @@ namespace GLDrawer
                 leftLifted = true;
                 MouseLeftRelease.Invoke(MousePosition, this);
                 MouseLeftReleaseScaled.Invoke(MousePositionScaled, this);
+                return;
             }
                 
 
@@ -86,12 +98,14 @@ namespace GLDrawer
                     rightClickToggle = true;
                 }
                 rightLifted = false;
+                return;
             }
             if (btn == 1 && action == 0)
             {
                 rightLifted = true;
                 MouseRightRelease.Invoke(MousePosition, this);
                 MouseRightReleaseScaled.Invoke(MousePositionScaled, this);
+                return;
             }
         }
         private void MouseMoveCallback()
@@ -117,7 +131,7 @@ namespace GLDrawer
         {
             if (key > 128 || key < 0)
                 throw new ArgumentException("Key out of supported ASCII range (0-127)");
-            return gldw.Input.getKey(key);
+            return gldw.Input.getKey(char.ToUpper(key));
         }
         /// <summary>
         /// Returns true if the letter key was was pressed down during the current frame
@@ -127,7 +141,7 @@ namespace GLDrawer
         {
             if (key > 128 || key < 0)
                 throw new ArgumentException("Key out of supported ASCII range (0-127)");
-            return gldw.Input.getKeyDown(key);
+            return gldw.Input.getKeyDown(char.ToUpper(key));
         }
         /// <summary>
         /// Returns true if the letter key was was lifted up during the current frame
@@ -137,7 +151,7 @@ namespace GLDrawer
         {
             if (key > 128 || key < 0)
                 throw new ArgumentException("Key out of supported ASCII range (0-127)");
-            return gldw.Input.getKeyUp(key);
+            return gldw.Input.getKeyUp(char.ToUpper(key));
         }
         /// <summary>
         /// Returns true if the key is being held down
@@ -163,6 +177,38 @@ namespace GLDrawer
         {
             return gldw.Input.getKeyUp((int)button);
         }
+
+        /// <summary>
+        /// Returns true if the mouse button is currently held down
+        /// <param name="mouseBTN">0 for left click, 1 for right click</param>
+        /// </summary>
+        public bool GetMouse(int mouseBTN)
+        {
+            if(mouseBTN != 0 && mouseBTN != 1)
+                throw new ArgumentException("mouse button must be 1 or 0");
+            return gldw.Input.getMouse(mouseBTN);
+        }
+        /// <summary>
+        /// Returns true if the mouse button was was pressed down during the current frame
+        /// <param name="mouseBTN">0 for left click, 1 for right click</param>
+        /// </summary>
+        public bool GetMouseDown(int mouseBTN)
+        {
+            if (mouseBTN != 0 && mouseBTN != 1)
+                throw new ArgumentException("mouse button must be 1 or 0");
+            return gldw.Input.getMouseDown(mouseBTN);
+        }
+        /// <summary>
+        /// Returns true if the mouse button was was lifted up during the current frame
+        /// <param name="mouseBTN">0 for left click, 1 for right click</param>
+        /// </summary>
+        public bool GetMouseUp(int mouseBTN)
+        {
+            if (mouseBTN != 0 && mouseBTN != 1)
+                throw new ArgumentException("mouse button must be 1 or 0");
+            return gldw.Input.getMouseUp(mouseBTN);
+        }
+
         /// <summary>
         /// Returns the last numeric key press
         /// </summary>

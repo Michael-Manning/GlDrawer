@@ -1,11 +1,9 @@
--Text
--Remove shape from canvas by reference and by index
--polygons
--fix outlines
--clear canvas
+-Remove shape from canvas by index
+-more anti ailiess
 -impliment inverted Y
--impliment scale
 -create implicit comversion between keys and keycode
+-fix text angles
+-canvas clear
 
 current shapeside codes:
 4 = quad
