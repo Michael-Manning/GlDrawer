@@ -37,6 +37,10 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>.\Cyotek.Windows.Forms.ColorPicker.dll</HintPath>
     </Reference>
+    <Reference Include="GLDrawer, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\Version 0.9 DLL\GLDrawer.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
@@ -67,16 +71,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Gl3DrawerCLR\Gl3DrawerCLR.vcxproj">
-      <Project>{67461bf0-73bd-46f3-a9c2-692fbe8f93f5}</Project>
-      <Name>Gl3DrawerCLR</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\GLDrawer\GLDrawer\GLDrawer.csproj">
-      <Project>{c23addb4-ea76-4b3c-8b65-02d3cab80bf2}</Project>
-      <Name>GLDrawer</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="colorwheel.resx">
