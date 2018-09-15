@@ -74,7 +74,6 @@
       <Filter>Header Files\Resource Files</Filter>
     </None>
     <None Include="ClassDiagram.cd" />
-    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="OpenGL3.rc">

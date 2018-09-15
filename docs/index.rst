@@ -12,7 +12,16 @@ More than a drawing library
 *********************************
 
 In addition to being an alternative to GDIDrawer to complete assignments,
-GLDrawer comes equipt with game engine tools which enable you to create simple hardware accelerated  games.  
+GLDrawer comes equipped with game engine tools which enable you to create simple hardware accelerated  games.  
+
+
+
+.. image:: images/indexDemo.gif
+   :width: 1300px
+   :height: 900px
+   :scale: 40 %
+   :alt: backBuffer demo
+   :align: left
 
 .. toctree::
    :maxdepth: 1

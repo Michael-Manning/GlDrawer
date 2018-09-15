@@ -9,7 +9,7 @@ To install GLDrawer in your project follow these steps.
 .. _here.: https://github.com/Michael-Manning/GLDrawer
 
 | **Step 2**
-| Extract the files, locate the latest release of GLDrawer, then copy GLDrawer.DLL file.
+| Extract the files, locate the latest release of GLDrawer, then copy the GLDrawer.DLL file.
 | Place the .DLL file somewhere easy to find or in your project directory.
 
 | **Step 3**
@@ -38,3 +38,19 @@ To install GLDrawer in your project follow these steps.
 
 A window should will pop up and you should see the "it works" text. 
 If you did, GLDrawer has been installed successfully!
+
+**Issues?**
+
+For GLDrawer to work, your project must be target .NET Framework 4.5 or earlier.
+You also may need to tell visual studio to target x86 for your CPU.
+
+Right click your project in the solution explorer and click properties. You will find these two settings
+under Application and Build respectively.
+
+.. image:: images/targetCPU.png
+   :width: 670px
+   :height: 377px
+   :scale: 100 %
+   :alt: Choose x86 target CPU
+   :align: left
+

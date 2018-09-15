@@ -181,7 +181,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="ClassDiagram.cd" />
-    <None Include="packages.config" />
     <None Include="Shaders\CircleFragment.glsl" />
     <None Include="Shaders\PolygonFragment.glsl" />
     <None Include="Shaders\RectFragment.glsl" />
@@ -192,13 +191,5 @@
     <ResourceCompile Include="OpenGL3.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-  <ImportGroup Label="ExtensionTargets">
-    <Import Project="..\packages\Costura.Fody.3.1.1\build\Costura.Fody.targets" Condition="Exists('..\packages\Costura.Fody.3.1.1\build\Costura.Fody.targets')" />
-  </ImportGroup>
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
-    <PropertyGroup>
-      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
-    </PropertyGroup>
-    <Error Condition="!Exists('..\packages\Costura.Fody.3.1.1\build\Costura.Fody.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Costura.Fody.3.1.1\build\Costura.Fody.targets'))" />
-  </Target>
+  <ImportGroup Label="ExtensionTargets" />
 </Project>

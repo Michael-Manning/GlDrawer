@@ -176,11 +176,11 @@
 <tbody valign="top">
 <tr class="row-even"><td>Time</td>
 <td>long</td>
-<td>Time in milliseconds since canvas creation</td>
+<td>Time in seconds since canvas creation</td>
 </tr>
 <tr class="row-odd"><td>DeltaTime</td>
 <td>long</td>
-<td>Time in milliseconds since previous frame</td>
+<td>Time in seconds since previous frame</td>
 </tr>
 <tr class="row-even"><td>Width</td>
 <td>int</td>
@@ -202,13 +202,13 @@
 <td>float</td>
 <td>Multiplier for all coordinates such as shape positions and scale</td>
 </tr>
-<tr class="row-odd"><td>BackBufferColor</td>
+<tr class="row-odd"><td>BackColor</td>
 <td>Color</td>
-<td>The color of the canvas background</td>
+<td>The color of the canvas background or back buffer</td>
 </tr>
 <tr class="row-even"><td>SimpleBackBuffer</td>
 <td>bool</td>
-<td>Forces the back buffer to be a solid color, even if the window is resized</td>
+<td>Forces the back buffer to be a solid color</td>
 </tr>
 <tr class="row-odd"><td>ExtraInfo</td>
 <td>bool</td>
@@ -217,6 +217,30 @@
 <tr class="row-even"><td>VSync</td>
 <td>bool</td>
 <td>Limits the framerate to 60fps and waits for vertical screen synchronization (read only)</td>
+</tr>
+<tr class="row-odd"><td>DebugMode</td>
+<td>bool</td>
+<td>Overlays text displaying render times and shape count of the canvas</td>
+</tr>
+<tr class="row-even"><td>Borderless</td>
+<td>bool</td>
+<td>wether the canvas window has Borders</td>
+</tr>
+<tr class="row-odd"><td>AutoRender</td>
+<td>bool</td>
+<td>wether the canvas will render the adde shapes automatically</td>
+</tr>
+<tr class="row-even"><td>Center</td>
+<td>vec2</td>
+<td>Property that returns the center point of the canvas</td>
+</tr>
+<tr class="row-odd"><td>ShapeCount</td>
+<td>int</td>
+<td>Property that returns the number of shapes on the canvas at any given time</td>
+</tr>
+<tr class="row-even"><td>Update</td>
+<td>event</td>
+<td>Event Action which is invoked once per frame</td>
 </tr>
 </tbody>
 </table>
@@ -277,49 +301,65 @@
 <td>void</td>
 <td>Draws a shape to the background with no reoccurring performance cost and returns a reference</td>
 </tr>
-<tr class="row-even"><td>ClearBackBuffer</td>
+<tr class="row-even"><td>getPixel</td>
+<td>Color</td>
+<td>gets the color of a single pixel on the canvas</td>
+</tr>
+<tr class="row-odd"><td>ClearBackBuffer</td>
 <td>void</td>
 <td>Redraws the background with the background color</td>
+</tr>
+<tr class="row-even"><td>Clear</td>
+<td>void</td>
+<td>Removes all shapes from the canvas</td>
 </tr>
 <tr class="row-odd"><td>Close</td>
 <td>void</td>
 <td>Closes the canvas window or removes the canvas from a forms panel</td>
 </tr>
-<tr class="row-even"><td>AddRectangle</td>
+<tr class="row-even"><td>SetWindowPostion</td>
+<td>void</td>
+<td>Moves the canvas window to a new location on the screen</td>
+</tr>
+<tr class="row-odd"><td>AddRectangle</td>
 <td>Rectangle</td>
 <td>Adds a Rectangle to the canvas and returns a reference</td>
 </tr>
-<tr class="row-odd"><td>AddCenteredectangle</td>
+<tr class="row-even"><td>AddCenteredectangle</td>
 <td>Rectangle</td>
 <td>Adds a centered Rectangle to the canvas and returns a reference</td>
 </tr>
-<tr class="row-even"><td>AddEllipse</td>
+<tr class="row-odd"><td>AddEllipse</td>
 <td>Ellipse</td>
 <td>Adds an Ellipse to the canvas and returns a reference</td>
 </tr>
-<tr class="row-odd"><td>AddCenteredEllipse</td>
+<tr class="row-even"><td>AddCenteredEllipse</td>
 <td>Ellipse</td>
 <td>Adds a centered Ellipse to the canvas and returns a reference</td>
 </tr>
-<tr class="row-even"><td>AddLine</td>
+<tr class="row-odd"><td>AddLine</td>
 <td>Line</td>
 <td>Adds a Line to the canvas where start and end points are defined and returns a reference</td>
 </tr>
-<tr class="row-odd"><td>AddLine</td>
+<tr class="row-even"><td>AddLine</td>
 <td>Line</td>
 <td>Adds a line segment to the canvas at a known start point using a length and rotation angle</td>
 </tr>
-<tr class="row-even"><td>AddSprite</td>
+<tr class="row-odd"><td>AddSprite</td>
 <td>Sprite</td>
 <td>Adds an image to the canvas given a filepath and returns a reference</td>
 </tr>
-<tr class="row-odd"><td>AddCenteredSprite</td>
+<tr class="row-even"><td>AddCenteredSprite</td>
 <td>Sprite</td>
 <td>Adds a centered image to the canvas given a filepath and returns a reference</td>
 </tr>
-<tr class="row-even"><td>AddPolygon</td>
-<td>Polygon</td>
-<td>Adds a polygon to the canvas and returns a reference</td>
+<tr class="row-odd"><td>AddText</td>
+<td>Text</td>
+<td>Adds text to the canvas given a bounding box and returns a reference</td>
+</tr>
+<tr class="row-even"><td>AddCenteredText</td>
+<td>Text</td>
+<td>Adds centered text to the canvas and returns a reference</td>
 </tr>
 <tr class="row-odd"><td>AddCenteredPolygon</td>
 <td>Polygon</td>

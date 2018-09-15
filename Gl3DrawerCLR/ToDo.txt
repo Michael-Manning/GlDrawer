@@ -1,9 +1,9 @@
 -Remove shape from canvas by index
--more anti ailiess
+-more anti aliasing
 -impliment inverted Y
 -create implicit comversion between keys and keycode
 -fix text angles
--canvas clear
+-more comments and summaries in Input.cs
 
 current shapeside codes:
 4 = quad

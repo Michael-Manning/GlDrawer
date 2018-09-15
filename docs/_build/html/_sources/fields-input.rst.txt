@@ -8,7 +8,8 @@ Members
 ==================  ============
 Name                Parameters
 ==================  ============  
-GLMouseEvent        (vec2 Position, GLCanvas Canvas)     
+GLMouseEvent        (vec2 Position, GLCanvas Canvas)
+GLScrollEvent       (int Delta, GLCanvas canvas)     
 GLKeyEvent          (Keys Code, GLCanvas Canvas)  
 ==================  ============ 
 
@@ -45,6 +46,9 @@ MousePositionScaled   vec2   Location of the mouse in pixels relative to the can
 LastLeftClick         vec2   The Location of the Last left click in pixels relative to the canvas
 LastRightClick        vec2   The Location of the Last Right click in pixels relative to the canvas
 LastNumberKey         int    The Last number key pressed with the canvas window in focus
+MouseLeftState        bool   Wether the left mouse button is currently held down
+MouseRightState       bool   Wether the Right mouse button is currently held down
+MouseScrollDirection  int    Returns the scroll direction of the current frame (usually -1 or +1)
 ====================  =====  ===================
 
 |
@@ -60,6 +64,9 @@ GetKeyUp                      bool    char         Returns true if a given ASCII
 GetSpecialKey                 bool    keycode      Returns true if a given Keycode is being held down
 GetSpecialKeyDown             bool    char         Returns true if a given Keycode key was pressed on the current frame
 GetSpecialKeyUp               bool    char         Returns true if a given Keycode key was released on the current frame
+GetMouse                      bool    int          Returns true if the given Mouse button is being held down. (0 for left click, 1 for right click) 
+GetMouseDown                  bool    int          Returns true if the given Mouse button was pressed on the current frame. (0 for left click, 1 for right click) 
+GetMouseUp                    bool    int          Returns true if the given Mouse button was released on the current frame. (0 for left click, 1 for right click) 
 GetLastMouseLeftClick         bool    out vec2     (Legacy) Returns true if there was a left click since the last time the function was called
 GetLastMouseRightClick        bool    out vec2     (Legacy) Returns true if there was a Right click since the last time the function was called
 GetLastMouseLeftClickScaled   bool    out vec2     (Legacy) Returns true if there was a left click since the last time the function was called. out vec2 is multiplied by the canvas scale factor

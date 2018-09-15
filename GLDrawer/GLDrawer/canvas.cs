@@ -37,7 +37,7 @@ namespace GLDrawer
         /// <summary>center coordinate of the canvas</summary>
         public vec2 Centre { get => new vec2(Width / 2, Height / 2); }
         /// <summary>number of shapes being drawn on the canvas</summary>
-        public int shapeCount { get => gldw.shapeCount; }
+        public int ShapeCount { get => gldw.shapeCount; }
         public bool VSync { get; private set; } //these four are set at initialization
         public bool DebugMode { get; private set; }
         public bool Borderless { get; private set; }
@@ -582,7 +582,7 @@ namespace GLDrawer
                 throw new ArgumentException("Shape was not found on / wasn't added to the canvas", "shape");
 
             int shapeIndex = gldw.getRectIndex(shape.rect);
-            if(shapeIndex < shapeCount -1)
+            if(shapeIndex < ShapeCount -1)
                 gldw.swapOrder(shapeIndex, shapeIndex +1);
         }
         /// <summary>sets a shape to be drawn behind every other shape on the canvas</summary>
@@ -601,7 +601,7 @@ namespace GLDrawer
             if (!gldw.checkLoaded(shape.rect))
                 throw new ArgumentException("Shape was not found on / wasn't added to the canvas", "shape");
 
-            int max = shapeCount; //CLR properties are slow
+            int max = ShapeCount; //CLR properties are slow
             int shapeIndex = gldw.getRectIndex(shape.rect);
 
             for (int i = shapeIndex; i < max-1; i++)
@@ -614,7 +614,7 @@ namespace GLDrawer
         /// <param name="IndexB">order of the second shape is drawn to the canvas</param>
         public void SwapDrawOrder(int IndexA, int IndexB)
         {
-            int max = shapeCount; //CLR properties are slow
+            int max = ShapeCount; //CLR properties are slow
             if (IndexA > max || IndexA < 0)
                 throw new ArgumentOutOfRangeException("IndexA", IndexA, "Shape index was out of canvas range (0 - " + max + ")");
             if (IndexB > max || IndexB < 0)

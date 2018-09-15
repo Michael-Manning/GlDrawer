@@ -459,6 +459,8 @@ int BaseGLD::createCanvas(int width, int height, bool borderd, vec3 backcol, boo
 
 	if(!Vsync)
 		glfwSwapInterval(0);
+	else
+		glfwSwapInterval(1);
 
 	genFramBuffer(&fboTextIdA, &fboIdA, width, height);
 	genFramBuffer(&fboTextIdB, &fboIdB, width, height);

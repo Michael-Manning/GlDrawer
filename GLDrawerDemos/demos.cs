@@ -72,9 +72,7 @@ namespace GLDrawerDemos
         public static void backBufferShapes()
         {
             can = new GLCanvas(1300, 900, TitleDetails: true, VSync: true);
-            can.Width = 1400;
-
-            for (int i = 0; i < 1400; i++)
+            for (int i = 0; i < 1300; i++)
             {
                 for (int j = 0; j < 900; j++)
                 {

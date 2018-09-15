@@ -4,10 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using GLDrawer;
 
-namespace GLDrawerTests
+namespace GLDrawer
 {  
+    /*
     public static class Program
     {
         public static GLCanvas can;
@@ -27,4 +27,5 @@ namespace GLDrawerTests
         }
 
     }
+    */
 }

@@ -177,7 +177,10 @@
 <tr class="row-even"><td>GLMouseEvent</td>
 <td>(vec2 Position, GLCanvas Canvas)</td>
 </tr>
-<tr class="row-odd"><td>GLKeyEvent</td>
+<tr class="row-odd"><td>GLScrollEvent</td>
+<td>(int Delta, GLCanvas canvas)</td>
+</tr>
+<tr class="row-even"><td>GLKeyEvent</td>
 <td>(Keys Code, GLCanvas Canvas)</td>
 </tr>
 </tbody>
@@ -286,6 +289,18 @@
 <td>int</td>
 <td>The Last number key pressed with the canvas window in focus</td>
 </tr>
+<tr class="row-odd"><td>MouseLeftState</td>
+<td>bool</td>
+<td>Wether the left mouse button is currently held down</td>
+</tr>
+<tr class="row-even"><td>MouseRightState</td>
+<td>bool</td>
+<td>Wether the Right mouse button is currently held down</td>
+</tr>
+<tr class="row-odd"><td>MouseScrollDirection</td>
+<td>int</td>
+<td>Returns the scroll direction of the current frame (usually -1 or +1)</td>
+</tr>
 </tbody>
 </table>
 <div class="line-block">
@@ -337,32 +352,47 @@
 <td>char</td>
 <td>Returns true if a given Keycode key was released on the current frame</td>
 </tr>
-<tr class="row-even"><td>GetLastMouseLeftClick</td>
+<tr class="row-even"><td>GetMouse</td>
+<td>bool</td>
+<td>int</td>
+<td>Returns true if the given Mouse button is being held down. (0 for left click, 1 for right click)</td>
+</tr>
+<tr class="row-odd"><td>GetMouseDown</td>
+<td>bool</td>
+<td>int</td>
+<td>Returns true if the given Mouse button was pressed on the current frame. (0 for left click, 1 for right click)</td>
+</tr>
+<tr class="row-even"><td>GetMouseUp</td>
+<td>bool</td>
+<td>int</td>
+<td>Returns true if the given Mouse button was released on the current frame. (0 for left click, 1 for right click)</td>
+</tr>
+<tr class="row-odd"><td>GetLastMouseLeftClick</td>
 <td>bool</td>
 <td>out vec2</td>
 <td>(Legacy) Returns true if there was a left click since the last time the function was called</td>
 </tr>
-<tr class="row-odd"><td>GetLastMouseRightClick</td>
+<tr class="row-even"><td>GetLastMouseRightClick</td>
 <td>bool</td>
 <td>out vec2</td>
 <td>(Legacy) Returns true if there was a Right click since the last time the function was called</td>
 </tr>
-<tr class="row-even"><td>GetLastMouseLeftClickScaled</td>
+<tr class="row-odd"><td>GetLastMouseLeftClickScaled</td>
 <td>bool</td>
 <td>out vec2</td>
 <td>(Legacy) Returns true if there was a left click since the last time the function was called. out vec2 is multiplied by the canvas scale factor</td>
 </tr>
-<tr class="row-odd"><td>GetLastMouseRightClickScaled</td>
+<tr class="row-even"><td>GetLastMouseRightClickScaled</td>
 <td>bool</td>
 <td>out vec2</td>
 <td>(Legacy) Returns true if there was a Right click since the last time the function was called. out vec2 is multiplied by the canvas scale factor</td>
 </tr>
-<tr class="row-even"><td>GetLastMousePosition</td>
+<tr class="row-odd"><td>GetLastMousePosition</td>
 <td>bool</td>
 <td>out vec2</td>
 <td>(legacy) Returns true if the mouse has moved (within the canvas) since the last time the function was called (same as MousePosition)</td>
 </tr>
-<tr class="row-odd"><td>GetLastMousePositionScaled</td>
+<tr class="row-even"><td>GetLastMousePositionScaled</td>
 <td>bool</td>
 <td>out vec2</td>
 <td>(legacy) Returns true if the mouse has moved (within the canvas) since the last time the function was called. out vec2 is multiplied by scale</td>

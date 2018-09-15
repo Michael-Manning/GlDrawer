@@ -22,12 +22,13 @@ If the shortcut doesn't work for you, or you'd like to understand how to set up 
 **Step 1**
 
 Read these docs or use intellisense to find the delegate format your need to use. 
-There are only two.
+There are only three.
 
 ==================  ============
 Name                Parameters
 ==================  ============  
 GLMouseEvent        (vec2 Position, GLCanvas Canvas)     
+GLKeyEvent          (Keys Code, GLCanvas Canvas)  
 GLKeyEvent          (Keys Code, GLCanvas Canvas)  
 ==================  ============ 
 

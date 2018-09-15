@@ -19,10 +19,11 @@ namespace GLDrawerDemos
         [STAThread]
         static void Main(string[] args)
         {
+            demos.backBufferShapes();
+            Console.ReadKey();
+
             Application.EnableVisualStyles();
             TestForm tform = new TestForm();
-
-
 
             can = new GLCanvas(tform, tform.surface, BackColor: Color.LightGray, debugMode: true);
             previewCan = new GLCanvas(tform, tform.preview, BackColor: tform.BackColor);
