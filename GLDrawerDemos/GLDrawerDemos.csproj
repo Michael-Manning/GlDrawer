@@ -41,7 +41,7 @@
     </Reference>
     <Reference Include="GLDrawer, Version=0.9.0.0, Culture=neutral, processorArchitecture=x86">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\GLDrawer\GLDrawer\bin\Debug\GLDrawer.dll</HintPath>
+      <HintPath>..\Latest DLL\GLDrawer.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
