@@ -75,29 +75,23 @@ public:
 };
 
 
-
-/////////////////////////////////////////////////////
-
 struct Particle {
 	vec2 pos, vel;
 	unsigned char r, g, b, a; // Color
-	float size, weight;
-	float life; // Remaining life of the particle. if < 0 : dead and unused.
-	Particle(float x, float y) {
-		pos = vec3(0);
+	float size;
+	float life; 
+	Particle(vec2 Pos, float x, float y, float Life, float startSize, vec4 startCol) {
+		pos = Pos;
 		vel = vec2(x, y);
-		size = 10;
-		life = 100;
-		r = rand() % 256;
-		g = rand() % 256;
-		b = rand() % 256;
-		a = 255;
+		size = startSize;
+		life = Life;
+		r = (int)startCol.r * 255;
+		g = (int)startCol.g * 255;
+		b = (int)startCol.b * 255;
+		a = (int)startCol.a * 255;
 	}
 	Particle() {
-		pos = vec3(0);
-		vel = vec2(0, 0);
-		size = 10;
-		life = 100;
+		life = 1;
 	}
 };
 
@@ -108,26 +102,41 @@ public:
 	int count;
 	int MaxParticles;
 	Particle * container;
+	vec2 spawnLocation;
 	float * positionSizeData;
 	unsigned char * colorData;
-	ParticleSystem(int maxCount);
+	float startSize, endSize, lifeLength, lifePrecision;
+	bool burstMode, continuous;
+	vec4 startCol, endCol;
+	float spread, angle, speed, speedPrecision;
+	int spawnRate; //#new particles per frame in continuous
+	float internalDelta; //smooths out spawn rates, especially at high framerates
+	vec2 gravity;
+	vec2 extraStartVelocity;
+	ParticleSystem(int maxCount, float LifeLength);
 	ParticleSystem() {};
-	//void dispose() {
-	//	delete container;
-	//	delete positionSizeData;
-	//	delete colorData;
-	//}
+	void updateParticles(float delta);
+	void dispose() {
+		delete container;
+		delete positionSizeData;
+		delete colorData;
+	}
 };
-
-/////////////////////////////////////////////////////
 
 //GameObject
 class GO {
 public:
-	shape * r;
+	shape * s;
 	extraData edata; //Gameobjects cannot have references to more than one canvas anyways
 	vec2 position;
 	float angle;
+	ParticleSystem * ps;
+	GO(shape * S, vec2 pos = vec2(0), float Angle = 0) {
+		s = S;
+		position = pos;
+		angle = Angle;
+		ps = NULL;
+	}
 };
 
 
@@ -135,8 +144,6 @@ class GLCanvas {
 public :
 	GLFWwindow * window;
 	InputManager * Input;
-
-	ParticleSystem * testP;
 
 	//backend only
 	void setVisible(bool visible);
@@ -178,8 +185,10 @@ public :
 	int loadShader(const char * vertexFilename, const char * fragmentFilename); //part of the canvas class to link the packed shaders boolean
 	void drawFont(shape * r, extraData * fontData);
 	void drawTexture(shape * r, extraData * fontData);
+	void drawParticleSystem(GO * g, float deltaTime);
 	void clearSetPixelData();
 	void setPolygonUniforms(shape * r); //saves lots of copy pasting
+	void setGOUniforms(GO * s); 
 	GLCanvas() {};
 
 	//used by back/middle end
@@ -264,4 +273,8 @@ public :
 	GLuint FontUVscaleUniformLocation;
 	GLuint FontUVposUniformLocation;
 	GLuint FontaspectUniformLocation;
+
+	//particle shader uniforms
+	GLuint ParticlePosUniformLocation;
+	GLuint ParticleResUniformLocation; //particle systems themselves don't have accsess to the canvas resolution
 };

@@ -89,14 +89,65 @@ const GLfloat particleVertices[] = {
  -1.0f, 1.0f, 0.0f,
  1.0f, 1.0f, 0.0f,
 };
-ParticleSystem::ParticleSystem(int maxCount) {
+ParticleSystem::ParticleSystem(int maxCount, float LifeLength) {
 	container = new Particle[maxCount];
 	positionSizeData = new float[maxCount * 3]();
 	colorData = new unsigned char[maxCount * 4]();
 	MaxParticles = maxCount;
-	count = maxCount;
-	for (int i = 0; i < maxCount; i++)
-		container[i] = Particle(RandomFloat(-0.1, 0.1), RandomFloat(-0.1, 0.1));
+	lifeLength = LifeLength;
+	spawnRate = MaxParticles / lifeLength;
+}
+void ParticleSystem::updateParticles(float delta) {
+	int newParticles = spawnRate * internalDelta;
+	if (newParticles == 0) {
+		internalDelta += delta;
+	}
+	else
+		internalDelta = delta;
+
+	if (newParticles + count > MaxParticles)
+		newParticles = MaxParticles - count;
+
+	for (int i = 0; i < newParticles + count; i++)
+	{
+		if (container[i].life == 0 || (i >= count && i < newParticles + count)) {
+			float newangle = angle + RandomFloat(-spread / 2, spread / 2);
+			float newspeed = speed + RandomFloat(-speedPrecision / 2, speedPrecision / 2);
+			float newLife = lifeLength + RandomFloat(-lifePrecision / 2, lifePrecision / 2);
+			container[i] = Particle(spawnLocation, cos(newangle) * newspeed + extraStartVelocity.x, sin(newangle) * newspeed + extraStartVelocity.y, newLife, startSize, startCol);
+		}
+	}
+
+	count += newParticles;
+
+	for (int i = 0; i < count; i++) {
+
+		Particle * p = container + i; // shortcut
+
+		p->life -= delta;
+		if (p->life < 0)
+			p->life = 0;
+		p->pos += p->vel * delta;
+		p->vel += +gravity * delta;
+
+		float progess = (p->life / lifeLength);
+		p->size = startSize * progess + endSize * (1.0f - progess);
+		p->r = (startCol.r * progess + endCol.r * (1.0f - progess)) * 250;
+		p->g = (startCol.g * progess + endCol.g * (1.0f - progess)) * 250;
+		p->b = (startCol.b * progess + endCol.b * (1.0f - progess)) * 250;
+		p->a = (startCol.a * progess + endCol.a * (1.0f - progess)) * 250;
+
+		// Fill the GPU buffer
+		positionSizeData[3 * i + 0] = p->pos.x;
+		positionSizeData[3 * i + 1] = p->pos.y;
+		positionSizeData[3 * i + 2] = p->size;
+
+		colorData[4 * i + 0] = p->r;
+		colorData[4 * i + 1] = p->g;
+		colorData[4 * i + 2] = p->b;
+		colorData[4 * i + 3] = p->a;
+	}
+
 }
 //int ParticlesCount;
 //const int MaxParticles = 5000;
@@ -528,6 +579,10 @@ int GLCanvas::createCanvas(int width, int height, bool borderd, vec3 backcol, bo
 	FontUVposUniformLocation = gl(GetUniformLocation(fontShaderProgram, "posOffset"));
 	FontaspectUniformLocation = gl(GetUniformLocation(fontShaderProgram, "aspect"));
 
+	//particle shader uniforms
+	ParticlePosUniformLocation = gl(GetUniformLocation(ParticleShaderProgram, "position"));
+	ParticleResUniformLocation = gl(GetUniformLocation(ParticleShaderProgram, "iResolution"));
+
 	if(!Vsync)
 		glfwSwapInterval(0);
 	else
@@ -677,6 +732,25 @@ void GLCanvas::setPolygonUniforms(shape * r) {
 	gl(Uniform2f(PmScaleUniformLocation, r->scale.x / resolutionV2f.x, r->scale.y / resolutionV2f.y));
 	gl(Uniform2f(PmPosUniformLocation, r->pos.x / resolutionV2f.x * 2.0f - 1.0f, r->pos.y / resolutionV2f.y * 2.0f - 1.0f));
 	gl(Uniform1f(PmRotUniformLocation, r->angle - r->rotSpeed * currTime));
+
+	//gl(Uniform2f(PUVscaleUniformLocation, 0.5f, 0.5f));
+	//gl(Uniform2f(PUVposUniformLocation, 0.5f, 0.5f));
+}
+void GLCanvas::setGOUniforms(GO * g) {
+	shape s = *g->s;
+
+	gl(Uniform1f(PaspectUniformLocation, aspect));
+	gl(Uniform4f(PColorUniformLocation, s.color.r, s.color.g, s.color.b, s.color.a));
+	gl(Uniform1i(PsideCountUniformLocation, s.sides));
+	gl(Uniform1f(PborderWidthUniformLocation, s.borderW));
+	gl(Uniform4f(PbordColorUniformLocation, s.borderColor.r, s.borderColor.g, s.borderColor.b, s.borderColor.a));
+	gl(Uniform2f(PshapeScaleUniformLocation, s.scale.x, s.scale.y));
+	gl(Uniform1f(PtimeUniformLocation, currTime));
+
+	//transform
+	gl(Uniform2f(PmScaleUniformLocation, s.scale.x / resolutionV2f.x, s.scale.y / resolutionV2f.y));
+	gl(Uniform2f(PmPosUniformLocation, (g->position.x + s.pos.x) / resolutionV2f.x * 2.0f - 1.0f, (g->position.y + s.pos.y) / resolutionV2f.y * 2.0f - 1.0f));
+	gl(Uniform1f(PmRotUniformLocation, s.angle - s.rotSpeed * currTime));
 
 	//gl(Uniform2f(PUVscaleUniformLocation, 0.5f, 0.5f));
 	//gl(Uniform2f(PUVposUniformLocation, 0.5f, 0.5f));
@@ -913,104 +987,33 @@ void GLCanvas::mainloop(bool render) {
 	int GoSize = GameObjects.size(); 
 	for (int i = 0; i < GoSize; ++i)
 	{
-		shape * r = GameObjects[i]->r;
-		if (r->hidden)
+		shape * s = GameObjects[i]->s;
+		GO * g = GameObjects[i];
+		if (s->hidden)
 			continue;
 
 		//draw as a font
-		if (r->sides == -1) {
-			drawFont(r, &eData[i]);
+		if (s->sides == -1) {
+			drawFont(s, &eData[i]);
 			gl(UseProgram(PolygonShaderProgram));
 		}
 		//draw as a texture
-		else if (!r->sides) {
-			drawTexture(r, &eData[i]);
+		else if (!s->sides) {
+			drawTexture(s, &eData[i]);
 		}
 		//draw as a polygon
 		else {
-			setPolygonUniforms(r);
+			setGOUniforms(g);
 			gl(DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
 		}
+
+		if (g->ps) {
+			drawParticleSystem(g, deltaTime);
+
+			gl(BindVertexArray(VAO));
+			gl(UseProgram(PolygonShaderProgram));
+		}
 	}
-
-
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	
-#if 0
-	gl(UseProgram(ParticleShaderProgram));
-
-	ParticleSystem ps = *testP;
-	for (int i = 0; i < ps.MaxParticles; i++) {
-
-		Particle& p = ps.container[i]; // shortcut
-		p.pos += p.vel * (float)0.1;
-
-		// Fill the GPU buffer
-		ps.positionSizeData[3 * i + 0] = p.pos.x;
-		ps.positionSizeData[3 * i + 1] = p.pos.y;
-		ps.positionSizeData[3 * i + 2] = p.size;
-
-		ps.colorData[4 * i + 0] = p.r;
-		ps.colorData[4 * i + 1] = p.g;
-		ps.colorData[4 * i + 2] = p.b;
-		ps.colorData[4 * i + 3] = p.a;
-	}
-	//update position buffer
-	glBindBuffer(GL_ARRAY_BUFFER, PPosVBO);
-	glBufferData(GL_ARRAY_BUFFER, ps.MaxParticles * 3 * sizeof(GLfloat), NULL, GL_STREAM_DRAW); 
-	glBufferSubData(GL_ARRAY_BUFFER, 0, ps.count * sizeof(GLfloat) * 3, ps.positionSizeData);
-
-	//update color buffer
-	glBindBuffer(GL_ARRAY_BUFFER, PColVBO);
-	glBufferData(GL_ARRAY_BUFFER, ps.MaxParticles * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW); 
-	glBufferSubData(GL_ARRAY_BUFFER, 0, ps.count * sizeof(GLubyte) * 4, ps.colorData);
-
-	//vertices
-	glEnableVertexAttribArray(1);
-	glBindBuffer(GL_ARRAY_BUFFER, PVertVBO);
-	glVertexAttribPointer(
-		1, 
-		3, 
-		GL_FLOAT, 
-		GL_FALSE, 
-		0,
-		(void*)0 
-	);
-	// position and size
-	glEnableVertexAttribArray(2);
-	glBindBuffer(GL_ARRAY_BUFFER, PPosVBO);
-	glVertexAttribPointer(
-		2, 
-		3, // x + y + size + size => 3
-		GL_FLOAT, 
-		GL_FALSE, 
-		0, 
-		(void*)0 
-	);
-	//colors
-	glEnableVertexAttribArray(3);
-	glBindBuffer(GL_ARRAY_BUFFER, PColVBO);
-	glVertexAttribPointer(
-		3, 
-		4, // size : r + g + b + a => 4
-		GL_UNSIGNED_BYTE, 
-		GL_TRUE, // normalized?
-		0, 
-		(void*)0 
-	);
-
-	glVertexAttribDivisor(1, 0); // particles vertices : always reuse the same 4 vertices -> 0
-	glVertexAttribDivisor(2, 1); // positions : one per quad (its center) -> 1
-	glVertexAttribDivisor(3, 1); // color : one per quad -> 1
-
-	glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, ps.count);
-#endif
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-	gl(BindVertexArray(VAO));
-	gl(UseProgram(PolygonShaderProgram));
-
 
 	//draw standard shapes
 	int shapesSize = shapes.size(); //for performance
@@ -1228,6 +1231,70 @@ void GLCanvas::drawFont(shape * r, extraData * fontData) {
 	}			
 	delete lineLengths;
 	delete text;
+}
+
+void GLCanvas::drawParticleSystem(GO * g, float deltaTime)
+{
+
+
+	gl(UseProgram(ParticleShaderProgram));
+
+	ParticleSystem ps = *g->ps;
+	g->ps->updateParticles(deltaTime);
+
+	//update position buffer
+	glBindBuffer(GL_ARRAY_BUFFER, PPosVBO);
+	glBufferData(GL_ARRAY_BUFFER, ps.MaxParticles * 3 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, ps.count * sizeof(GLfloat) * 3, ps.positionSizeData);
+
+	//update color buffer
+	glBindBuffer(GL_ARRAY_BUFFER, PColVBO);
+	glBufferData(GL_ARRAY_BUFFER, ps.MaxParticles * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, ps.count * sizeof(GLubyte) * 4, ps.colorData);
+
+	//vertices
+	glEnableVertexAttribArray(1);
+	glBindBuffer(GL_ARRAY_BUFFER, PVertVBO);
+	glVertexAttribPointer(
+		1,
+		3,
+		GL_FLOAT,
+		GL_FALSE,
+		0,
+		(void*)0
+	);
+	// position and size
+	glEnableVertexAttribArray(2);
+	glBindBuffer(GL_ARRAY_BUFFER, PPosVBO);
+	glVertexAttribPointer(
+		2,
+		3, // x + y + size + size => 3
+		GL_FLOAT,
+		GL_FALSE,
+		0,
+		(void*)0
+	);
+	//colors
+	glEnableVertexAttribArray(3);
+	glBindBuffer(GL_ARRAY_BUFFER, PColVBO);
+	glVertexAttribPointer(
+		3,
+		4, // size : r + g + b + a => 4
+		GL_UNSIGNED_BYTE,
+		GL_TRUE, // normalized?
+		0,
+		(void*)0
+	);
+
+	glVertexAttribDivisor(1, 0); // particles vertices : always reuse the same 4 vertices -> 0
+	glVertexAttribDivisor(2, 1); // positions : one per quad (its center) -> 1
+	glVertexAttribDivisor(3, 1); // color : one per quad -> 1
+
+	gl(Uniform2f(ParticlePosUniformLocation, (g->position.x - resolutionWidth/2), (g->position.y - resolutionHeight / 2)));
+	gl(Uniform2f(ParticleResUniformLocation, resolutionWidth, resolutionHeight));
+
+	glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, ps.count);
+
 }
 
 vec3 GLCanvas::getPixel(int x, int y){
