@@ -22,6 +22,15 @@ namespace GLDrawer
         {
             this.transform = transform;
         }
+
+        internal  void internalUpdate()
+        {
+
+        }
+
+        public virtual void Start() { }
+
+        public virtual void Update() { }
     }
     /// <summary>
     ///represents a gameObject's location in world space

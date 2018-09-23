@@ -109,6 +109,4 @@ Sprites work with most image file types and transparency *is* supported.
 GLDrawer has the ability rasterize TrueTypeFont files. This means that with nothing but the font filepath, and a string of text,
 you can generate an image for every letter of the alphabet and have the letters appear in the same order as your string.
 
-If you're still reading all this, you must love reading documentation. I hope you appreciate how hard it was to make this work lol
-
 

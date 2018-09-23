@@ -39,7 +39,7 @@
     <OutputPath>bin\x86\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <DebugType>full</DebugType>
-    <PlatformTarget>x86</PlatformTarget>
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <Prefer32Bit>true</Prefer32Bit>
@@ -58,9 +58,8 @@
     <StartupObject />
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Gl3DrawerCLR, Version=1.0.6755.276, Culture=neutral, processorArchitecture=x86">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\Debug\Gl3DrawerCLR.dll</HintPath>
+    <Reference Include="GLDrawerCLR">
+      <HintPath>..\..\bin\Debug\GLDrawerCLR.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -75,6 +74,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="canvas.cs" />
+    <Compile Include="color.cs" />
     <Compile Include="GameObject.cs" />
     <Compile Include="Input.cs" />
     <Compile Include="Program.cs" />
@@ -85,6 +85,7 @@
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
     <Compile Include="shapes.cs" />
+    <Compile Include="vec2.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

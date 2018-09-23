@@ -8,10 +8,11 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>GLDrawerDemos</RootNamespace>
     <AssemblyName>GLDrawerDemos</AssemblyName>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -22,6 +23,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -37,9 +39,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>.\Cyotek.Windows.Forms.ColorPicker.dll</HintPath>
     </Reference>
-    <Reference Include="GLDrawer, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="GLDrawer, Version=0.9.0.0, Culture=neutral, processorArchitecture=x86">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\Version 0.9 DLL\GLDrawer.dll</HintPath>
+      <HintPath>..\GLDrawer\GLDrawer\bin\Debug\GLDrawer.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />

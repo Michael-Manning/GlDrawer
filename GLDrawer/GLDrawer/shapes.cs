@@ -3,18 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using GL3DrawerCLR;
-
-namespace communication
-{
-    public static class util
-    {
-        public static void linkCanvas(GLDWrapper GLDW, GLDrawer.Shape shape)
-        {
-
-        }
-    }
-}
+using GLDrawerCLR;
 
 namespace GLDrawer
 {
@@ -24,27 +13,25 @@ namespace GLDrawer
     {
         /// <summary>
         /// this simple class primarly interacts with the C++ backend.
-        /// A "Rect" is a backend structure which is contains %90 of the actual shape data and functions.
-        /// All shapes are contained in a Rect and are simply rendered with different shaders depending 
+        /// An "unmanaged_shape" is a backend structure which contains %90 of the actual shape data and functions.
+        /// All shapes are contained in an unmanaged_shape and are simply rendered with different shaders depending 
         /// on the number of sides (-1 = font, 0 = texture, 1 = Ellipse, 4 = Quad, all other positive numbers = polygon).
         /// Text and Sprite contain the only supplimentary data which are their filepaths and the text to be rasterized.
-        /// See GL3DrawerCLR.h, and link.h for more details
+        /// See GLDrawerCLR.h, and engine.h for more details
         /// </summary>
-        public vec2 Position { get => new vec2(rect.Pos.x, rect.Pos.y); set => rect.Pos = new GL3DrawerCLR.vec2(value.x, value.y); }
-        public vec2 Scale { get => new vec2(rect.Scale.x, rect.Scale.y); set => rect.Scale = new GL3DrawerCLR.vec2(value.x, value.y); }
-        public virtual float Angle { get => rect.Angle; set => rect.Angle = value; }
-        public Color FillColor { get => rect.Color; set => rect.Color = value; }
-        public Color BorderColor { get => rect.BorderColor; set => rect.BorderColor = value; }
-        public float BorderWidth { get => rect.BordWidth; set => rect.BordWidth = value; }
-        public float RotationSpeed { get => rect.rSpeed; set => rect.rSpeed = value; }
-        public bool Hidden { get => rect.hidden; set => rect.hidden = value; }
+        public vec2 Position { get => new vec2(internalShape.Pos.x, internalShape.Pos.y); set => internalShape.Pos = new GLDrawerCLR.vec2(value.x, value.y); }
+        public vec2 Scale { get => new vec2(internalShape.Scale.x, internalShape.Scale.y); set => internalShape.Scale = new GLDrawerCLR.vec2(value.x, value.y); }
+        public virtual float Angle { get => internalShape.Angle; set => internalShape.Angle = value; }
+        public Color FillColor { get => internalShape.Color; set => internalShape.Color = value; }
+        public Color BorderColor { get => internalShape.BorderColor; set => internalShape.BorderColor = value; }
+        public float BorderWidth { get => internalShape.BordWidth; set => internalShape.BordWidth = value; }
+        public float RotationSpeed { get => internalShape.rSpeed; set => internalShape.rSpeed = value; }
+        public bool Hidden { get => internalShape.hidden; set => internalShape.hidden = value; }
 
-        //public int internalIndex { get { return rect.index; } }
-        //protected int sides;
+        //where the action actually happens
+        internal unmanaged_shape internalShape;
 
-        //The only unintentionaly exposed variable in GLDawer as it is required by the canvas class
-        public Rect rect;
-
+        //shortcut to replace unfilled automatic arguements with an empty color
         protected Color checkNullC(Color? c)
         {
             return c == null ? Color.Invisible : (Color)c;
@@ -56,22 +43,22 @@ namespace GLDrawer
         public Rectangle(vec2 position, vec2 scale, Color? fillColor = null, float borderWidth = 0, Color? borderColor = null, float angle = 0, float rotationSpeed = 0)
         {
 
-            rect = new Rect(position.x, position.y, scale.x, scale.y, angle, checkNullC(fillColor), checkNullC(borderColor), borderWidth, rotationSpeed);
+            internalShape = new unmanaged_shape(position.x, position.y, scale.x, scale.y, angle, checkNullC(fillColor), checkNullC(borderColor), borderWidth, rotationSpeed);
         }
         ~Rectangle()
         {
-            rect.dispose();
+            internalShape.dispose();
         }
     }
     public class Ellipse : Shape
     {
         public Ellipse(vec2 position, vec2 scale, Color? fillColor = null, float borderWidth = 0, Color? borderColor = null, float angle = 0, float rotationSpeed = 0)
         {
-            rect = new Rect(position.x, position.y, scale.x, scale.y, angle, checkNullC(fillColor), checkNullC(borderColor), borderWidth, rotationSpeed, 1);
+            internalShape = new unmanaged_shape(position.x, position.y, scale.x, scale.y, angle, checkNullC(fillColor), checkNullC(borderColor), borderWidth, rotationSpeed, 1);
         }
         ~Ellipse()
         {
-            rect.dispose();
+            internalShape.dispose();
         }
     }
     public class Line : Shape
@@ -119,28 +106,28 @@ namespace GLDrawer
             get => base.Angle;
             set
             {
-                rect.Angle = value;
+                internalShape.Angle = value;
                 //UNTESTED!
                 istart = Position + new vec2((float)Math.Cos(- value) * (Length / 2f), (float)Math.Sin(- value) * (Length/2f));
                 iend = Position + new vec2((float)Math.Cos(value) * (Length / 2f), (float)Math.Sin(value) * (Length / 2f));
             }
         }
 
-        //since a line just wraps around a backend rectangle, some math is required to transform the rect given start and endpoints
+        //since a line just wraps around a backend rectangle, some math is required to transform the internalShape given start and endpoints
         private void recalculate()
         {
             float a = (Start.y - End.y);
             float o = (Start.x - End.x);
-            rect.Angle = (float)Math.Atan(a / o);
-            rect.Pos = new vec2((Start.x + End.x) / 2, (Start.y + End.y) / 2);
-            rect.Scale = new vec2((float)Math.Sqrt(a * a + o * o), Thickness);
+            internalShape.Angle = (float)Math.Atan(a / o);
+            internalShape.Pos = new vec2((Start.x + End.x) / 2, (Start.y + End.y) / 2);
+            internalShape.Scale = new vec2((float)Math.Sqrt(a * a + o * o), Thickness);
         }
 
-        //simply defines a rect without a transform and calculates the transform once the properties aare triggered
+        //simply defines a internalShape without a transform and calculates the transform once the properties aare triggered
         public Line(vec2 start, vec2 end, float thickness, Color? fillColor = null, float borderWidth = 0, Color? borderColor = null, float rotationSpeed = 0)
         {
             //position, scale, and angle are calulated afterwards
-            rect = new Rect(0,0,0,0, 0f, checkNullC(fillColor), checkNullC(borderColor), borderWidth, 0f); 
+            internalShape = new unmanaged_shape(0,0,0,0, 0f, checkNullC(fillColor), checkNullC(borderColor), borderWidth, 0f); 
             Start = start;
             End = end;
             Thickness = thickness;
@@ -149,7 +136,7 @@ namespace GLDrawer
         //UNTESTED!
         public Line(vec2 StartPosition, float length, float thickness, float angle, Color? fillColor = null, float borderWidth = 0, Color? borderColor = null, float rotationSpeed = 0)
         {
-            rect = new Rect(0, 0, 0, 0, angle, checkNullC(fillColor), checkNullC(borderColor), borderWidth, 0f);
+            internalShape = new unmanaged_shape(0, 0, 0, 0, angle, checkNullC(fillColor), checkNullC(borderColor), borderWidth, 0f);
             Start = StartPosition;
             End = StartPosition + new vec2((float)Math.Cos(angle) * length, (float)Math.Sin(angle) * length);
             Thickness = thickness;
@@ -157,7 +144,7 @@ namespace GLDrawer
 
         ~Line()
         {
-            rect.dispose();
+            internalShape.dispose();
         }
     }
     public class Polygon : Shape
@@ -171,24 +158,24 @@ namespace GLDrawer
                 if (value < 3)
                     throw new ArgumentOutOfRangeException("sideCount", value, "Polygon must have a minimum of 3 sides");
                 isidecount = value;
-                rect.sides = value;
+                internalShape.sides = value;
             }
         }
         public Polygon(vec2 position, vec2 scale, int sideCount, Color? fillColor = null, float borderWidth = 0, Color? borderColor = null, float angle = 0, float rotationSpeed = 0)
         {           
-            rect = new Rect(position.x, position.y, scale.x, scale.y, angle, checkNullC(fillColor), checkNullC(borderColor), borderWidth, rotationSpeed, sideCount);
+            internalShape = new unmanaged_shape(position.x, position.y, scale.x, scale.y, angle, checkNullC(fillColor), checkNullC(borderColor), borderWidth, rotationSpeed, sideCount);
             SideCount = sideCount;
         }
         ~Polygon()
         {
-            rect.dispose();
+            internalShape.dispose();
         }
     }
     public class Text : Shape
     {
-        public JustificationType Justification { get => (JustificationType)rect.justification; set => rect.justification = (int)value; }
-        public string Body { get => rect.text; set => rect.text = value; }
-        public string Font { get => rect.filepath; }
+        public JustificationType Justification { get => (JustificationType)internalShape.justification; set => internalShape.justification = (int)value; }
+        public string Body { get => internalShape.text; set => internalShape.text = value; }
+        public string Font { get => internalShape.filepath; }
         public Rectangle BoundingRect { get; private set; }
 
         //with bound
@@ -198,7 +185,7 @@ namespace GLDrawer
                 throw new ArgumentException("ttf file was not found", "font");
 
             BoundingRect = FixedBound;
-                rect = new Rect(text,  Height, checkNullC(color), (int)justification, FixedBound.rect, font, angle, rotationSpeed);          
+                internalShape = new unmanaged_shape(text,  Height, checkNullC(color), (int)justification, FixedBound.internalShape, font, angle, rotationSpeed);          
         }
         //without bound
         public Text(vec2 position, string text, float Height, Color? color = null, JustificationType justification = JustificationType.Center, string font = "c:\\windows\\fonts\\times.ttf", float angle = 0, float rotationSpeed = 0)
@@ -206,11 +193,11 @@ namespace GLDrawer
             if (!System.IO.File.Exists(font))
                 throw new ArgumentException("ttf file was not found", "font");
 
-            rect = new Rect(text, position.x, position.y, Height, checkNullC(color), (int)justification, font, angle, rotationSpeed);
+            internalShape = new unmanaged_shape(text, position.x, position.y, Height, checkNullC(color), (int)justification, font, angle, rotationSpeed);
         }
         ~Text()
         {
-            rect.dispose();
+            internalShape.dispose();
         }
     }
     public class Sprite : Shape
@@ -219,11 +206,11 @@ namespace GLDrawer
         public Sprite(string filePath, vec2 position, vec2 scale, Color? Tint = null, float borderWidth = 0, Color? borderColor = null, float angle = 0, float rotationSpeed = 0)
         {
             FilePath = filePath;
-            rect = new Rect(filePath, position.x, position.y, scale.x, scale.y, angle, checkNullC(Tint), checkNullC(borderColor), borderWidth, rotationSpeed);
+            internalShape = new unmanaged_shape(filePath, position.x, position.y, scale.x, scale.y, angle, checkNullC(Tint), checkNullC(borderColor), borderWidth, rotationSpeed);
         }
         ~Sprite()
         {
-            rect.dispose();
+            internalShape.dispose();
         }
     }
 }

@@ -1,8 +1,8 @@
 # GLDrawer
 Simple .net drawing and game creating interface. 
+User Documentation: https://gldrawer.readthedocs.io
 
-Inspired by the GDIDrawer by Simon Walker which is a .Net wrapper for GDI to make programming assignments more interesting for NAIT students. 
-GLDrawer is a from-scratch creation using Gl3w, GLFW, STB, and Box2D. It is being made to contain all the features found in GDIDrawer, but with games in mind.
+GLDrawer is a from scratch recreation of GDIDrawer using OpenGL3
 
 Differences from GDIDrawer include:
 - Higher performance and hardware acceleration
@@ -21,10 +21,6 @@ Differences from GDIDrawer include:
 - Implementation and wrapper of the Box2D physics engine (in progress)
 - velocity and motion tools
 
-User Documentation: https://gldrawer.readthedocs.io
-
-This Repo was originally created in October of 2017, but has been recently restarted from the ground up with native C++. 
-I learned so much in the first attempt that it made more sense to remake the backend in true OpenGL instead of the wrapper I was using.
 
 
 

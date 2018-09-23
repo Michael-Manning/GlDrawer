@@ -72,7 +72,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>$(SolutionDir)bin\</OutDir>
+    <OutDir>$(SolutionDir)\bin\$(Configuration)\</OutDir>
     <TargetName>$(ProjectName)_d</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -80,7 +80,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(SolutionDir)bin\</OutDir>
+    <OutDir>$(SolutionDir)\bin\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
@@ -93,13 +93,13 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\..\include\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\include\</AdditionalIncludeDirectories>
       <CompileAs>CompileAsCpp</CompileAs>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>..\..\Include\GLFW static binaries\glfw-3.2.1\src\Debug\glfw3.lib;Glu32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>..\Include\GLFW\glfw3.lib;Glu32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <EmbedManagedResourceFile>%(EmbedManagedResourceFile)</EmbedManagedResourceFile>
     </Link>
   </ItemDefinitionGroup>
@@ -127,7 +127,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\..\include\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\include\</AdditionalIncludeDirectories>
       <CompileAs>CompileAsCpp</CompileAs>
     </ClCompile>
     <Link>
@@ -135,7 +135,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>..\..\Include\GLFW static binaries\glfw-3.2.1\src\Debug\glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>..\Include\GLFW\glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <EmbedManagedResourceFile>%(EmbedManagedResourceFile)</EmbedManagedResourceFile>
     </Link>
   </ItemDefinitionGroup>
@@ -159,10 +159,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Input.h" />
-    <ClInclude Include="link.h" />
+    <ClInclude Include="engine.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="shaders.h" />
-    <ClInclude Include="stb_image.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="Z:\glm-master\glm\vec2.hpp" />
@@ -170,8 +169,8 @@
   <ItemGroup>
     <ClCompile Include="gl3w.c" />
     <ClCompile Include="Input.cpp" />
-    <ClCompile Include="link.cpp" />
-    <ClCompile Include="OpenGL3.cpp" />
+    <ClCompile Include="engine.cpp" />
+    <ClCompile Include="Main.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

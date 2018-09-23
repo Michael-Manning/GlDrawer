@@ -42,13 +42,12 @@ mat4 rot = mat4( c,  -s,  0.0, 0.0,
                  s,   c,  0.0, 0.0,
                 0.0, 0.0, 1.0, 0.0,
                 0.0, 0.0, 0.0, 1.0);
-   // return (tran * ascal * rot * scal);
     return (tran * ascal * rot * scal);
 }
 
 void main()
 {
    vec4 ndcPos = trans() *  vec4(aPos.x / aspect, aPos.y, aPos.z, 1.0);
-        frag_uv = aPos.xy*scaleOffset + posOffset;
+        frag_uv = aPos.xy *0.5 + 0.5; //*scaleOffset + posOffset;
    gl_Position = ndcPos;
 }

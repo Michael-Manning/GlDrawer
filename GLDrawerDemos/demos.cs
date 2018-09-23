@@ -71,7 +71,7 @@ namespace GLDrawerDemos
         private static Ellipse[] Ye = new Ellipse[20];
         public static void backBufferShapes()
         {
-            can = new GLCanvas(1300, 900, TitleDetails: true, VSync: true);
+            can = new GLCanvas(1300, 900, TitleDetails: true, VSync: false);
             for (int i = 0; i < 1300; i++)
             {
                 for (int j = 0; j < 900; j++)

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using GL3DrawerCLR;
+using GLDrawerCLR;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Diagnostics;
@@ -27,17 +27,18 @@ namespace GLDrawer
         /// <summary>time in seconds of the last frame time</summary>
         public float DeltaTime { get => iDeltaTime; }
         /// <summary>text to display on the window title</summary>
-        public string WindowTitle { get => gldw.title; set => gldw.title = value; }
+        public string WindowTitle { get => GLWrapper.title; set => GLWrapper.title = value; }
         /// <summary>wether 0 on the y axis starts from the top or bottom</summary>
         private bool InvertedYAxis = false; //unimplimented for public use as of now
         /// <summary>multiplier for all shape coordinates</summary>
         public int Scale = 1;
         /// <summary>wether to display debug info next to the title</summary>
-        public bool ExtraInfo { set => gldw.titleDetails = value; }
+        public bool ExtraInfo { set => GLWrapper.titleDetails = value; }
         /// <summary>center coordinate of the canvas</summary>
         public vec2 Centre { get => new vec2(Width / 2, Height / 2); }
+        public vec2 Camera = vec2.Zero;
         /// <summary>number of shapes being drawn on the canvas</summary>
-        public int ShapeCount { get => gldw.shapeCount; }
+        public int ShapeCount { get => GLWrapper.shapeCount; }
         public bool VSync { get; private set; } //these four are set at initialization
         public bool DebugMode { get; private set; }
         public bool Borderless { get; private set; }
@@ -51,10 +52,10 @@ namespace GLDrawer
             set
             {
                 iBackColor = value;
-                if(gldw != null)
+                if(GLWrapper != null)
                 {
-                    gldw.backColor = value;
-                    gldw.clearBB();
+                    GLWrapper.backColor = value;
+                    GLWrapper.clearBB();
                 }
             }
         }
@@ -67,7 +68,7 @@ namespace GLDrawer
             get => iWidth;
             set
             {
-                gldw.width = value;
+                GLWrapper.width = value;
                 frozen = true;
                 while (frozen) { }
             }
@@ -78,7 +79,7 @@ namespace GLDrawer
             get => iHeight;
             set
             {
-                gldw.height = value;
+                GLWrapper.height = value;
                 frozen = true;
                 while (frozen) { }
             }
@@ -90,7 +91,7 @@ namespace GLDrawer
         public event Action Update = delegate { };
 
 
-        private GLDWrapper gldw;
+        private unmanaged_Canvas GLWrapper;
         private Form iform;
         private Panel ipanel;
         private bool embedded = false;
@@ -98,6 +99,7 @@ namespace GLDrawer
         private bool NullRemovalFlag = false; //used for thread safe garbage collection
         private bool frozen = false; //used to emergency freeze the main thread in case of runtime memory alocation such as a window resize
         private bool renderNextFrame = true; //tracks manual rendering
+        private List<Shape> shapeRefs = new List<Shape>();
 
         private static List<GLCanvas> activeCanvases = new List<GLCanvas>();
         private static Thread loopthread;
@@ -117,7 +119,7 @@ namespace GLDrawer
             }
 
             //it's a bad idea to continue before the canvas is initialized
-            while (gldw == null || !gldw.initialized)
+            while (GLWrapper == null || !GLWrapper.initialized)
             {
                 Thread.Sleep(1);
             }
@@ -129,7 +131,7 @@ namespace GLDrawer
                 //if the end of the main program is reached, all the canvas windows should close
                 if (!mainThread.IsAlive)
                     for (int i = 0; i < activeCanvases.Count; i++)
-                        activeCanvases[i].gldw.shouldClose = true;
+                        activeCanvases[i].GLWrapper.shouldClose = true;
 
                 //when all canvasas are closed, the thread is aborted
                 if (activeCanvases.Count == 0)
@@ -143,14 +145,14 @@ namespace GLDrawer
                     {
                         if (can.embedded)
                         {
-                            can.gldw.createCanvas(can.iWidth, can.iHeight, true, can.BackColor, true, can.DebugMode);
-                            SetParent(can.gldw.getNativeHWND(), can.panelHandle);
+                            can.GLWrapper.createCanvas(can.iWidth, can.iHeight, true, can.BackColor, can.VSync, can.DebugMode);
+                            SetParent(can.GLWrapper.getNativeHWND(), can.panelHandle);
                         }
                         else
-                            can.gldw.createCanvas(can.iWidth, can.iHeight, can.Borderless, can.BackColor, can.VSync, can.DebugMode);
+                            can.GLWrapper.createCanvas(can.iWidth, can.iHeight, can.Borderless, can.BackColor, can.VSync, can.DebugMode);
                         can.Initialize();
                     }
-                    if (can.gldw.shouldClose)
+                    if (can.GLWrapper.shouldClose)
                     {
                         activeCanvases.RemoveAt(i);
                         continue;
@@ -174,12 +176,12 @@ namespace GLDrawer
         /// <param name="borderless">Wether or not the window is borderless</param>
         public GLCanvas(int width = 800, int height = 600, string title = "Canvas Window", Color? BackColor = null, bool TitleDetails = true, bool VSync = true, bool autoRender = true, bool debugMode = false, bool borderless = false)
         {
-            gldw = new GLDWrapper(usePackedShaders);
-            gldw.title = title;
-            gldw.titleDetails = TitleDetails;
+            GLWrapper = new unmanaged_Canvas(usePackedShaders);
+            GLWrapper.title = title;
+            GLWrapper.titleDetails = TitleDetails;
             iWidth = width;
             iHeight = height;
-            this.VSync = VSync;
+            this.VSync = activeCanvases.Count > 0 ? false : VSync; //can't have more than one context with vsync, or it will run at 30fps
             Borderless = borderless;
             DebugMode = debugMode;
             iBackColor = BackColor == null ? Color.Black : (Color)BackColor;
@@ -205,12 +207,12 @@ namespace GLDrawer
         /// <param name="debugMode">Display rendering information on top of the canvas</param>
         public GLCanvas(Form form, Panel panel, Color? BackColor = null, bool autoRender = true, bool debugMode = false)
         {        
-            gldw = new GLDWrapper(usePackedShaders);
+            GLWrapper = new unmanaged_Canvas(usePackedShaders);
             iHeight = panel.Height;
             iWidth = panel.Width;
             form.FormClosed += delegate { Close(); }; //close the canvas when the parent form is closed
             panelHandle = panel.Handle;
-            this.VSync = true;
+            this.VSync = activeCanvases.Count > 0 ? false : true; //can't have more than one context with vsync, or it will run at 30fps
             Borderless = true;
             DebugMode = debugMode;
             iform = form;
@@ -225,14 +227,14 @@ namespace GLDrawer
         //C++ backend needs to know where to trigger input events
         private void Initialize()
         {
-            gldw.Input.setMouseCallback(MouseCallback);
-            gldw.Input.setKeyCallback(KeyCallback);
-            gldw.Input.setMouseMoveCallback(MouseMoveCallback);
+            GLWrapper.Input.setMouseCallback(MouseCallback);
+            GLWrapper.Input.setKeyCallback(KeyCallback);
+            GLWrapper.Input.setMouseMoveCallback(MouseMoveCallback);
             initialized = true;
         }
         private void mainLoop()
         {
-            iTime = gldw.ellapsedTime;
+            iTime = GLWrapper.ellapsedTime;
             iDeltaTime = iTime - lastTime;
             lastTime = iTime;
 
@@ -241,30 +243,30 @@ namespace GLDrawer
 
             if (NullRemovalFlag)
             {
-                gldw.clearNullRects();
+                GLWrapper.clearNullRects();
                 GC.Collect();
                 NullRemovalFlag = false;
             }
 
             if (simpleBackBuffer)
-                gldw.clearBB();
+                GLWrapper.clearBB();
 
             //needs to be very spesific due to threads
             if (!AutoRender)
             {
                 if (renderNextFrame)
                 {
-                    gldw.mainloop(true);
+                    GLWrapper.mainloop(true);
                     renderNextFrame = false;
                 }
                 else
-                    gldw.mainloop(false);
+                    GLWrapper.mainloop(false);
             }
             else
-                gldw.mainloop(true);
+                GLWrapper.mainloop(true);
 
-            iWidth = gldw.width;
-            iHeight = gldw.height;
+            iWidth = GLWrapper.width;
+            iHeight = GLWrapper.height;
             frozen = false;
         }
 
@@ -294,7 +296,8 @@ namespace GLDrawer
             Width *= Scale;
             Height *= Scale;
             Rectangle r = new Rectangle(new vec2(XStart + Width / 2f, YStart + Height / 2f), new vec2(Width, Height), FillColor, BorderThickness, BorderColor, Angle, RotationSpeed);
-            gldw.addRect(r.rect);
+            GLWrapper.addRect(r.internalShape);
+            shapeRefs.Add(r);
             return r;
         }
         /// <summary>
@@ -317,7 +320,8 @@ namespace GLDrawer
             Width *= Scale;
             Height *= Scale;
             Rectangle r = new Rectangle(new vec2(Xpos, Ypos), new vec2(Width, Height), FillColor, BorderThickness, BorderColor, Angle, RotationSpeed);
-            gldw.addRect(r.rect);
+            GLWrapper.addRect(r.internalShape);
+            shapeRefs.Add(r);
             return r;
         }
         /// <summary>
@@ -340,7 +344,8 @@ namespace GLDrawer
             Width *= Scale;
             Height *= Scale;
             Ellipse e = new Ellipse(new vec2(XStart + Width / 2f, YStart + Height / 2f), new vec2(Width, Height), FillColor, BorderThickness, BorderColor, Angle, RotationSpeed);
-            gldw.addRect(e.rect);
+            GLWrapper.addRect(e.internalShape);
+            shapeRefs.Add(e);
             return e;
         }
         /// <summary>
@@ -363,7 +368,8 @@ namespace GLDrawer
             Width *= Scale;
             Height *= Scale;
             Ellipse e = new Ellipse(new vec2(Xpos, Ypos), new vec2(Width, Height), FillColor, BorderThickness, BorderColor, Angle, RotationSpeed);
-            gldw.addRect(e.rect);
+            GLWrapper.addRect(e.internalShape);
+            shapeRefs.Add(e);
             return e;
         }
         /// <summary>
@@ -386,7 +392,8 @@ namespace GLDrawer
             XEnd *= Scale;
             YEnd *= Scale;
             Line l = new Line(new vec2(XStart, YStart), new vec2(XEnd, YEnd), Thickness, LineColor, BorderThickness, BorderColor, RotationSpeed);
-            gldw.addRect(l.rect);
+            GLWrapper.addRect(l.internalShape);
+            shapeRefs.Add(l);
             return l;
         }
         /// <summary>
@@ -406,7 +413,8 @@ namespace GLDrawer
             StartPos *= Scale;
             Length *= Scale;
             Line l = new Line(StartPos, Length, Thickness, Angle, LineColor, BorderThickness, BorderColor, RotationSpeed);
-            gldw.addRect(l.rect);
+            GLWrapper.addRect(l.internalShape);
+            shapeRefs.Add(l);
             return l;
         }
         /// <summary>
@@ -430,7 +438,8 @@ namespace GLDrawer
             Width *= Scale;
             Height *= Scale;
             Polygon p = new Polygon(new vec2(Xpos, Ypos), new vec2(Width, Height), SideCount, FillColor, BorderThickness, BorderColor, Angle, RotationSpeed);
-            gldw.addRect(p.rect);
+            GLWrapper.addRect(p.internalShape);
+            shapeRefs.Add(p);
             return p;
         }
         /// <summary>
@@ -454,7 +463,8 @@ namespace GLDrawer
             Width *= Scale;
             Height *= Scale;
             Sprite s = new Sprite(FilePath, new vec2(Xpos, Ypos), new vec2(Width, Height), FillColor, BorderThickness, BorderColor, Angle, RotationSpeed);
-            gldw.addRect(s.rect);
+            GLWrapper.addRect(s.internalShape);
+            shapeRefs.Add(s);
             return s;
         }
         /// <summary>
@@ -478,7 +488,8 @@ namespace GLDrawer
             Width *= Scale;
             Height *= Scale;
             Sprite s = new Sprite(FilePath, new vec2(XStart + Width / 2f, YStart + Height / 2f), new vec2(Width, Height), FillColor, BorderThickness, BorderColor, Angle, RotationSpeed);
-            gldw.addRect(s.rect);
+            GLWrapper.addRect(s.internalShape);
+            shapeRefs.Add(s);
             return s;
         }
         /// <summary>
@@ -493,7 +504,8 @@ namespace GLDrawer
         public Text AddCenteredText(string text, float textHeight, Color ? TextColor = null, JustificationType justification = JustificationType.Center, string fontFilepath  = "c:\\windows\\fonts\\times.ttf")
         {
             Text t = new Text(this.Centre, text, textHeight, TextColor == null ? Color.White : TextColor, justification, fontFilepath);
-            gldw.addRect(t.rect);
+            GLWrapper.addRect(t.internalShape);
+            shapeRefs.Add(t);
             return t;
         }
         /// <summary>
@@ -512,7 +524,8 @@ namespace GLDrawer
             Xpos *= Scale;
             Ypos *= Scale;
             Text t = new Text(new vec2(Xpos, Ypos), text, textHeight, TextColor == null ? Color.White : TextColor, justification, fontFilepath);
-            gldw.addRect(t.rect);
+            GLWrapper.addRect(t.internalShape);
+            shapeRefs.Add(t);
             return t;
         }
         /// <summary>
@@ -528,7 +541,8 @@ namespace GLDrawer
         public Text AddText(string text, float textHeight, Rectangle BoundingRect, Color? TextColor = null, JustificationType justification = JustificationType.Center, string fontFilepath = "c:\\windows\\fonts\\times.ttf")
         {
             Text t = new Text(text, textHeight, BoundingRect, TextColor == null ? Color.White : TextColor, justification, fontFilepath);
-            gldw.addRect(t.rect);
+            GLWrapper.addRect(t.internalShape);
+            shapeRefs.Add(t);
             return t;
         }
         /// <summary>
@@ -552,60 +566,66 @@ namespace GLDrawer
             Height *= Scale;
             Rectangle BoundingRect = new Rectangle(new vec2(XStart + width, YStart + height) / 2f, new vec2(width, height));
             Text t = new Text(text, textHeight, BoundingRect, TextColor == null ? Color.White : TextColor, justification, fontFilepath);
-            gldw.addRect(t.rect);
+            GLWrapper.addRect(t.internalShape);
+            shapeRefs.Add(t);
             return t;
         }
 
         public Shape Add(Shape shape)
         {
-            gldw.addRect(shape.rect);
+            GLWrapper.addRect(shape.internalShape);
+            shapeRefs.Add(shape);
             return shape;
         }
         //// <summary>renders all shapes to the screen</summary>
         public void Render() => renderNextFrame = true;
         /// <summary>stops drawaing a shape on the canvas</summary>
-        public void RemoveShape(Shape s) => gldw.removeRect(s.rect);
+        public void RemoveShape(Shape s)
+        {
+            shapeRefs.Remove(s);
+            GLWrapper.removeRect(s.internalShape);
+        }
         /// <summary>displays a shape one index behind other shapes on the canvas</summary>
         public void SendBackward(Shape shape)
         {
-            if (!gldw.checkLoaded(shape.rect))
+            if (!GLWrapper.checkLoaded(shape.internalShape))
                 throw new ArgumentException("Shape was not found on / wasn't added to the canvas", "shape");
 
-            int shapeIndex = gldw.getRectIndex(shape.rect);
+            int shapeIndex = GLWrapper.getRectIndex(shape.internalShape);
             if (shapeIndex > 0)
-                gldw.swapOrder(shapeIndex, shapeIndex - 1);
+                GLWrapper.swapOrder(shapeIndex, shapeIndex - 1);
         }
         /// <summary>displays a shape one index in front of the other shapes on the canvas</summary>
         public void SendForward(Shape shape)
         {
-            if (!gldw.checkLoaded(shape.rect))
+            if (!GLWrapper.checkLoaded(shape.internalShape))
                 throw new ArgumentException("Shape was not found on / wasn't added to the canvas", "shape");
 
-            int shapeIndex = gldw.getRectIndex(shape.rect);
+            int shapeIndex = GLWrapper.getRectIndex(shape.internalShape);
             if(shapeIndex < ShapeCount -1)
-                gldw.swapOrder(shapeIndex, shapeIndex +1);
+                GLWrapper.swapOrder(shapeIndex, shapeIndex +1);
         }
         /// <summary>sets a shape to be drawn behind every other shape on the canvas</summary>
         public void SendToBack(Shape shape)
         {
-            if (!gldw.checkLoaded(shape.rect))
+            if (!GLWrapper.checkLoaded(shape.internalShape))
                 throw new ArgumentException("Shape was not found on / wasn't added to the canvas", "shape");
 
-            int shapeIndex = gldw.getRectIndex(shape.rect);
+            int shapeIndex = GLWrapper.getRectIndex(shape.internalShape);
             for (int i = shapeIndex; i > 0; i--)
-                gldw.swapOrder(i, i - 1);
+                GLWrapper.swapOrder(i, i - 1);
         }
         /// <summary>sets a shape to be drawn in front of every other shape on the canvas</summary>
         public void SendToFront(Shape shape)
         {
-            if (!gldw.checkLoaded(shape.rect))
+            if (!GLWrapper.checkLoaded(shape.internalShape))
                 throw new ArgumentException("Shape was not found on / wasn't added to the canvas", "shape");
 
             int max = ShapeCount; //CLR properties are slow
-            int shapeIndex = gldw.getRectIndex(shape.rect);
+            int shapeIndex = GLWrapper.getRectIndex(shape.internalShape);
 
             for (int i = shapeIndex; i < max-1; i++)
-                gldw.swapOrder(i, i + 1);
+                GLWrapper.swapOrder(i, i + 1);
         }
         /// <summary>
         /// swaps the drawing order of two shapes and which will apear in front of the other
@@ -620,16 +640,16 @@ namespace GLDrawer
             if (IndexB > max || IndexB < 0)
                 throw new ArgumentOutOfRangeException("IndexB", IndexB, "Shape index was out of canvas range (0 - " + max + ")");
 
-            gldw.swapOrder(IndexA, IndexB);
+            GLWrapper.swapOrder(IndexA, IndexB);
         }
         /// <summary>swaps the drawing order of two shapes and which will apear in front of the other</summary>
         public void SwapDrawOrder(Shape shapeA, Shape shapeB)
         {
-            if (!gldw.checkLoaded(shapeA.rect))
+            if (!GLWrapper.checkLoaded(shapeA.internalShape))
                 throw new ArgumentException("Shape A was not found on / wasn't added to the canvas", "shapeA");
-            if (!gldw.checkLoaded(shapeB.rect))
+            if (!GLWrapper.checkLoaded(shapeB.internalShape))
                 throw new ArgumentException("Shape B was not found on / wasn't added to the canvas", "shapeB");
-            gldw.swapOrder(gldw.getRectIndex(shapeA.rect), gldw.getRectIndex(shapeB.rect));
+            GLWrapper.swapOrder(GLWrapper.getRectIndex(shapeA.internalShape), GLWrapper.getRectIndex(shapeB.internalShape));
         }
         /// <summary>sets the color of a single pixel on theh back buffer</summary>
         public void SetBBPixel(int x, int y, Color color)
@@ -638,16 +658,16 @@ namespace GLDrawer
                 throw new ArgumentException("X coordinate must be a positive number less than the canvas width", "x");
             if (y < 0 || y > Height)
                 throw new ArgumentException("Y coordinate must be a positive number less than the canvas height", "y");
-            gldw.setBBpixel(x, y, color);
+            GLWrapper.setBBpixel(x, y, color);
         }
         /// <summary>draws a whole shape to the back buffer</summary>
         public Shape SetBBShape(Shape shape)
         {
-            gldw.setBBShape(shape.rect);
+            GLWrapper.setBBShape(shape.internalShape);
             return shape;
         }
         /// <summary>gets the color of a single pixel on the canvas</summary>
-        public Color getPixel(vec2 pixel) => gldw.getPixel((int)pixel.x, (int)pixel.y);
+        public Color getPixel(vec2 pixel) => GLWrapper.getPixel((int)pixel.x, (int)pixel.y);
         /// <summary>gets the color of a single pixel on the canvas</summary>
         public Color getPixel(int x, int y)
         {
@@ -656,7 +676,7 @@ namespace GLDrawer
             if (y < 0 || y > Height)
                 throw new ArgumentException("Y coordinate must be a positive number less than the canvas height", "y");
 
-            return gldw.getPixel(x, y);
+            return GLWrapper.getPixel(x, y);
         }
 
 
@@ -674,351 +694,30 @@ namespace GLDrawer
                 throw new ArgumentException("X coordinate must be a positive number", "x");
             if (y < 0)
                 throw new ArgumentException("Y coordinate must be a positive number", "y");
-            gldw.setPos(x, y);
+            GLWrapper.setPos(x, y);
         }
 
         /// <summary>closes the canvas</summary>
         public void Close()
         {
-            gldw.shouldClose = true;
-            //gldw.dispose();
+            GLWrapper.shouldClose = true;
+            //GLWrapper.dispose();
         }
         /// <summary>sets every pixel on the back buffer to the back buffer color</summary>
-        public void ClearBackBuffer() => gldw.clearBB();
+        public void ClearBackBuffer() => GLWrapper.clearBB();
         /// <summary>removes all shapes from the canvas</summary>
-        public void Clear() => gldw.clearShapes();
+        public void Clear()
+        {
+            shapeRefs.Clear();
+            GLWrapper.clearShapes();
+        }
         ~GLCanvas()
         {
-            gldw.dispose();
+            GLWrapper.dispose();
         }
     }
 
-    public struct vec2
-    {
-        public float x, y;
-
-        public vec2(float X, float Y)
-        {
-            x = X;
-            y = Y;
-        }
-        public vec2(float XY)
-        {
-            x = XY;
-            y = XY;
-        }
-
-        public static vec2 Zero { get { return new vec2(0); } }
-        /// <summary>vec2 withlargest possible values</summary>
-        public static vec2 Max { get { return new vec2(float.MaxValue); } }
-        /// <summary>vec2 with abolute values of x and y</summary>
-        public vec2 Abs { get { return new vec2(Math.Abs(x), Math.Abs(y)); } }
-
-        //implicit vec2 to Gl3DrawerCLR vec2 convertion which is implcitly converted to glm vec2 internally
-        public static implicit operator GL3DrawerCLR.vec2(vec2 v)
-        {
-            return new GL3DrawerCLR.vec2(v.x, v.y);
-        }
-
-        /// <summary>gets the distance from the target</summary>
-        public float Length(vec2 Target)
-        {
-            float a = x - Target.x;
-            float b = y - Target.y;
-            return (float)Math.Sqrt(a*a + b*b);
-        }
-
-        public override bool Equals(Object obj)
-        {
-            return obj is vec2 && this == (vec2)obj;
-        }
-        public override int GetHashCode()
-        {
-            return x.GetHashCode() ^ y.GetHashCode();
-        }
-        /// <summary>returns a directional vector from 0,0 with a radius of 1.0</summary>
-        public vec2 Normalize()
-        {
-            float distance = (float)Math.Sqrt(this.x * this.x + this.y * this.y);
-            return new vec2(this.x / distance, this.y / distance);
-        }
-        /// <summary>linear interpolation between vectors</summary>
-        public vec2 lerp(vec2 target, float time)
-        {
-            float retX = x * time + target.x * (1 - time);
-            float retY = y * time + target.y * (1 - time);
-            return new vec2(retX, retY);
-        }
-        //implicit vec2 to PointF
-        public static implicit operator System.Drawing.PointF(vec2 v)
-        {
-            return new System.Drawing.PointF(v.x, v.y);
-        }
-        //implicit PointF to vec2
-        public static implicit operator vec2(System.Drawing.PointF p)
-        {
-            return new vec2(p.X, p.Y);
-        }
-        //implicit vec2 to Point
-        public static implicit operator System.Drawing.Point(vec2 v)
-        {
-            return new System.Drawing.Point((int)v.x, (int)v.y);
-        }
-        //implicit Point to vec2
-        public static implicit operator vec2(System.Drawing.Point p)
-        {
-            return new vec2(p.X, p.Y);
-        }
-        //equals
-        public static bool operator ==(vec2 a, vec2 b)
-        {
-            return a.x == b.x && a.y == b.y;
-        }
-        //does not equal
-        public static bool operator !=(vec2 a, vec2 b)
-        {
-            return !(a == b);
-        }
-        //addition
-        public static vec2 operator +(vec2 a, vec2 b)
-        {
-            return new vec2(a.x + b.x, a.y + b.y);
-        }
-        //subtraction
-        public static vec2 operator -(vec2 a, vec2 b)
-        {
-            return new vec2(a.x - b.x, a.y - b.y);
-        }
-        //multiplication
-        public static vec2 operator *(vec2 a, vec2 b)
-        {
-            return new vec2(a.x * b.x, a.y * b.y);
-        }
-        //division
-        public static vec2 operator /(vec2 a, vec2 b)
-        {
-            return new vec2(a.x / b.x, a.y / b.y);
-        }
-        //float addition
-        public static vec2 operator +(vec2 a, float b)
-        {
-            return new vec2(a.x + b, a.y + b);
-        }
-        //float subtraction
-        public static vec2 operator -(vec2 a, float b)
-        {
-            return new vec2(a.x - b, a.y - b);
-        }
-        //float multiplication
-        public static vec2 operator *(vec2 a, float b)
-        {
-            return new vec2(a.x * b, a.y * b);
-        }
-        //float division
-        public static vec2 operator /(vec2 a, float b)
-        {
-            return new vec2(a.x / b, a.y / b);
-        }
-        public override string ToString()
-        {
-            return x + " " + y;
-        }
-    }
-
-    public struct Color
-    {
-        private int ir, ig, ib, ia;
-        public int R { get { return ir; } set { ir = value.limit(0,255); }  }
-        public int G { get { return ig; } set { ig = value.limit(0, 255); } }
-        public int B { get { return ib; } set { ib = value.limit(0, 255); } }
-        public int A { get { return ia; } set { ia = value.limit(!RainbowMode ? -255 : 0, 255); } } //-1.0 for alpha triggers the rainbow in the backend
-        private static Random rnd = new Random();
-        private bool RainbowMode;
-
-        /// <summary>creates a new color from RGB and Alpha values </summary>
-        public Color(int r, int g, int b, int a = 255) : this()
-        {
-            R = r;
-            G = g;
-            B = b;
-            A = a;
-            RainbowMode = false;
-        }
-        /// <summary> creates a monochrome color </summary>
-        public Color(int rgb = 255, int a = 255) : this()
-        {
-            R = rgb;
-            G = rgb;
-            B = rgb;
-            A = a;
-            RainbowMode = false;
-        }
-
-        public static Color White { get { return new Color(255, 255, 255); } }
-        public static Color Black { get { return new Color(0, 0, 0); } }
-        public static Color Gray { get { return new Color(100, 100, 100); } }
-        public static Color LightGray { get { return new Color(160, 160, 160); } }
-        public static Color DarkGray { get { return new Color(70, 70, 70); } }
-        public static Color Blue { get { return new Color(50, 200, 255); } }
-        public static Color LightBlue { get { return new Color(70, 70, 255); } }
-        public static Color DarkBlue { get { return new Color(0, 0, 160); } }
-        public static Color Red { get { return new Color(255, 0, 0); } }
-        public static Color DarkRed { get { return new Color(150, 0, 0); } }
-        public static Color Yellow { get { return new Color(255, 255, 0); } }
-        public static Color Orange { get { return new Color(255, 130, 0); } }
-        public static Color Purple { get { return new Color(188, 11, 129); } }
-        public static Color Pink { get { return new Color(255, 20, 153); } }
-        public static Color Green { get { return new Color(0, 255, 0); } }
-        public static Color LightGreen { get { return new Color(0, 255, 0); } }
-        public static Color DarkGreen { get { return new Color(0, 130, 0); } }
-        public static Color Invisible { get { return new Color(0, 0, 0, 0); } }
-        public static Color Rainbow
-        {
-            get
-            {
-                Color c = new Color(255, 255, 255);
-                c.RainbowMode = true;
-                return c;
-            }
-        }
-        /// <summary> A random opaque color </summary>
-        public static Color Random { get => new Color(rnd.Next(0, 255), rnd.Next(0, 255), rnd.Next(0, 255)); }
-
-        //just in case you're used to system.drawing
-        public static Color FromArgb(int a, int r, int g, int b)
-        {
-            return new Color(r, g, b, a);
-        }
-        /// <summary>Averages the rgb values together</summary>
-        public void SetMonochrome()
-        {
-            this = new Color((R + G + B)/3, A);
-        }
-        public void Invert()
-        {
-            R = 255 - R;
-            G = 255 - G;
-            B = 255 - B;
-        }
-
-        //implicit color to drawing color
-        public static implicit operator System.Drawing.Color(Color c)
-        {
-            return System.Drawing.Color.FromArgb(c.A, c.R, c.G, c.B);
-        }
-
-        //implicit drawing color to color
-        public static implicit operator Color(System.Drawing.Color c)
-        {
-            return new Color(c.R, c.G, c.B, c.A);
-        }
-
-        //implicit color to Gl3DrawerCLR RGBA convertion which is implcitly converted to glm vec4 internally
-        public static implicit operator GL3DrawerCLR.RGBA (Color c)
-        {
-            return new GL3DrawerCLR.RGBA(c.R / 255f, c.G / 255f, c.B/255f, c.RainbowMode ? -1f : c.A/255f);
-        }
-        public static implicit operator Color(GL3DrawerCLR.RGBA c)
-        {
-            return new Color((int)(c.r * 255), (int)(c.g * 255), (int)(c.b * 255), (int)(c.a * 255));
-        }
-
-        public override bool Equals(Object obj)
-        {
-            return obj is vec2 && this == (Color)obj;
-        }
-
-        public override int GetHashCode()
-        {
-            return R.GetHashCode() ^ G.GetHashCode() ^ B.GetHashCode() ^ A.GetHashCode();
-        }
-
-        public static bool operator ==(Color x, Color y)
-        {
-            return (x.R == y.R && x.G == y.G && x.B == y.B && x.A == y.A && x.RainbowMode == y.RainbowMode);
-        }
-
-        public static bool operator !=(Color x, Color y)
-        {
-            return !(x == y); 
-        }
-        public static Color operator +(Color x, Color y)
-        {
-            return new Color(x.R + y.R, x.G + y.G, x.B + y.B, x.A + y.A);
-        }
-        public static Color operator -(Color x, Color y)
-        {
-            return new Color(x.R - y.R, x.G - y.G, x.B - y.B, x.A - y.A);
-        }
-        public static Color operator *(Color x, Color y)
-        {
-            return new Color(x.R * y.R, x.G * y.G, x.B * y.B, x.A * y.A);
-        }
-        public static Color operator /(Color x, Color y)
-        {
-            return new Color(x.R / y.R, x.G / y.G, x.B / y.B,x.A / y.A);
-        }
-        public static Color operator +(Color x, float y)
-        {
-            int val = (int)y * 255;
-            return new Color(x.R + val, x.G + val, x.B + val, x.A + val);
-        }
-        public static Color operator -(Color x, float y)
-        {
-            int val = (int)y * 255;
-            return new Color(x.R - val, x.G - val, x.B - val, x.A - val);
-        }
-        public static Color operator *(Color x, float y)
-        {
-            int val = (int)y * 255;
-            return new Color(x.R * val, x.G * val, x.B * val, x.A * val);
-        }
-        public static Color operator /(Color x, float y)
-        {
-            int val = (int)y * 255;
-            return new Color(x.R / val, x.G / val, x.B / val, x.A / val);
-        }
-        public static Color operator +(Color x, int y)
-        {
-            int val = y.limit(-255, 255);
-            return new Color(x.R + val, x.G + val, x.B + val);
-        }
-        public static Color operator -(Color x, int y)
-        {
-            int val = y.limit(-255, 255);
-            return new Color(x.R - val, x.G - val, x.B - val);
-        }
-        public static Color operator *(Color x, int y)
-        {
-            int val = y.limit(-255, 255);
-            return new Color(x.R * val, x.G * val, x.B * val);
-        }
-        public static Color operator /(Color x, int y)
-        {
-            int val = y.limit(-255, 255);
-            return new Color(x.R / val, x.G / val, x.B / val);
-        }
-    }
-    //might be confusing
-    public static partial class ExtentionMethods
-    {
-        /// <summary>
-        /// Limits a float between two values
-        /// </summary>
-        public static float limit(this float value, float min, float max)
-        {
-            value = value < min ? min : value;
-            return value > max ? max : value;
-        }
-        /// <summary>
-        /// Limits an int between two values
-        /// </summary>
-        public static int limit(this int value, int min, int max)
-        {
-            value = value < min ? min : value;
-            return value > max ? max : value;
-        }
-    }
+  
     public static class GMath
     {
         /// <summary>

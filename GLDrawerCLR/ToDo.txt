@@ -1,0 +1,12 @@
+-more anti aliasing
+-impliment inverted Y
+-fix text angles
+-more comments and summaries in Input.cs
+-rename shader scale and pos offset to uv offsets
+
+current shapeside codes:
+4 = quad
+2 = line
+1 = circle
+0 = sprite 
+-1 = text

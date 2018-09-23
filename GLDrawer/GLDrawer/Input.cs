@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using GL3DrawerCLR;
+using GLDrawerCLR;
 using System.Windows.Forms;
 
 namespace GLDrawer
@@ -59,7 +59,7 @@ namespace GLDrawer
         bool leftLifted = true, rightLifted = true;
         private void MouseCallback(int btn, int action, int mods)
         {
-            GL3DrawerCLR.vec2 v = gldw.Input.getMousePos();
+            GLDrawerCLR.vec2 v = GLWrapper.Input.getMousePos();
             iMousePosition = new vec2(v.x, v.y);
             if(btn == 3)
             {
@@ -110,7 +110,7 @@ namespace GLDrawer
         }
         private void MouseMoveCallback()
         {
-            GL3DrawerCLR.vec2 v = gldw.Input.getMousePos();
+            GLDrawerCLR.vec2 v = GLWrapper.Input.getMousePos();
             iMousePosition = new vec2(v.x, v.y);
             MouseMove.Invoke(MousePosition, this);
             MouseMoveScaled.Invoke(MousePositionScaled, this);
@@ -131,7 +131,7 @@ namespace GLDrawer
         {
             if (key > 128 || key < 0)
                 throw new ArgumentException("Key out of supported ASCII range (0-127)");
-            return gldw.Input.getKey(char.ToUpper(key));
+            return GLWrapper.Input.getKey(char.ToUpper(key));
         }
         /// <summary>
         /// Returns true if the letter key was was pressed down during the current frame
@@ -141,7 +141,7 @@ namespace GLDrawer
         {
             if (key > 128 || key < 0)
                 throw new ArgumentException("Key out of supported ASCII range (0-127)");
-            return gldw.Input.getKeyDown(char.ToUpper(key));
+            return GLWrapper.Input.getKeyDown(char.ToUpper(key));
         }
         /// <summary>
         /// Returns true if the letter key was was lifted up during the current frame
@@ -151,7 +151,7 @@ namespace GLDrawer
         {
             if (key > 128 || key < 0)
                 throw new ArgumentException("Key out of supported ASCII range (0-127)");
-            return gldw.Input.getKeyUp(char.ToUpper(key));
+            return GLWrapper.Input.getKeyUp(char.ToUpper(key));
         }
         /// <summary>
         /// Returns true if the key is being held down
@@ -159,7 +159,7 @@ namespace GLDrawer
         /// </summary>
         public bool GetSpecialKey(keycode button)
         {
-            return gldw.Input.getKey((int)button);
+            return GLWrapper.Input.getKey((int)button);
         }
         /// <summary>
         /// Returns true if the key was was pressed during tthe current frame
@@ -167,7 +167,7 @@ namespace GLDrawer
         /// </summary>
         public bool GetSpecialKeyDown(keycode button)
         {
-            return gldw.Input.getKeyDown((int)button);
+            return GLWrapper.Input.getKeyDown((int)button);
         }
         /// <summary>
         /// Returns true if the key was lifted during the current frame
@@ -175,7 +175,7 @@ namespace GLDrawer
         /// </summary>
         public bool GetSpecialKeyUp(keycode button)
         {
-            return gldw.Input.getKeyUp((int)button);
+            return GLWrapper.Input.getKeyUp((int)button);
         }
 
         /// <summary>
@@ -186,7 +186,7 @@ namespace GLDrawer
         {
             if(mouseBTN != 0 && mouseBTN != 1)
                 throw new ArgumentException("mouse button must be 1 or 0");
-            return gldw.Input.getMouse(mouseBTN);
+            return GLWrapper.Input.getMouse(mouseBTN);
         }
         /// <summary>
         /// Returns true if the mouse button was was pressed down during the current frame
@@ -196,7 +196,7 @@ namespace GLDrawer
         {
             if (mouseBTN != 0 && mouseBTN != 1)
                 throw new ArgumentException("mouse button must be 1 or 0");
-            return gldw.Input.getMouseDown(mouseBTN);
+            return GLWrapper.Input.getMouseDown(mouseBTN);
         }
         /// <summary>
         /// Returns true if the mouse button was was lifted up during the current frame
@@ -206,7 +206,7 @@ namespace GLDrawer
         {
             if (mouseBTN != 0 && mouseBTN != 1)
                 throw new ArgumentException("mouse button must be 1 or 0");
-            return gldw.Input.getMouseUp(mouseBTN);
+            return GLWrapper.Input.getMouseUp(mouseBTN);
         }
 
         /// <summary>

@@ -3,10 +3,9 @@
    <Costura>
 	    <ExcludeAssemblies>
         Cyotek.Windows.Forms.ColorPicker
-		GLDrawerTests
     </ExcludeAssemblies>
     <Unmanaged32Assemblies>
-		Gl3DrawerCLR
+		GlDrawerCLR
     </Unmanaged32Assemblies>
   </Costura>
 </Weavers>
