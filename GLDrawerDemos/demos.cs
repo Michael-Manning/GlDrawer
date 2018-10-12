@@ -35,17 +35,17 @@ namespace GLDrawerDemos
 
             Shape t = can.AddCenteredText("Epilepsy warning!", 70f);
             Thread.Sleep(2000);
-            can.RemoveShape(t);
+            can.Remove(t);
 
             int delay = 5;
             for (int i = 0; i < 10000; i++)
             {
-                Ellipse A = can.AddCenteredEllipse(200,300, 300, 300, Color.Random);
+                Polygon A = can.AddCenteredEllipse(200,300, 300, 300, Color.Random);
                 Thread.Sleep(delay);
-                can.RemoveShape(A);
-                Ellipse B = can.AddCenteredEllipse(600, 300, 300, 300, Color.Random);
+                can.Remove(A);
+                Polygon B = can.AddCenteredEllipse(600, 300, 300, 300, Color.Random);
                 Thread.Sleep(delay);
-                can.RemoveShape(B);
+                can.Remove(B);
             }
         }
 
@@ -62,13 +62,13 @@ namespace GLDrawerDemos
             {
                 can.Add(s);
                 Thread.Sleep(delay);
-                can.RemoveShape(s);
+                can.Remove(s);
                 Thread.Sleep(delay);
             }
         }
 
-        private static Ellipse[] Xe = new Ellipse[26];
-        private static Ellipse[] Ye = new Ellipse[20];
+        private static Polygon[] Xe = new Polygon[26];
+        private static Polygon[] Ye = new Polygon[20];
         public static void backBufferShapes()
         {
             can = new GLCanvas(1300, 900, TitleDetails: true, VSync: false);
@@ -81,9 +81,9 @@ namespace GLDrawerDemos
             }
 
             for (int i = 0; i < Ye.Length; i++)
-                Ye[i] = new Ellipse(new vec2(-50, 50 * i), new vec2(51), Color.Rainbow);
+                Ye[i] = new Polygon(new vec2(-50, 50 * i), new vec2(51), 0, 1,Color.Rainbow);
             for (int i = 0; i < Xe.Length; i++)
-                Xe[i] = new Ellipse(new vec2(50 * i, 0), new vec2(51), Color.Rainbow);
+                Xe[i] = new Polygon(new vec2(50 * i, 0), new vec2(51), 0, 1, Color.Rainbow);
             can.Update += Can_Update;
         }
 

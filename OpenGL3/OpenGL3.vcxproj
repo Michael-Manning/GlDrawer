@@ -158,7 +158,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Input.h" />
     <ClInclude Include="engine.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="shaders.h" />
@@ -168,7 +167,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="gl3w.c" />
-    <ClCompile Include="Input.cpp" />
     <ClCompile Include="engine.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="stdafx.cpp">

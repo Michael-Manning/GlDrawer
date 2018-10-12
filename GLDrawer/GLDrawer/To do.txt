@@ -2,14 +2,16 @@
 Things left to work on for version 1.0:
 
 -increase font resolution
--complete standard caanvas function per gdidrawer
--finish polygons
 -fix border bleeding in shader
 -add outer anti ailiasing with rectangles
--add color tinting for sprites
--update docs
+-add file type validation for sprites and fonts
+fix text again
+mouseposwordspace isnt worldspace
 
 things to test:
 
--extra line constructor
 -unconventional line transformations
+
+Extra stuff
+
+-per particle rotation

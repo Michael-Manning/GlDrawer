@@ -1,2 +1,86 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<ClassDiagram /> 
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="GLCanvas">
+    <Position X="2.5" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>QHYIAinF0sJAB8TjHrC6ZQIiEWKAi5FpFkDGmwg0Fac=</HashCode>
+      <FileName>engine.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="InputManager">
+    <Position X="4.75" Y="11.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>BAAAAAAAIQAAAAAAVABAQIAABAAAQAAMAAAAKEAAAAA=</HashCode>
+      <FileName>Input.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="GO">
+    <Position X="11.5" Y="0.75" Width="1.5" />
+    <Members>
+      <Method Name="GO" Hidden="true" />
+    </Members>
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAEAAAAABAgAAAIAAAAAAAAAAgAJAAAABAAAA=</HashCode>
+      <FileName>engine.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ParticleSystem">
+    <Position X="13.5" Y="0.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>BDAQAAwDCAAQCAAgBSCiASIAAAAAAwEsAJLBEgBgQAA=</HashCode>
+      <FileName>engine.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Struct Name="shape">
+    <Position X="6.25" Y="0.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAABIIAAAAAAAICAIACgAAAAACIAAQCAABABAQ=</HashCode>
+      <FileName>engine.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="fontDat">
+    <Position X="5.25" Y="7.75" Width="1.5" />
+    <Compartments>
+      <Compartment Name="Methods" Collapsed="true" />
+    </Compartments>
+    <TypeIdentifier>
+      <HashCode>AAIAAAAABAIQABAAABAAAAIgAAACAEAAAAABAAAAAgE=</HashCode>
+      <FileName>engine.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="extraData">
+    <Position X="6.25" Y="5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAEAAAAAAgAABAAAAAAAAAAAAAAAAABCABAgA=</HashCode>
+      <FileName>engine.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="imgDat">
+    <Position X="7.25" Y="7.75" Width="1.5" />
+    <Compartments>
+      <Compartment Name="Methods" Collapsed="true" />
+    </Compartments>
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAgAAAAAAAAAAAAAAAAGAAAAAAAAAAAAA=</HashCode>
+      <FileName>engine.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="description">
+    <Position X="6.5" Y="11.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAABAAAAAAAAAAAACAAAQAAAAAAAAAAEAAAAAAAAAA=</HashCode>
+      <FileName>Input.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="Particle">
+    <Position X="15.25" Y="0.75" Width="1.5" />
+    <Members>
+      <Method Name="Particle" Hidden="true" />
+    </Members>
+    <TypeIdentifier>
+      <HashCode>AAEAAAAAAAAACAAAAKAAAIAAAAAAAAAoAQABAAAAAAA=</HashCode>
+      <FileName>engine.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

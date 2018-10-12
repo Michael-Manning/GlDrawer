@@ -47,7 +47,12 @@ mat4 rot = mat4( c,  -s,  0.0, 0.0,
 
 void main()
 {
-   vec4 ndcPos = trans() *  vec4(aPos.x / aspect, aPos.y, aPos.z, 1.0);
-        frag_uv = aPos.xy *0.5 + 0.5; //*scaleOffset + posOffset;
+    vec4 ndcPos;
+    if(xform[0][0] == 0)
+        ndcPos = trans() * vec4(aPos.x / aspect, aPos.y, aPos.z, 1.0);    
+    else
+        ndcPos = (xform * vec4(aPos.x / aspect, aPos.y, aPos.z, 1.0));
+
+    frag_uv = aPos.xy *0.5 + 0.5; 
    gl_Position = ndcPos;
 }

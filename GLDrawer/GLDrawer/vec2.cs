@@ -7,7 +7,9 @@ using GLDrawerCLR;
 
 namespace GLDrawer
 {
+#pragma warning disable IDE1006 // Naming Styles
     public struct vec2
+#pragma warning restore IDE1006 // Naming Styles
     {
         public float x, y;
 
@@ -29,10 +31,10 @@ namespace GLDrawer
         public vec2 Abs { get { return new vec2(Math.Abs(x), Math.Abs(y)); } }
 
         //implicit vec2 to Gl3DrawerCLR vec2 convertion which is implcitly converted to glm vec2 internally
-        public static implicit operator GLDrawerCLR.vec2(vec2 v)
-        {
-            return new GLDrawerCLR.vec2(v.x, v.y);
-        }
+        //public static implicit operator GLDrawerCLR.vec2(vec2 v)
+        //{
+        //    return new GLDrawerCLR.vec2(v.x, v.y);
+        //}
 
         /// <summary>gets the distance from the target</summary>
         public float Length(vec2 Target)
@@ -57,7 +59,8 @@ namespace GLDrawer
             return new vec2(this.x / distance, this.y / distance);
         }
         /// <summary>linear interpolation between vectors</summary>
-        public vec2 lerp(vec2 target, float time)
+        public vec2 
+            Lerp(vec2 target, float time)
         {
             float retX = x * time + target.x * (1 - time);
             float retY = y * time + target.y * (1 - time);

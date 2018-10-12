@@ -3,7 +3,6 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include "Input.h"
 #include <vector>
 
 using namespace std;
@@ -11,7 +10,7 @@ using namespace glm;
 
 #define TEXTFILE 256;
 
-struct fontDat {
+struct fontAsset {
 	unsigned char bitmapBuffer[512 * 512];
 	vec2 uvOffset[95]; //location of the letter within the generated bitmap
 	vec2 uvScale[95]; //size ofthe letter within the bitmap
@@ -20,58 +19,65 @@ struct fontDat {
 	float tallestLetter = 0; //tallest letter in pixels
 	float alignmentOffset = 0; //pixels in which the tallest letter sets below the alignemt. Required for precise global positioning
 	float spaceOff;
-	int justification;
 	GLuint id;
+	bool init;
 	const char * filePath;
-	fontDat(const char * filepath);
+
+	fontAsset(const char * filepath);
+	fontAsset() { init = false; }
 	void loadTexture();
+	void dipose();
 };
 
-//while images are small, the same image should be prevented from be loaded multiple times into the same context
-struct imgDat {
+//while images are small, the same image should be prevented from be loaded multiple times into the same OpnGL context
+struct imgAsset {
 	const char * filePath;
 	GLuint ID;
-	imgDat(const char * filepath);
+	bool init;
+
+	imgAsset(const char * filepath);
+	imgAsset() { init = false; }
 };
 
-struct extraData {
-	int id; 	//sprite texture only
-	int fd; //font data
-
-	extraData() {
-		id = -1;
-		fd = -1;
-	}
-};
-
-//anything that can be drawn is a shape
-struct shape {
-public:
-	vec2 pos;
-	vec2 scale;
-	float angle;
-
-	vec4 color;
-	vec4 borderColor;
-	
-	float borderW;
-	float rotSpeed;
-	int sides, justification;
-	bool hidden;
-
-	//to be offloaded:
-	const char* path;
+class GO;
+struct textData {
 	string text;
-	int textLength;
-	shape * bound = NULL;
+	const char * filepath;
+	vec4 color;
+	float height;
+	int justification;
+	bool boundMode;
 
-	shape(vec2 Pos, vec2 Scale, float Angle, vec4 Color, vec4 BorderCol = vec4(), float bordW = 0, float RotationSpeed = 0, int Sides = 4);
-	//As a texture
-	shape(const char* filePath, vec2 Pos, vec2 Scale, float Angle, vec4 Color, vec4 BorderCol = vec4(), float bordW = 0, float RotationSpeed = 0);
-	//As a font
-	shape(const char* filePath, string text, int textLength, vec2 Pos, float Scale, int Tjustification = 0, shape * bound = NULL, float Angle = 0, vec4 Color = vec4(), vec4 BorderCol = vec4(), float bordW = 0, float RotationSpeed = 0);
+	int TextLength = 0;
+	float * letterTransData;
+	float * letterUVData;
+	int hashIndex = -1; //privately accessd
+
+	textData(string Text, float textHeight, vec4 Color, int Justification, const char * path, bool bound = false );
+	textData() {};
+	int getHashIndex();
+	void dispose();
+};
+
+struct imgData {
+	const char * filepath;
+	int hashIndex = -1; //privately accessd
+	vec4 tint;
+
+	//will include settings for stretch to fit, tilling .ect
+	imgData(const char* path, vec4 tint = vec4(0));
+	imgData() { tint = vec4(0); }
+	int getHashIndex();
+};
+
+struct polyData {
+	vec4 fColor;
+	vec4 bColor;
 	
-	shape();
+	float bWidth;
+	int sides;
+
+	polyData(vec4 fCol = vec4(1), vec4 bCol = vec4(0), float BWidth = 0, int Sides = 4);
 };
 
 
@@ -97,55 +103,129 @@ struct Particle {
 
 float RandomFloat(float a, float b);
 
+//everything needs a default with C++/CLI
 class ParticleSystem {
 public:
-	int count;
-	int MaxParticles;
+	//data
 	Particle * container;
-	vec2 spawnLocation;
 	float * positionSizeData;
 	unsigned char * colorData;
-	float startSize, endSize, lifeLength, lifePrecision;
-	bool burstMode, continuous;
+	float UVScale = 0;
+	float * UVData; //per particle UVs
+	vec2 * UVS; //UVs of the sprite sheet
+	int count = 0;
+
+	//settings
+	int MaxParticles = 0;
+	vec2 spawnLocation;	
+	float startSize = 0, endSize = 0, lifeLength = 0, lifePrecision = 0;
+	bool burstMode = false, continuous = true;
 	vec4 startCol, endCol;
-	float spread, angle, speed, speedPrecision;
-	int spawnRate; //#new particles per frame in continuous
-	float internalDelta; //smooths out spawn rates, especially at high framerates
+	float spread = 0, angle = 0, speed = 0, speedPrecision = 0;
+	int spawnRate = 0; //#new particles per frame in continuous
+	float internalDelta = 0; //smooths out spawn rates, especially at high framerates
 	vec2 gravity;
 	vec2 extraStartVelocity;
+	float radius = 0;
+	bool relitivePosition = true;
+	bool drawBehindShape = true;
+
 	ParticleSystem(int maxCount, float LifeLength);
 	ParticleSystem() {};
-	void updateParticles(float delta);
-	void dispose() {
+	const char * filepath; //used by parent GO imgdata
+	void setTexture(const char * Texture);
+	void setAnimation(const char * Texture, int resolution, int tilesPerLine);
+	void updateParticles(float delta, float extraAngle); //angle to match gameobject
+	bool disposed = true;
+	void dispose(){
+		if (disposed)
+			return;
+		disposed = true;
 		delete container;
 		delete positionSizeData;
 		delete colorData;
+		delete UVData;
+		if(textureMode)
+			delete UVS;
 	}
+
+	imgData img;
+	bool textureMode = false;
+	bool tileMode = false;
+	bool dead = false;
+	int tileCount;
+	int resolution;
+	bool burstTrigger = true;
 };
 
 //GameObject
 class GO {
 public:
-	shape * s;
-	extraData edata; //Gameobjects cannot have references to more than one canvas anyways
-	vec2 position;
-	float angle;
+	GO * parent;
+	polyData * p;
+	imgData * i;
+	textData * t;
 	ParticleSystem * ps;
-	GO(shape * S, vec2 pos = vec2(0), float Angle = 0) {
-		s = S;
-		position = pos;
-		angle = Angle;
-		ps = NULL;
-	}
+
+	vec2 position;
+	vec2 scale;
+	float angle;
+	float rSpeed = 0;
+	int drawIndex = 0;
+	bool hidden = false;
+
+	GO(vec2 pos = vec2(0), vec2 Scale = vec2(0), float Angle = 0, float rotationSpeed = 0);
+	GO(polyData * poly, vec2 pos = vec2(0), vec2 Scale = vec2(0), float Angle = 0, float rotationSpeed = 0);
+	GO(imgData * img, vec2 pos = vec2(0), vec2 Scale = vec2(0), float Angle = 0, float rotationSpeed = 0);
+	GO(textData * text, vec2 pos = vec2(0), vec2 Scale = vec2(0), float Angle = 0, float rotationSpeed = 0);
+	GO(ParticleSystem * part, vec2 pos = vec2(0), vec2 Scale = vec2(0), float Angle = 0, float rotationSpeed = 0);
 };
 
+
+extern vector<const char *> fontHashLookup;
+extern vector<const char *> imgHashLookup;
+
+//for input rollover and events
+struct description {
+	int btn, action, read;
+	bool operator==(const description& b) {
+		return (action == b.action && btn == b.btn);
+	}
+};
 
 class GLCanvas {
 public :
 	GLFWwindow * window;
-	InputManager * Input;
+
+	//input manager stuff
+	void onKeyboard(int key, int scancode, int action, int mods);
+	void onMouse(int button, int action, int mods);
+	void onCursor();
+	description keyBuffer[10];
+	description mouseBuffer[10];
+
+	bool mouseMoveFlag = false;
+
+	int keyStates[348];
+	int LeftMouseState, RightMouseState;
+	void clearStates();
+
+	bool getKey(char key);
+	bool getKeyDown(char key);
+	bool getKeyUp(char key);
+
+	bool getKey(int key);
+	bool getKeyDown(int key);
+	bool getKeyUp(int key);
+
+	vec2 getMousePos();
+	bool getMouse(int button);
+	bool getMouseDown(int button);
+	bool getMouseUp(int button);
+
 
 	//backend only
+	const int expectedTextLength = 200; //number of letters to preallocated VRAM (can handle larger at runtime)
 	void setVisible(bool visible);
 	bool usePackedShaders = false;
 	float aspect; //canvas aspect ratio
@@ -156,8 +236,8 @@ public :
 	float prevTime;
 	float currentFPS;
 	float LastRenderTime;
-	shape infoShape; //used as a font to display debug info on the canvas
-	extraData infoData; //font data for the info shape must be kept sepreate to prevent vector errors
+	textData infoText;//used to display debug info on the canvas
+	GO infoGO; //used to display debug info on the canvas
 	float debugTimer = 0; //used to time frequency of debug information updates
 	float debugUpdateFreq = 0.2; //how many seconds to wait between info updates
 	std::string debugString;
@@ -169,7 +249,7 @@ public :
 	const char * title = "Running from Native C++    ";
 	bool titleDetails = true; //toggle for fps, render time, and shape count
 	bool closeFlag = false; //for indicating that a clean up happened, and to indicate one should happen
-	bool Cleaned = false; //to prevent multiple cleanups
+	bool disposed = false; //to prevent multiple cleanups
 	bool clearColorFlag = true; //resets the back buffer in the next from if true
 	bool debugMode = false;
 	void setWindowSize(int w, int h);
@@ -177,58 +257,54 @@ public :
 	int resolutionHeight;
 	bool clearShapeFlag = false;
 	bool windowTitleFlag = true; //setting the title takes insanely long, so it should only be updated if there's a change
+	bool centerOffset = false;// 0,0 is bottom left of the string
 	vec2 camera;
 	int ParticleLimit = 10000; //max particles per system. Required for memory allocation
 	vec4 backCol;
 
 	//backend only
 	int loadShader(const char * vertexFilename, const char * fragmentFilename); //part of the canvas class to link the packed shaders boolean
-	void drawFont(shape * r, extraData * fontData);
-	void drawTexture(shape * r, extraData * fontData);
-	void drawParticleSystem(GO * g, float deltaTime);
+	void setFont(GO * g);
+	void setTexture(GO *, GLuint textureLocation);
+	void setPolygon(GO * g); 
+	void loadImageAsset(const char * filepath); //like setTexture, but only loads the image to memory for later use
+	void drawParticleSystem(GO * g, float deltaTime, mat4 *global = NULL);
 	void clearSetPixelData();
-	void setPolygonUniforms(shape * r); //saves lots of copy pasting
-	void setGOUniforms(GO * s); 
-	GLCanvas() {};
+	void setGOTransform(GO * s, GLuint aspect, GLuint scale, GLuint pos, GLuint rot);
+	void LocalTransformHelper(GO * child, mat4 * m);
+	mat4 makeLocalTransform(GO * child);
+	void drawGameobjectShape(GO * g); //automatically applies localized transformations
+	GLCanvas();
 
 	//used by back/middle end
 	void setPos(int x, int y);
-	int createCanvas(int width, int height, bool borderd, vec3 backCol, bool Vsync);
-	void addShape(shape * r);
+	int createCanvas(int width, int height, bool borderd, vec3 backCol, bool Vsync, bool cursorHidden = false);
 	void addGO(GO* g);
 	void setBBPixel(int x, int y, vec4 col);
-	void setBBShape(shape r); //currently only accepting ellipses and shapeangles
-	void removeNullShapes();
-	void swapOrder(int indexA, int indexB);
-	int getDrawIndex(shape * r);
-	void cleanup();
-	void removeShape(shape * r);
+	void setBBShape(GO g); 
+	void dispose();
 	vec3 getPixel(int x, int y);
 	void updateDebugInfo();
 	HWND getNativeHWND();
 	void focus();
 	void mainloop(bool render = true); //steps the program forward (and maybe renders the scene)
-	
-	vector<shape*> shapeBuffer;
-	vector<extraData> eDataBuffer;
-	vector<shape*> removalBuffer;
-	vector<shape*> shapes;
+
 
 	vector<GO*> GameObjects;
 	vector<GO*> GOBuffer;
 	vector<GO*> GORemoveBuffer;
+	vector<GO> BBQue;
 
-	vector<shape> BBQue;
-	vector<extraData> BBEdataQue;
-	vector<extraData> eData;
-	vector<fontDat> fonts;
-	vector<imgDat> imgs;
+	vector<const char *> assetBuffer;
+	vector<fontAsset> fonts;
+	vector<imgAsset> imgs;
 	unsigned char* setPixelData;
 	GLuint setPixelDataID;
 
-	int PolygonShaderProgram, fboShaderProgram, fontShaderProgram, ParticleShaderProgram;
+	int PolygonShaderProgram, textureShaderProgram, fontShaderProgram, ParticleShaderProgram;
 	GLuint VBO, VAO, EBO;
-	GLuint PPosVBO, PColVBO, PVertVBO; //for particle systems
+	GLuint PPosVBO, PColVBO, PVertVBO, PuvVBO; //for particle systems
+	GLuint FTranVBO, FuvVBO; //for text
 	GLuint texture;
 	GLuint fboIdA;
 	GLuint fboTextIdA;
@@ -237,12 +313,12 @@ public :
 
 	//polygon shader uniforms
 	GLuint PxformUniformLocation;
-	GLuint PshapeScaleUniformLocation;
 	GLuint PColorUniformLocation;
 	GLuint PbordColorUniformLocation;
 	GLuint PsideCountUniformLocation;
+	GLuint PshapeScaleUniformLocation;
 	GLuint PborderWidthUniformLocation;
-	GLuint PtextureUniformLocation;
+	//GLuint PtextureUniformLocation;
 	GLuint PtimeUniformLocation;
 
 	GLuint PmPosUniformLocation;
@@ -252,9 +328,11 @@ public :
 	GLuint PUVposUniformLocation;
 	GLuint PaspectUniformLocation;
 
-	//fbo shader uniforms
+	//texture shader uniforms
 	GLuint FtextureUniformLocation;
+	GLuint FColorUniformLocation; //tinting
 
+	GLuint FxformUniformLocation;
 	GLuint FmPosUniformLocation;
 	GLuint FmScaleUniformLocation;
 	GLuint FmRotUniformLocation;
@@ -273,8 +351,12 @@ public :
 	GLuint FontUVscaleUniformLocation;
 	GLuint FontUVposUniformLocation;
 	GLuint FontaspectUniformLocation;
+	GLuint FontxformUniformLocation;
 
 	//particle shader uniforms
 	GLuint ParticlePosUniformLocation;
 	GLuint ParticleResUniformLocation; //particle systems themselves don't have accsess to the canvas resolution
+	GLuint ParticleTextureUniformLocation;
+	GLuint ParticleUVScaleUniformLocation;
+	GLuint ParticlexformUniformLocation;
 };

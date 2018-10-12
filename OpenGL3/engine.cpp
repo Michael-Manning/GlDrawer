@@ -20,22 +20,20 @@
 #define STB_TRUETYPE_IMPLEMENTATION 
 #include <stb/stb_truetype.h>
 
-
 #include <iostream>
 #include <iomanip>
 #include <string>
 #include <fstream>
 #include <sstream>
 #include <vector>
-#include "Input.h"
+//#include "Input.h"
 #include "engine.h"
 #include "shaders.h"
 
 using namespace std;
 using namespace glm;
 
-
-vector<shape> shapeSource;
+////////Usefull macros
 
 template <typename F> struct _scope_exit_t {
 	_scope_exit_t(F f) : f(f) {}
@@ -50,6 +48,7 @@ template <typename F> _scope_exit_t<F> _make_scope_exit_t(F f) {
 #define defer(code) \
 	auto _concat(scope_exit_, __COUNTER__) = _make_scope_exit_t([=](){ code; })
 
+//replaces glfunction() with gl(function()) and prints errors automatically
 #ifdef NDEBUG
 #define gl(OPENGL_CALL) \
 	gl##OPENGL_CALL
@@ -65,10 +64,22 @@ template <typename F> _scope_exit_t<F> _make_scope_exit_t(F f) {
 		} \
 	}
 #endif
+#define polyTransUniforms PaspectUniformLocation, PmScaleUniformLocation, PmPosUniformLocation, PmRotUniformLocation
+#define textTransUniforms FaspectUniformLocation, FmScaleUniformLocation, FmPosUniformLocation, FmRotUniformLocation
+#define fontTransUniforms FontaspectUniformLocation, FontmScaleUniformLocation, FontmPosUniformLocation, FontmRotUniformLocation
+#define FBOUniforms() 		gl(Uniform2f(FmScaleUniformLocation, 1.0, 1.0f));\
+							gl(Uniform2f(FmPosUniformLocation, 0, 0));\
+							gl(Uniform1f(FmRotUniformLocation, 0.0f));\
+							gl(Uniform2f(FUVscaleUniformLocation, 0.5f, 0.5f));\
+							gl(Uniform2f(FUVposUniformLocation, 0.5f, 0.5f));\
+							gl(Uniform1f(FaspectUniformLocation, aspect));\
+						    gl(Uniform4f(FColorUniformLocation, 0, 0,0,0));\
 
 #define asizei(a) (int)(sizeof(a)/sizeof(a[0]))
 
-#pragma region shapes
+//defined in header
+vector<const char *> fontHashLookup;
+vector<const char *> imgHashLookup;
 
 const unsigned int shapeIndices[] = {  // note that we start from 0!
 	0, 3, 1,  // first Triangle
@@ -88,41 +99,67 @@ const GLfloat particleVertices[] = {
  1.0f, -1.0f, 0.0f,
  -1.0f, 1.0f, 0.0f,
  1.0f, 1.0f, 0.0f,
-};
+}; 
 ParticleSystem::ParticleSystem(int maxCount, float LifeLength) {
 	container = new Particle[maxCount];
 	positionSizeData = new float[maxCount * 3]();
 	colorData = new unsigned char[maxCount * 4]();
+	UVData = new float[maxCount * 2]();
 	MaxParticles = maxCount;
 	lifeLength = LifeLength;
 	spawnRate = MaxParticles / lifeLength;
+	spawnLocation = vec2();
+	gravity = vec2();
+	extraStartVelocity = vec2();
+	startCol = vec4();
+	endCol = vec4();
+	spawnLocation = vec2();
+	disposed = false;
 }
-void ParticleSystem::updateParticles(float delta) {
-	int newParticles = spawnRate * internalDelta;
-	if (newParticles == 0) {
-		internalDelta += delta;
+void ParticleSystem::updateParticles(float delta, float extraAngle) {
+	int newParticles = 0;
+	if (burstMode) {
+		if (burstTrigger) {
+			newParticles = MaxParticles;
+			burstTrigger = false;
+		}
 	}
-	else
-		internalDelta = delta;
+	else {
+		newParticles= spawnRate * internalDelta;
+		if (newParticles == 0 && count != MaxParticles) {
+			internalDelta += delta;
+		}
+		else
+			internalDelta = 0;
+	}
 
-	if (newParticles + count > MaxParticles)
-		newParticles = MaxParticles - count;
+	//if (count == MaxParticles)
+		//internalDelta = 0;
 
-	for (int i = 0; i < newParticles + count; i++)
-	{
-		if (container[i].life == 0 || (i >= count && i < newParticles + count)) {
-			float newangle = angle + RandomFloat(-spread / 2, spread / 2);
-			float newspeed = speed + RandomFloat(-speedPrecision / 2, speedPrecision / 2);
-			float newLife = lifeLength + RandomFloat(-lifePrecision / 2, lifePrecision / 2);
-			container[i] = Particle(spawnLocation, cos(newangle) * newspeed + extraStartVelocity.x, sin(newangle) * newspeed + extraStartVelocity.y, newLife, startSize, startCol);
+	if (!burstMode || newParticles > 0) {
+		if (newParticles + count > MaxParticles)
+			newParticles = MaxParticles - count;
+
+		for (int i = 0; i < newParticles + count; i++)
+		{
+			if ((continuous && container[i].life == 0) || (i >= count && i < newParticles + count)) {
+				float newangle = angle + RandomFloat(-spread / 2, spread / 2) + extraAngle;
+				float newspeed = speed + RandomFloat(-speedPrecision / 2, speedPrecision / 2);
+				float newLife = lifeLength - RandomFloat(0, lifePrecision);
+				vec2 newPos = spawnLocation + vec2(RandomFloat(-radius / 2, radius / 2), RandomFloat(-radius / 2, radius / 2));
+				container[i] = Particle(newPos, cos(newangle) * newspeed + extraStartVelocity.x, sin(newangle) * newspeed + extraStartVelocity.y, newLife, startSize, startCol);
+			}
 		}
 	}
 
+
 	count += newParticles;
 
+	bool notDead = !(count > 0);
 	for (int i = 0; i < count; i++) {
-
 		Particle * p = container + i; // shortcut
+		if (p->life > 0)
+			notDead = true;
 
 		p->life -= delta;
 		if (p->life < 0)
@@ -137,7 +174,6 @@ void ParticleSystem::updateParticles(float delta) {
 		p->b = (startCol.b * progess + endCol.b * (1.0f - progess)) * 250;
 		p->a = (startCol.a * progess + endCol.a * (1.0f - progess)) * 250;
 
-		// Fill the GPU buffer
 		positionSizeData[3 * i + 0] = p->pos.x;
 		positionSizeData[3 * i + 1] = p->pos.y;
 		positionSizeData[3 * i + 2] = p->size;
@@ -146,18 +182,49 @@ void ParticleSystem::updateParticles(float delta) {
 		colorData[4 * i + 1] = p->g;
 		colorData[4 * i + 2] = p->b;
 		colorData[4 * i + 3] = p->a;
+
+		if (tileMode) {
+			UVData[i * 2] = UVS[(int)(tileCount * progess)].x;
+			UVData[i * 2 + 1] = UVS[(int)(tileCount * progess)].y;
+		}
+		else if (textureMode) {
+			UVData[i * 2] = 0.5f;
+			UVData[i * 2 + 1] = 0.5f;
+		}
+
 	}
 
+	if (!notDead) {
+		if (!continuous) {
+			dead = true;
+			dispose();
+		}
+		else if (burstMode)
+			burstTrigger = true;
+	}
 }
-//int ParticlesCount;
-//const int MaxParticles = 5000;
-//Particle ParticlesContainer[MaxParticles];
-//float  g_particule_position_size_data[MaxParticles];
-//unsigned char g_particule_color_data[MaxParticles];
-//int LastUsedParticle = 0;
 
-// Finds a Particle in ParticlesContainer which isn't used yet.
-// (i.e. life < 0);
+void ParticleSystem::setTexture(const char * Texture) {
+	filepath = Texture;
+	textureMode = true;
+	UVScale = 1.0;
+}
+void ParticleSystem::setAnimation(const char * Texture, int WH, int TPL) {
+	filepath = Texture;
+	tileMode = true;
+	textureMode = true;
+	UVScale = WH / TPL;
+	tileCount = TPL * TPL;
+	UVS = new vec2[tileCount];
+	resolution = WH;
+	for (int i = 0; i < tileCount; i++)
+	{
+		float x = i % TPL * UVScale + (UVScale / 2);
+		float y = i / TPL * UVScale + (UVScale / 2);
+		UVS[i] = vec2(x/ WH, y/ WH);
+
+	}
+}
 
 float RandomFloat(float a, float b) {
 	float random = ((float)rand()) / (float)RAND_MAX;
@@ -167,23 +234,9 @@ float RandomFloat(float a, float b) {
 }
 
 
-void GLCanvas::addShape(shape * r) {
-	while (shapeCopyFlag) {}
-	shapeBuffer.push_back(r);
-	eDataBuffer.push_back(extraData());
-}
 void GLCanvas::addGO(GO * g) {
 	GOBuffer.push_back(g);
 }
-
-//float RandFloat() {
-//	return static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
-//}
-//vec4 RandColor() {
-//	return vec4(RandFloat(), RandFloat(), RandFloat(), 1.0f);
-//}
-
-#pragma endregion
 
 const char * defaultFilepath = "../data/"; //use if the shader folder is outside of the bin dishapeory
 
@@ -262,49 +315,25 @@ int GLCanvas::loadShader(const char * vertexFilename, const char * fragmentFilen
 	return shaderProgram;
 }
 
-void GLCanvas::cleanup() {
-	if (Cleaned)
+void GLCanvas::dispose() {
+	if (disposed)
 		return;
-
+	//delete set pixel buffer
 	delete setPixelData;
-	shapes.clear();
-	eData.clear();
-	fonts.clear();
+	//delete font asset heap data
+	for (int i = 0; i < fonts.size(); i++)
+		fonts[i].dipose();
+	//delte text heap data
+	for (int i = 0; i < GameObjects.size(); i++)
+		if (GameObjects[i]->t)
+			GameObjects[i]->t->dispose();
 	glfwTerminate();
-	Cleaned = true;
+	disposed = true;
 }
 void GLCanvas::setWindowSize(int w, int h) {
 	glfwSetWindowSize(window, w, h);
 }
 
-void GLCanvas::swapOrder(int a, int b) {
-	{
-		shape* temp = shapes[a];
-		shapes[a] = shapes[b];
-		shapes[b] = temp;
-	}
-	{
-		extraData temp = eData[a];
-		eData[a] = eData[b];
-		eData[b] = temp;
-	}
-
-}
-int GLCanvas::getDrawIndex(shape * r) {
-	for (int i = 0; i < shapes.size(); i++)
-		if (shapes[i] == r)
-			return i;
-	return -1;
-}
-void GLCanvas::removeNullShapes() {
-	for (int i = 0; i < shapes.size(); i++)
-	{
-		if (shapes[i]->color.r < 0 || shapes[i]->color.r > 1) {
-			shapes.erase(shapes.begin() + i);
-			eData.erase(eData.begin() + i);
-		}
-	}
-}
 void GLCanvas::setPos(int x, int y) 
 {
 	glfwSetWindowPos(window, x, y);
@@ -319,80 +348,124 @@ void GLCanvas::focus() {
 	if(window)
 		glfwFocusWindow(window);
 }
-void GLCanvas::removeShape(shape * r) {
-	removalBuffer.push_back(r);
-}
+
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-	static_cast<GLCanvas*>(glfwGetWindowUserPointer(window))->Input->onKeyboard(key, scancode, action, mods);
+	static_cast<GLCanvas*>(glfwGetWindowUserPointer(window))->onKeyboard(key, scancode, action, mods);
 }
 void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
-	static_cast<GLCanvas*>(glfwGetWindowUserPointer(window))->Input->onMouse(button, action, mods);
+	static_cast<GLCanvas*>(glfwGetWindowUserPointer(window))->onMouse(button, action, mods);
 }
 void mouseMoveCallback(GLFWwindow* window, double x, double y) {
-	static_cast<GLCanvas*>(glfwGetWindowUserPointer(window))->Input->onCursor();
+	static_cast<GLCanvas*>(glfwGetWindowUserPointer(window))->onCursor();
 }
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
-	static_cast<GLCanvas*>(glfwGetWindowUserPointer(window))->Input->onMouse(3, (int)yoffset, 0);
+	static_cast<GLCanvas*>(glfwGetWindowUserPointer(window))->onMouse(3, (int)yoffset, 0);
 }
 //unexpected resize + set pixel = death
 void window_size_callback(GLFWwindow* window, int width, int height) {
 	GLCanvas * base = static_cast<GLCanvas*>(glfwGetWindowUserPointer(window));
 	base->windowSizeChanged = true;
 }
-shape::shape() {
-	pos = vec2();
-	scale = vec2(100);
-	angle = 0;
-	color = vec4();
-	borderColor = vec4();
-	borderW = 0;
-	rotSpeed = 0;
-	sides = 4;
-	hidden = false;
-}
-//as polygon
-shape::shape(vec2 Pos, vec2 Scale, float Angle, vec4 Color, vec4 BorderCol, float bordW, float RotationSpeed, int Sides) {
-	pos = Pos;
-	scale = Scale;
-	angle = Angle;
-	color = Color;
-	borderColor = BorderCol;
-	borderW = bordW;
-	rotSpeed = RotationSpeed;
+
+
+polyData::polyData(vec4 fCol, vec4 bCol, float BWidth, int Sides)
+{
+	fColor = fCol;
+	bColor = bCol;
+	bWidth = BWidth;
 	sides = Sides;
-	hidden = false;
 }
-//as sprite
-shape::shape(const char* filePath, vec2 Pos, vec2 Scale, float Angle, vec4 Color, vec4 BorderCol, float bordW, float RotationSpeed) {
-	pos = Pos;
+imgData::imgData(const char * path, vec4 tintCol)
+{
+	filepath = path;
+	tint = tintCol;
+}
+int imgData::getHashIndex() {
+	if (hashIndex == -1) {
+		if (imgHashLookup.size() == 0) {
+			hashIndex = 0;
+			imgHashLookup.push_back(filepath);
+			return 0;
+		}
+		else {
+			for (int i = 0; i < imgHashLookup.size(); i++) {
+				if (strcmp(imgHashLookup[i], filepath) == 0) {
+					hashIndex = i;
+					return i;
+				}
+			}
+			imgHashLookup.push_back(filepath);
+			return imgHashLookup.size() - 1;
+		}
+	}
+	else
+		return hashIndex;
+}
+textData::textData(string Text, float textHeight, vec4 Color, int Justification, const char * path, bool bound)
+{
+	text = Text;
+	filepath = path;
+	height = textHeight;
+	color = Color;
+	boundMode = bound;
+	justification = Justification;
+}
+void textData::dispose()
+{
+	delete letterTransData;
+	delete letterUVData;
+}
+int textData::getHashIndex() {
+	if (hashIndex == -1) {
+		if (fontHashLookup.size() == 0) {
+			hashIndex = 0;
+			fontHashLookup.push_back(filepath);
+			return 0;
+		}
+		else {
+			for (int i = 0; i < fontHashLookup.size(); i++) {
+				if (strcmp(fontHashLookup[i], filepath) == 0) {
+					hashIndex = i;
+					return i;
+				}
+			}
+			fontHashLookup.push_back(filepath);
+			return fontHashLookup.size() - 1;
+		}
+	}
+	else
+		return hashIndex;
+}
+GO::GO(vec2 pos, vec2 Scale, float Angle, float rotationSpeed) {
+	position = pos;
 	scale = Scale;
 	angle = Angle;
-	color = Color;
-	borderColor = BorderCol;
-	borderW = bordW;
-	rotSpeed = RotationSpeed;
-	sides = 0;
-	path = filePath;
-	hidden = false;
+	rSpeed = rotationSpeed;
+	p = NULL;
+	i = NULL;
+	t = NULL;
+	ps = NULL;
+	parent = NULL;
 }
-//as text
-shape::shape(const char* filePath, string Text, int length, vec2 Pos, float Scale, int Tjustification, shape * Bound, float Angle, vec4 Color, vec4 BorderCol, float bordW, float RotationSpeed) {
-	pos = Pos;
-	scale = vec2(Scale);
-	angle = Angle;
-	color = Color;
-	borderColor = BorderCol;
-	borderW = bordW;
-	rotSpeed = RotationSpeed;
-	path = filePath;
-	text = Text;
-	textLength = length;
-	justification = Tjustification;
-    bound = Bound;
-	sides = -1;
-	hidden = false;
+GO::GO(polyData * poly, vec2 pos, vec2 Scale, float Angle, float rotationSpeed) : GO(pos, Scale, Angle, rotationSpeed)
+{
+	p = poly;
 }
+GO::GO(imgData * img, vec2 pos, vec2 Scale, float Angle, float rotationSpeed) : GO(pos, Scale, Angle, rotationSpeed)
+{
+	i = img;
+}
+GO::GO(textData * text, vec2 pos, vec2 Scale, float Angle, float rotationSpeed) : GO(pos, Scale, Angle, rotationSpeed)
+{
+	t = text;
+}
+
+GO::GO(ParticleSystem * part, vec2 pos, vec2 Scale, float Angle, float rotationSpeed) : GO(pos, Scale, Angle, rotationSpeed)
+{
+	ps = part;
+}
+
 HWND GLCanvas::getNativeHWND() {
 	return glfwGetWin32Window(window);
 }
@@ -411,7 +484,7 @@ void genFramBuffer(GLuint * textID, GLuint * fboID, int width, int height) {
 
 		gl(BindFramebuffer(GL_FRAMEBUFFER, *fboID));
 		defer(glBindFramebuffer(GL_FRAMEBUFFER, 0));
-
+		 
 		// attach the texture to FBO color attachment point
 		gl(FramebufferTexture2D(GL_FRAMEBUFFER,        // 1. fbo target: GL_FRAMEBUFFER 
 			GL_COLOR_ATTACHMENT0,  // 2. attachment point
@@ -434,7 +507,79 @@ void genFramBuffer(GLuint * textID, GLuint * fboID, int width, int height) {
 	}
 }
 
-int GLCanvas::createCanvas(int width, int height, bool borderd, vec3 backcol, bool Vsync)
+void GLCanvas::onKeyboard(int key, int scancode, int action, int mods) {
+	//Likely redundant
+	if (keyStates[key] == action)
+		return;
+	for (int i = 0; i < 10; i++)
+		if (keyBuffer[i].read)
+			keyBuffer[i] = description{ key,action, false };
+	keyStates[key] = action;
+}
+void GLCanvas::onMouse(int button, int action, int mods) {
+	if (button == 0)
+		LeftMouseState = action;
+	else if (button == 1)
+		RightMouseState = action;
+	for (int i = 0; i < 10; i++)
+		if (mouseBuffer[i].read)
+			mouseBuffer[i] = description{ button,action, false };
+}
+void GLCanvas::onCursor() {
+	mouseMoveFlag = true;
+}
+
+void GLCanvas::clearStates() {
+	fill(keyStates, keyStates + 348, 2);
+	LeftMouseState = 2;
+	RightMouseState = 2;
+}
+
+bool GLCanvas::getKey(char key) {
+	return glfwGetKey(window, toupper(key));
+}
+bool GLCanvas::getKeyDown(char key) {
+	return (keyStates[toupper(key)] == 1);
+}
+bool GLCanvas::getKeyUp(char key) {
+	return (keyStates[toupper(key)] == 0);
+}
+//same thing but int32
+bool GLCanvas::getKey(int key) {
+	return glfwGetKey(window, key);
+}
+bool GLCanvas::getKeyDown(int key) {
+	return (keyStates[key] == 1);
+}
+bool GLCanvas::getKeyUp(int key) {
+	return (keyStates[key] == 0);
+}
+
+vec2 GLCanvas::getMousePos() {
+	double x, y;
+	glfwGetCursorPos(window, &x, &y);
+	return vec2((float)x, (float)y);
+}
+bool GLCanvas::getMouse(int button) {
+	return(glfwGetMouseButton(window, button) == 1);
+}
+bool GLCanvas::getMouseDown(int button) {
+
+	if (button == 0)
+		return (LeftMouseState == 1);
+	if (button == 1)
+		return (RightMouseState == 1);
+	return false;
+}
+bool GLCanvas::getMouseUp(int button) {
+	if (button == 0)
+		return (LeftMouseState == 0);
+	else if (button == 1)
+		return (RightMouseState == 0);
+	return false;
+}
+
+int GLCanvas::createCanvas(int width, int height, bool borderd, vec3 backcol, bool Vsync, bool cursorHidden)
 {
 	resolutionWidth = width;
 	resolutionHeight = height;
@@ -463,10 +608,10 @@ int GLCanvas::createCanvas(int width, int height, bool borderd, vec3 backcol, bo
 		return 1;
 	}
 
-	//*Input = InputManager();
-	Input->window = window;
 	glfwPollEvents();
 	glfwMakeContextCurrent(window);
+	if(cursorHidden)
+		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 
 	int gl3wInitResult = gl3wInit();
 	//return 1;
@@ -488,13 +633,13 @@ int GLCanvas::createCanvas(int width, int height, bool borderd, vec3 backcol, bo
 	//the sources are from shaders.h which is automatically generated from the original .glsl files
 	if (usePackedShaders) {
 		PolygonShaderProgram = loadShader(RectVertex, PolygonFragment);
-		fboShaderProgram = loadShader(RectVertex, TextureFragment);
+		textureShaderProgram = loadShader(RectVertex, TextureFragment);
 		fontShaderProgram = loadShader(FontVertex, FontFragment);
 		ParticleShaderProgram = loadShader(ParticleVertex, ParticleFragment);
 	}
 	else {
 		PolygonShaderProgram = loadShader("RectVertex", "PolygonFragment");
-		fboShaderProgram = loadShader("RectVertex", "TextureFragment");
+		textureShaderProgram = loadShader("RectVertex", "TextureFragment");
 		fontShaderProgram = loadShader("FontVertex", "FontFragment");
 		ParticleShaderProgram = loadShader("ParticleVertex", "ParticleFragment");
 	}
@@ -514,9 +659,22 @@ int GLCanvas::createCanvas(int width, int height, bool borderd, vec3 backcol, bo
 	// The VBO containing the colors of the particles
 	glGenBuffers(1, &PColVBO);
 	glBindBuffer(GL_ARRAY_BUFFER, PColVBO);
-	// Initialize with empty (NULL) buffer : it will be updated later, each frame.
 	glBufferData(GL_ARRAY_BUFFER, ParticleLimit * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW);
 
+	// The VBO containing the colors of the particles
+	glGenBuffers(1, &PuvVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, PuvVBO);
+	glBufferData(GL_ARRAY_BUFFER, expectedTextLength* 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
+
+	//Position and scale VBO for letters in text
+	glGenBuffers(1, &FTranVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, FTranVBO);
+	glBufferData(GL_ARRAY_BUFFER, expectedTextLength * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
+
+	//Position and scale VBO for letters in text
+	glGenBuffers(1, &FuvVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, FuvVBO);
+	glBufferData(GL_ARRAY_BUFFER, expectedTextLength * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
 
 	//create VAO for shape shaders
 	gl(GenVertexArrays(1, &VAO));
@@ -542,12 +700,12 @@ int GLCanvas::createCanvas(int width, int height, bool borderd, vec3 backcol, bo
 
 	//polygon shader uniforms
 	PxformUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "xform"));
-	PshapeScaleUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "shapeScale"));
 	PColorUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "Color"));
 	PbordColorUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "bordColor"));
 	PsideCountUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "sideCount"));
+	PshapeScaleUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "shapeScale"));
 	PborderWidthUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "bordWidth"));
-	PtextureUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "Text"));
+	//PtextureUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "Text"));
 	PtimeUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "iTime"));
 
 	PmPosUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "position"));
@@ -558,14 +716,16 @@ int GLCanvas::createCanvas(int width, int height, bool borderd, vec3 backcol, bo
 	PaspectUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "aspect"));
 
 	//fbo shader uniforms
-	FtextureUniformLocation = gl(GetUniformLocation(fboShaderProgram, "Text"));
+	FtextureUniformLocation = gl(GetUniformLocation(textureShaderProgram, "Text"));
+	FColorUniformLocation = gl(GetUniformLocation(textureShaderProgram, "tint"));
 
-	FmPosUniformLocation = gl(GetUniformLocation(fboShaderProgram, "position"));
-	FmScaleUniformLocation = gl(GetUniformLocation(fboShaderProgram, "scale"));
-	FmRotUniformLocation = gl(GetUniformLocation(fboShaderProgram, "rotation"));
-	FUVscaleUniformLocation = gl(GetUniformLocation(fboShaderProgram, "scaleOffset"));
-	FUVposUniformLocation = gl(GetUniformLocation(fboShaderProgram, "posOffset"));
-	FaspectUniformLocation = gl(GetUniformLocation(fboShaderProgram, "aspect"));
+	FmPosUniformLocation = gl(GetUniformLocation(textureShaderProgram, "position"));
+	FmScaleUniformLocation = gl(GetUniformLocation(textureShaderProgram, "scale"));
+	FmRotUniformLocation = gl(GetUniformLocation(textureShaderProgram, "rotation"));
+	FUVscaleUniformLocation = gl(GetUniformLocation(textureShaderProgram, "scaleOffset"));
+	FUVposUniformLocation = gl(GetUniformLocation(textureShaderProgram, "posOffset"));
+	FaspectUniformLocation = gl(GetUniformLocation(textureShaderProgram, "aspect"));
+	FxformUniformLocation = gl(GetUniformLocation(textureShaderProgram, "xform"));
 
 	//font shader uniforms
 	FonttextureUniformLocation = gl(GetUniformLocation(fontShaderProgram, "Text"));
@@ -578,10 +738,14 @@ int GLCanvas::createCanvas(int width, int height, bool borderd, vec3 backcol, bo
 	FontUVscaleUniformLocation = gl(GetUniformLocation(fontShaderProgram, "scaleOffset"));
 	FontUVposUniformLocation = gl(GetUniformLocation(fontShaderProgram, "posOffset"));
 	FontaspectUniformLocation = gl(GetUniformLocation(fontShaderProgram, "aspect"));
+	FontxformUniformLocation = gl(GetUniformLocation(fontShaderProgram, "xform"));
 
 	//particle shader uniforms
 	ParticlePosUniformLocation = gl(GetUniformLocation(ParticleShaderProgram, "position"));
 	ParticleResUniformLocation = gl(GetUniformLocation(ParticleShaderProgram, "iResolution"));
+	ParticleTextureUniformLocation = gl(GetUniformLocation(ParticleShaderProgram, "Text"));
+	ParticleUVScaleUniformLocation = gl(GetUniformLocation(ParticleShaderProgram, "UVScale"));
+	ParticlexformUniformLocation = gl(GetUniformLocation(ParticleShaderProgram, "xform"));
 
 	if(!Vsync)
 		glfwSwapInterval(0);
@@ -592,12 +756,16 @@ int GLCanvas::createCanvas(int width, int height, bool borderd, vec3 backcol, bo
 	genFramBuffer(&fboTextIdB, &fboIdB, width, height);
 
 	//used to display debug information on the canvas.
-	if (debugMode) 
-		infoShape = shape("c:\\windows\\fonts\\arial.ttf", "test info", 6, vec2(170, resolutionV2f.y - 20), 20, 0, NULL, 0, vec4(1));
+	if (debugMode) {
+		infoText = textData("this will be replaced by some info", 20, vec4(1), 0, "c:\\windows\\fonts\\arial.ttf");
+		infoGO = GO(vec2(170, resolutionV2f.y - 20));
+		infoGO.t = &infoText;
+	}	
 
 	setPixelData = new unsigned char[width * height * 4];
 	clearSetPixelData();
 
+	camera = vec2();
     prevTime = (float)glfwGetTime();
 	return 0;
 }
@@ -615,7 +783,7 @@ the "x" and "y" components reveal the scale of the letter. no components reveal 
 Since the letters are actually aligned to a grid withen the texture map, the alignedment can be calculated through 
 a complicated calculation involving just the 4 floats provided by stb. */
 unsigned char TTBuffer[1 << 20];
-fontDat::fontDat(const char * filepath) {
+fontAsset::fontAsset(const char * filepath) {
 	stbtt_bakedchar cData[96];
 	filePath = filepath;
 	float tallestC = 0; //height of the tallest letter
@@ -663,15 +831,25 @@ fontDat::fontDat(const char * filepath) {
 	tallestLetter = tallestC;
 	spaceOff = tallestLetter / 3;
 	id = -1;
+	init = true;
 }
 //this could be moved into the constuctor
-void fontDat::loadTexture(){
+void fontAsset::loadTexture(){
 	gl(GenTextures(1, &id));
 	gl(BindTexture(GL_TEXTURE_2D, id));
 	//	gl(TexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 512, 512, 0, GL_RGBA, GL_UNSIGNED_BYTE, tempBitmap));
 	gl(TexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 512, 512, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, bitmapBuffer));
 	// can free temp_bitmap at this point
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+}
+
+void fontAsset::dipose()
+{
+//	delete bitmapBuffer;
+	//delete [] uvOffset;
+	//delete uvScale;
+	//delete quadScale;
+	//delete alignment;
 }
 
 
@@ -697,9 +875,10 @@ void loadTexture(const char * path, GLuint * id) {
 	stbi_image_free(image);
 }
 
-imgDat::imgDat(const char * FilePath) {
+imgAsset::imgAsset(const char * FilePath) {
 	filePath = FilePath;
 	loadTexture(FilePath, &ID);
+	init = true;
 }
 
 void GLCanvas::setBBPixel(int x, int y, vec4 col) {
@@ -714,63 +893,85 @@ void GLCanvas::setBBPixel(int x, int y, vec4 col) {
 	setPixelData[gridY + gridX + 3] = col.a * 255;
 	setPixelFlag = true;
 }
-void GLCanvas::setBBShape(shape r) {
-	BBQue.push_back(r);
-	BBEdataQue.push_back(extraData());
+void GLCanvas::setBBShape(GO g) {
+	BBQue.push_back(g);
 }
 
-void GLCanvas::setPolygonUniforms(shape * r) {
+void GLCanvas::setPolygon(GO * g) {
 	gl(Uniform1f(PaspectUniformLocation, aspect));
-	gl(Uniform4f(PColorUniformLocation, r->color.r, r->color.g, r->color.b, r->color.a));
-	gl(Uniform1i(PsideCountUniformLocation, r->sides));
-	gl(Uniform1f(PborderWidthUniformLocation, r->borderW));
-	gl(Uniform4f(PbordColorUniformLocation, r->borderColor.r, r->borderColor.g, r->borderColor.b, r->borderColor.a));
-	gl(Uniform2f(PshapeScaleUniformLocation, r->scale.x, r->scale.y));
+	gl(Uniform4f(PColorUniformLocation, g->p->fColor.r, g->p->fColor.g, g->p->fColor.b, g->p->fColor.a));
+	gl(Uniform1i(PsideCountUniformLocation, g->p->sides));
+	gl(Uniform2f(PshapeScaleUniformLocation, g->scale.x, g->scale.y));
+	gl(Uniform1f(PborderWidthUniformLocation, g->p->bWidth));
+	gl(Uniform4f(PbordColorUniformLocation, g->p->bColor.r, g->p->bColor.g, g->p->bColor.b, g->p->bColor.a));
 	gl(Uniform1f(PtimeUniformLocation, currTime));
-
-	//transform
-	gl(Uniform2f(PmScaleUniformLocation, r->scale.x / resolutionV2f.x, r->scale.y / resolutionV2f.y));
-	gl(Uniform2f(PmPosUniformLocation, r->pos.x / resolutionV2f.x * 2.0f - 1.0f, r->pos.y / resolutionV2f.y * 2.0f - 1.0f));
-	gl(Uniform1f(PmRotUniformLocation, r->angle - r->rotSpeed * currTime));
-
-	//gl(Uniform2f(PUVscaleUniformLocation, 0.5f, 0.5f));
-	//gl(Uniform2f(PUVposUniformLocation, 0.5f, 0.5f));
 }
-void GLCanvas::setGOUniforms(GO * g) {
-	shape s = *g->s;
 
-	gl(Uniform1f(PaspectUniformLocation, aspect));
-	gl(Uniform4f(PColorUniformLocation, s.color.r, s.color.g, s.color.b, s.color.a));
-	gl(Uniform1i(PsideCountUniformLocation, s.sides));
-	gl(Uniform1f(PborderWidthUniformLocation, s.borderW));
-	gl(Uniform4f(PbordColorUniformLocation, s.borderColor.r, s.borderColor.g, s.borderColor.b, s.borderColor.a));
-	gl(Uniform2f(PshapeScaleUniformLocation, s.scale.x, s.scale.y));
-	gl(Uniform1f(PtimeUniformLocation, currTime));
-
+void GLCanvas::setGOTransform(GO * g, GLuint Aspect, GLuint scale, GLuint pos, GLuint rot) {
 	//transform
-	gl(Uniform2f(PmScaleUniformLocation, s.scale.x / resolutionV2f.x, s.scale.y / resolutionV2f.y));
-	gl(Uniform2f(PmPosUniformLocation, (g->position.x + s.pos.x) / resolutionV2f.x * 2.0f - 1.0f, (g->position.y + s.pos.y) / resolutionV2f.y * 2.0f - 1.0f));
-	gl(Uniform1f(PmRotUniformLocation, s.angle - s.rotSpeed * currTime));
+	gl(Uniform1f(Aspect, aspect));
+	gl(Uniform2f(scale, g->scale.x / resolutionV2f.x, g->scale.y / resolutionV2f.y));
+	gl(Uniform2f(pos, (g->position.x - camera.x) / resolutionWidth * 2.0f, (g->position.y - camera.y) / resolutionHeight * 2.0f));
+	gl(Uniform1f(rot, g->angle - g->rSpeed * currTime));
+}
 
-	//gl(Uniform2f(PUVscaleUniformLocation, 0.5f, 0.5f));
-	//gl(Uniform2f(PUVposUniformLocation, 0.5f, 0.5f));
+void GLCanvas::LocalTransformHelper(GO * child,  mat4 * m) {
+	if (!child->parent)
+		return;
+	if (child->parent->parent) {
+		LocalTransformHelper(child->parent, m);
+	}
+	else {
+		//if the end of the parent chain has been reached, the aspect ratio correction gets applied here
+		*m = translate(*m, vec3(-camera / resolutionV2f * 2.0f, 0.0f));
+		*m = translate(*m, vec3((child->parent->position) / resolutionV2f * 2.0f, 0.0f));
+		*m = scale(*m, vec3(aspect, 1.0f, 1.0f));
+	}
+
+	*m = rotate(*m, child->parent->angle, vec3(0.0f, 0.0f, 1.0f));
+	*m = translate(*m, vec3((child->position) / resolutionV2f * 2.0f , 0.0f));
+}
+
+mat4 GLCanvas::makeLocalTransform(GO * child) {
+	mat4 m(1.0f);
+	LocalTransformHelper(child, &m);
+	m = rotate(m, child->angle + child->rSpeed * currTime, vec3(0.0f, 0.0f, 1.0f));
+
+	return m;
+}
+void GLCanvas::drawGameobjectShape(GO * g) {
+
+}
+
+GLCanvas::GLCanvas()
+{
+	fill(keyStates, keyStates + 348, 2);
+	LeftMouseState = 2;
+	RightMouseState = 2;
+	for (int i = 0; i < 10; i++)
+	{
+		keyBuffer[i].read = true;
+		mouseBuffer[i].read = true;
+	}
 }
 
 void GLCanvas::mainloop(bool render) {
 	
 	glfwMakeContextCurrent(window);
-	Input->clearStates();
+	clearStates();
 	glfwPollEvents();
 
 	if (glfwWindowShouldClose(window) || closeFlag) {
-		cleanup();
+		closeFlag = true;
+		dispose();
 		return;
 	}
 
 	//glfwMakeContextCurrent(window);
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
 		glfwSetWindowShouldClose(window, true);
-		cleanup();
+		dispose();
+		closeFlag = true;
 		return;
 	}
 
@@ -810,48 +1011,56 @@ void GLCanvas::mainloop(bool render) {
 		gl(ClearColor(backCol.r, backCol.g, backCol.b, 1.0f));
 		gl(Clear(GL_COLOR_BUFFER_BIT));
 		clearColorFlag = false;
-		if(render)
-			setBBShape(shape(resolutionV2f / 2.0f, resolutionV2f * 2.0f, 0, vec4(backCol.r, backCol.g, backCol.b, 1), vec4(), 0, 0));
+		//if(render)
+		//	setBBShape(shape(resolutionV2f / 2.0f, resolutionV2f * 2.0f, 0, vec4(backCol.r, backCol.g, backCol.b, 1), vec4(), 0, 0));
 	}
+
+	for (int i = 0; i < assetBuffer.size(); i++)
+	{
+		loadImageAsset(assetBuffer[i]);
+	}
+
+	mat4 empty(0);
 
 	//draw shapes to the back buffer
 	gl(BindVertexArray(VAO));
 	gl(UseProgram(PolygonShaderProgram));
 	if (render) {
-		vector<shape> BBQueCopy = BBQue;//copy first for Thread safety
-		vector<extraData> BBEdataQueCopy = BBEdataQue;
-		BBQue.clear();
-		BBEdataQue.clear();
-		for (int i = 0; i < BBQueCopy.size(); i++)
+		for (int i = 0; i < BBQue.size(); i++)
 		{
-			shape * r = &BBQueCopy[i];
+			GO * g = &BBQue[i];
+			if (g->hidden)
+				continue;
 
-			//draw as a font
-			if (r->sides == -1) {
-				drawFont(r, &BBEdataQueCopy[i]);
+			if (g->i) {
+				gl(UseProgram(textureShaderProgram));
+				setTexture(g, FtextureUniformLocation);
+				setGOTransform(g, textTransUniforms);
+				gl(DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
 				gl(UseProgram(PolygonShaderProgram));
 			}
-			//draw as a texture
-			else if (!r->sides) {
-				drawTexture(r, &BBEdataQueCopy[i]);
+			else if (g->t) {
+				setFont(g);
+				gl(DrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, g->t->TextLength));
+				gl(UseProgram(PolygonShaderProgram));
 			}
-			//draw as a polygon
-			else {
-				setPolygonUniforms(r);
+			else if (g->p) {
+				setPolygon(g);
+				setGOTransform(g, polyTransUniforms);
+				setPolygon(g);
 				gl(DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
 			}
-			gl(BindTexture(GL_TEXTURE_2D, 0));
+
 
 		}
-		BBQueCopy.clear();
-		BBEdataQueCopy.clear();
+		BBQue.clear();
 	}
 
 	//with the writing buffer still bound, create a texture from the setpixel data buffer and paste it to the back buffer
 	if (setPixelFlag && render) {
 		setPixelCopyFlag = true; //pause other thread while pixels are coppied to buffer
 		gl(BindVertexArray(VAO));
-		gl(UseProgram(fboShaderProgram));
+		gl(UseProgram(textureShaderProgram));
 
 		gl(GenTextures(1, &setPixelDataID));
 		gl(BindTexture(GL_TEXTURE_2D, setPixelDataID));
@@ -861,14 +1070,8 @@ void GLCanvas::mainloop(bool render) {
 		gl(TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
 		gl(TexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, resolutionWidth, resolutionHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, setPixelData));
 
-		gl(Uniform2f(FmScaleUniformLocation, 1.0, 1.0f));
-		gl(Uniform2f(FmPosUniformLocation, 0, 0));
-		gl(Uniform1f(FmRotUniformLocation, 0.0f));
-
-		gl(Uniform2f(FUVscaleUniformLocation, 0.5f, 0.5f));
-		gl(Uniform2f(FUVposUniformLocation, 0.5f, 0.5f));
-		gl(Uniform1f(FaspectUniformLocation, aspect));
-
+		FBOUniforms();
+		gl(UniformMatrix4fv(FxformUniformLocation, 1, GL_FALSE, value_ptr(empty)));
 		gl(DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
 		gl(BindTexture(GL_TEXTURE_2D, 0));
 		gl(DeleteTextures(1, &setPixelDataID));
@@ -880,7 +1083,7 @@ void GLCanvas::mainloop(bool render) {
 	//transfer the back write buffer to the read buffer
 	{
 		gl(BindVertexArray(VAO));
-		gl(UseProgram(fboShaderProgram));
+		gl(UseProgram(textureShaderProgram));
 
 		gl(BindFramebuffer(GL_FRAMEBUFFER, fboIdB));
 		gl(Viewport(0, 0, resolutionWidth, resolutionHeight));
@@ -888,15 +1091,8 @@ void GLCanvas::mainloop(bool render) {
 		gl(ActiveTexture(GL_TEXTURE0 + 0));
 		gl(BindTexture(GL_TEXTURE_2D, fboTextIdA));
 
-		//transform
-		gl(Uniform2f(FmScaleUniformLocation, 1.0, 1.0f));
-		gl(Uniform2f(FmPosUniformLocation, 0, 0));
-		gl(Uniform1f(FmRotUniformLocation, 0.0f));
-
-		gl(Uniform2f(FUVscaleUniformLocation, 0.5f, 0.5f));
-		gl(Uniform2f(FUVposUniformLocation, 0.5f, 0.5f));
-		gl(Uniform1f(FaspectUniformLocation, aspect));
-
+		FBOUniforms();
+		gl(UniformMatrix4fv(FxformUniformLocation, 1, GL_FALSE, value_ptr(empty)));
 		gl(DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
 		gl(BindTexture(GL_TEXTURE_2D, 0));
 
@@ -911,24 +1107,18 @@ void GLCanvas::mainloop(bool render) {
 		gl(Viewport(0, 0, resolutionWidth, resolutionHeight));
 
 		gl(BindVertexArray(VAO));
-		gl(UseProgram(PolygonShaderProgram));
-		gl(Uniform1f(PaspectUniformLocation, aspect));
+		gl(UseProgram(textureShaderProgram));
+		gl(Uniform1f(FaspectUniformLocation, aspect));
 
 		gl(ActiveTexture(GL_TEXTURE0 + 0));
 		gl(BindTexture(GL_TEXTURE_2D, fboTextIdB));
 
-		gl(Uniform4f(PColorUniformLocation, 1.0f, 1.0f, 1.0f, 1.0f));
-		gl(Uniform1i(PsideCountUniformLocation, 0));
-		gl(Uniform1f(PborderWidthUniformLocation, 0));
-		gl(Uniform2f(PshapeScaleUniformLocation, 1.0f, 1.0f));
-
 		//transform
-		gl(Uniform2f(PmScaleUniformLocation, 1.0, 1.0f));
-		gl(Uniform2f(PmPosUniformLocation, 0, 0));
-		gl(Uniform1f(PmRotUniformLocation, 0.0f));
+		gl(Uniform2f(FmScaleUniformLocation, 1.0, 1.0f));
+		gl(Uniform2f(FmPosUniformLocation, 0, 0));
+		gl(Uniform1f(FmRotUniformLocation, 0.0f));
 
-		gl(Uniform2f(PUVscaleUniformLocation, 0.5f, 0.5f));
-		gl(Uniform2f(PUVposUniformLocation, 0.5f, 0.5f));
+		gl(UniformMatrix4fv(FxformUniformLocation, 1, GL_FALSE, value_ptr(empty)));
 
 		gl(DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
 		gl(BindTexture(GL_TEXTURE_2D, 0));
@@ -939,35 +1129,11 @@ void GLCanvas::mainloop(bool render) {
 	if (render) {
 		//thread safe transfer object buffer to canvas draw list
 		shapeCopyFlag = true;
-		for (int i = 0; i < shapeBuffer.size(); i++)
-			shapes.push_back(shapeBuffer[i]);
-		shapeBuffer.clear();
-
-		for (int i = 0; i < eDataBuffer.size(); i++)
-			eData.push_back(eDataBuffer[i]);
-		eDataBuffer.clear();
-
-		//thread safe removal of shapes
-		for (int j = 0; j < removalBuffer.size(); j++)
-		{
-			for (int i = 0; i < shapes.size(); i++)
-			{
-				if (shapes[i] == removalBuffer[j]) {
-					shapes.erase(shapes.begin() + i);
-					eData.erase(eData.begin() + i);
-				}
-			}
-		}
-		removalBuffer.clear();
-		if (clearShapeFlag) {
-			shapes.clear();
-			eData.clear();
-			clearShapeFlag = false;
-		}
 
 		//thread safe transfer of gameobjects
 		for (int i = 0; i < GOBuffer.size(); i++)
 			GameObjects.push_back(GOBuffer[i]);
+		int newGOs = GOBuffer.size();
 		GOBuffer.clear();
 
 		//thread safe removal of gameobjects
@@ -975,9 +1141,31 @@ void GLCanvas::mainloop(bool render) {
 			for (int i = 0; i < GameObjects.size(); i++)
 				if (GameObjects[i] == GORemoveBuffer[j]) 
 					GameObjects.erase(GameObjects.begin() + i);
+		GORemoveBuffer.clear();
 
+		if (clearShapeFlag) {
+			GameObjects.clear();
+			clearShapeFlag = false;
+		}
 
 		shapeCopyFlag = false;
+		for (int i = 0; i < newGOs; i++)
+		{
+			bool change = false;
+			int s = GameObjects.size() - 1; //only works when declared outside the loop?
+			for (int j = 0; j < s; j++)
+			{
+
+				if (GameObjects[j]->drawIndex < GameObjects[j + 1]->drawIndex) {
+					GO * temp = GameObjects[j];
+					GameObjects[j] = GameObjects[j + 1];
+					GameObjects[j + 1] = temp;
+					change = true;
+				}
+			}
+			if (!change)
+				break;
+		}
 	}
 
 	gl(BindVertexArray(VAO));
@@ -985,74 +1173,92 @@ void GLCanvas::mainloop(bool render) {
 
 	//draw Gameobjects
 	int GoSize = GameObjects.size(); 
+	mat4 m; //used if parent transforms are involved
 	for (int i = 0; i < GoSize; ++i)
 	{
-		shape * s = GameObjects[i]->s;
+	/*	GO  gg = *GameObjects[i];
+		GO * g = &gg;
+		if(centerOffset)
+			g->position -= resolutionV2f / 2.f;*/
 		GO * g = GameObjects[i];
-		if (s->hidden)
+
+#ifdef _DEBUG
+		int shapeCount = 0;
+		shapeCount += g->p != nullptr;
+		shapeCount += (g->i != nullptr) && (g->ps == nullptr); //particle systems might also have a texture
+		shapeCount += g->t != nullptr;
+		shapeCount += g->ps != nullptr;
+		if (shapeCount > 1)
+			cout << "Warning: GO with multiple draw targets detected\n";
+#endif
+
+		if (g->hidden)
 			continue;
 
-		//draw as a font
-		if (s->sides == -1) {
-			drawFont(s, &eData[i]);
-			gl(UseProgram(PolygonShaderProgram));
-		}
-		//draw as a texture
-		else if (!s->sides) {
-			drawTexture(s, &eData[i]);
-		}
-		//draw as a polygon
-		else {
-			setGOUniforms(g);
-			gl(DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
-		}
+		if (g->parent)
+			m = makeLocalTransform(g);
 
 		if (g->ps) {
-			drawParticleSystem(g, deltaTime);
-
+			if (g->parent)
+				drawParticleSystem(g, deltaTime, &m);
+			else
+				drawParticleSystem(g, deltaTime, NULL);
 			gl(BindVertexArray(VAO));
 			gl(UseProgram(PolygonShaderProgram));
 		}
-	}
-
-	//draw standard shapes
-	int shapesSize = shapes.size(); //for performance
-	shape ** drawList = shapes.data();
-	for (int i = 0; i < shapesSize; ++i)
-	{
-		shape * r = *(drawList + i);
-		if (r->hidden)
-			continue;
-
-		//draw as a font
-		if (r->sides == -1) {
-			drawFont(r, &eData[i]);
+		else if (g->i) {
+			gl(UseProgram(textureShaderProgram));
+			setTexture(g, FtextureUniformLocation);
+			if (g->parent) {
+				m = scale(m, vec3(g->scale / resolutionV2f, 1.0f));
+				gl(UniformMatrix4fv(FxformUniformLocation, 1, GL_FALSE, value_ptr(m)));
+				gl(DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
+			}
+			else {
+				setGOTransform(g, textTransUniforms);
+				gl(UniformMatrix4fv(FxformUniformLocation, 1, GL_FALSE, value_ptr(empty)));
+				gl(DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
+			}
 			gl(UseProgram(PolygonShaderProgram));
-		}			
-		//draw as a texture
-		else if (!r->sides) {
-			drawTexture(r, &eData[i]);
 		}
-		//draw as a polygon
-		else {
-			setPolygonUniforms(r);
-			//gl(DrawElements(GL_TRIANGLE_STRIP, 4, GL_UNSIGNED_INT, 0));
-			gl(DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
+		else if (g->t) {
+			setFont(g);
+			if (g->parent) {
+				gl(UniformMatrix4fv(FontxformUniformLocation, 1, GL_FALSE, value_ptr(m)));
+				gl(DrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, g->t->TextLength));
+			}
+			else {
+				gl(UniformMatrix4fv(FontxformUniformLocation, 1, GL_FALSE, value_ptr(empty)));
+				gl(DrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, g->t->TextLength));
+			}
+			gl(UseProgram(PolygonShaderProgram));
+		}
+		else if (g->p) {
+			gl(UseProgram(PolygonShaderProgram));
+			setPolygon(g);
+			if (g->parent) {			
+				m = scale(m, vec3(g->scale / resolutionV2f, 1.0f));
+				gl(UniformMatrix4fv(PxformUniformLocation, 1, GL_FALSE, value_ptr(m)));
+				gl(DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
+			}
+			else {
+				setGOTransform(g, polyTransUniforms);
+				gl(UniformMatrix4fv(PxformUniformLocation, 1, GL_FALSE, value_ptr(empty)));
+				gl(DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
+			}
 		}
 	}
 	if (debugMode) {
-		infoShape.pos = vec2(170, resolutionV2f.y - 30);
-
-		infoShape.text = debugString;
-		drawFont(&infoShape, &infoData);
+		infoGO.position = vec2(170, resolutionV2f.y - 30);
+		infoText.text = debugString;
+		setFont(&infoGO);
+		gl(DrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, infoText.TextLength));
 	}
 	gl(UseProgram(0));
 	gl(BindVertexArray(0));
-	
+
 	windowSizeChanged = false;
-
 	glfwSwapBuffers(window);
-
 	updateDebugInfo();
 
 	if (windowTitleFlag) {
@@ -1062,74 +1268,89 @@ void GLCanvas::mainloop(bool render) {
 			glfwSetWindowTitle(window, title);
 		windowTitleFlag = false;
 	}
+	
 }
 
-void GLCanvas::drawTexture(shape * r, extraData * imgData) {
+//checks if image is loaded to memory. assigns it so and loads it if not
+void GLCanvas::setTexture(GO * g, GLuint textureLocation) {
+	int index = g->i->getHashIndex();
+	if (index + 1> imgs.size())
+		imgs.resize(index + 1);
+	if (!&imgs[index] || !imgs[index].init)
+		imgs[index] = imgAsset(g->i->filepath);
 
-	if (imgData->id == -1)
-	{
-		for (int i = 0; i < imgs.size(); i++)
-			if (imgs[i].filePath == r->path) 
-				imgData->id = i;
-		
-		//wasn't initiallized and font wasn't previously loaded into memory	
-		if (imgData->id == -1) {
-			imgs.push_back(imgDat(r->path));
-			imgData->id = imgs.size() - 1;
-		}
-	}
-
-	gl(BindTexture(GL_TEXTURE_2D, imgs[imgData->id].ID));
-	gl(Uniform1i(PtextureUniformLocation, 0));
-	setPolygonUniforms(r);
-	gl(DrawElements(GL_TRIANGLE_STRIP, 8, GL_UNSIGNED_INT, 0));
-	//gl(DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
-	gl(BindTexture(GL_TEXTURE_2D, 0));
+	gl(Uniform1f(FaspectUniformLocation, aspect));
+	gl(BindTexture(GL_TEXTURE_2D, imgs[index].ID));
+	//temp fix
+	if(g->ps == NULL)
+		gl(Uniform4f(FColorUniformLocation, g->i->tint.r, g->i->tint.g, g->i->tint.b, g->i->tint.a));
+	gl(Uniform1i(textureLocation, 0));
 }
 
-void GLCanvas::drawFont(shape * r, extraData * fontData) {
+
+//similar to setTexture, but only loads to memory, no uniforms
+void GLCanvas::loadImageAsset(const char * filepath) {
+
+	for (int i = 0; i < imgs.size(); i++)
+		if (strcmp(imgs[i].filePath, filepath) == 0)
+			return;
+
+	//wasn't found in memory, so load it now
+	imgs.push_back(imgAsset(filepath)); //constructor calls loadTexture
+	imgHashLookup.push_back(filepath);
+}
+
+void GLCanvas::setFont(GO * g) {
 	gl(UseProgram(fontShaderProgram));
 
 	gl(Uniform1f(FontaspectUniformLocation, aspect));
-	gl(Uniform4f(FontColorUniformLocation, r->color.r, r->color.g, r->color.b, r->color.a));
+	gl(Uniform4f(FontColorUniformLocation, g->t->color.r, g->t->color.g, g->t->color.b, g->t->color.a));
 	gl(Uniform1f(FonttimeUniformLocation, currTime));
 
-	//checks if this ttf file already loaded into canvas memory
-	if (fontData->fd == -1) {
-		for (int i = 0; i < fonts.size(); i++)
-			if (fonts[i].filePath == r->path) 
-				fontData->fd = i;
-		
-		//wasn't initiallized and font wasn't previously loaded into memory	
-		if (fontData->fd == -1) {
-			fonts.push_back(fontDat(r->path));
-			fonts[fonts.size() - 1].loadTexture();
-			fontData->fd = fonts.size() - 1;
-		}
+
+	int HashIndex = g->t->getHashIndex();
+	if (HashIndex +1 > fonts.size())
+		fonts.resize(HashIndex + 1);
+	if (!&fonts[HashIndex] || !fonts[HashIndex].init) {
+		fonts[HashIndex] = fontAsset(g->t->filepath);
+		fonts[HashIndex].loadTexture();
 	}
-			
-	fontDat * selected = &fonts[(*fontData).fd];
+
+
+
+	fontAsset * selected = &fonts[HashIndex];
 	gl(BindTexture(GL_TEXTURE_2D, selected->id));
 	gl(Uniform1i(FonttextureUniformLocation, 0));
 
 	float xof = 0; //x offset of each letter
 	float x = 0, y = 0; //required by stbtt
-	float scaleRatio = r->scale.y / selected->tallestLetter;
+	float scaleRatio = g->t->height / selected->tallestLetter;
 	float totalWidth = 0;
 	int lineCount = 1; //number of lines in the string (# of '\n')
 	int lineNum = 0;  //current line being worked on
 	char c; //used to store each letter for calculations
-	bool boundMode = r->bound; //bounding box mode
+	bool boundMode = g->t->boundMode; //bounding box mode
 	int maxLines; //Only used for bounding box mode
 	float record = 0; //longest line of text
 	int recordIndex = 0; //which line number is the
 	int Xreference; // iether scaled boundry.X or record
-	int textLength = r->text.length();
-	
+	int textLength = g->t->text.length();
+
 	float letterPosX, letterPosY, finalScaleX, finalScaleY; //used ever for letter. Allocated here for performance
 
-	char * text = new char[r->text.size() + 1];
-	memcpy(text, r->text.c_str(), r->text.size());
+	//much faster to convert the string to a char *
+	char * text = new char[g->t->text.size() + 1];
+	memcpy(text, g->t->text.c_str(), g->t->text.size());
+
+	//allocate an arrays to be coppied to the VBOs
+	if (textLength > g->t->TextLength) {
+		//if containers are not being allocated for the first time, delete the previuos data
+		if (g->t->TextLength > 0)
+			g->t->dispose();
+		g->t->letterTransData = new float[textLength * 4]();
+		g->t->letterUVData = new float[textLength * 4]();
+		g->t->TextLength = textLength;
+	}
 
 	//pre calculate the pixel lengths of the final lines
 	for (int i = 0; i < textLength; i++)
@@ -1143,12 +1364,12 @@ void GLCanvas::drawFont(shape * r, extraData * fontData) {
 		c = text[i];
 		//actual letter lengths
 		if (c != '\n' && c != ' ');
-			totalWidth += selected->quadScale[c - 32].x;
+		totalWidth += selected->quadScale[c - 32].x;
 		//add in distace for space characters
 		if (c == ' ')
 			totalWidth += selected->spaceOff;
 		if (c == '\n' || i == textLength - 1) {
-			record = max(record, totalWidth);
+			record = totalWidth > record ? totalWidth : record;
 			lineLengths[lineCounter - 1] = totalWidth;
 			lineCounter++;
 			totalWidth = 0;
@@ -1156,13 +1377,13 @@ void GLCanvas::drawFont(shape * r, extraData * fontData) {
 	}
 
 	if (boundMode) {
-		maxLines = r->bound->scale.y / r->scale.y;
-		r->pos = r->bound->pos + vec2(-r->bound->scale.x / (float)2, 
-									   r->bound->scale.y / (float)2 - selected->tallestLetter / (float)2);
-		Xreference = r->bound->scale.x / scaleRatio;
+		maxLines = g->scale.y / g->t->height;
+		//g->pos = g->pos + vec2(-g->scale.x / (float)2,
+			//g->scale.y / (float)2 - selected->tallestLetter / (float)2);
+		Xreference = g->scale.x / scaleRatio;
 	}
 	else Xreference = record;
-				
+
 
 	for (int i = 0; i < textLength; i++)
 	{
@@ -1177,39 +1398,38 @@ void GLCanvas::drawFont(shape * r, extraData * fontData) {
 		}
 		//set the cursor for the new line
 		if (i == 0 || text[i - 1] == '\n') {
-			if (r->justification == 0 || (boundMode && lineLengths[lineNum] > r->bound->scale.x / scaleRatio))
+			if (g->t->justification == 0 || (boundMode && lineLengths[lineNum] > g->scale.x / scaleRatio))
 				xof = 0;
-			else if (r->justification == 1)
+			else if (g->t->justification == 1)
 				xof = (Xreference - lineLengths[lineNum]) / 2;
 			else {
 				xof = (Xreference - lineLengths[lineNum]);
-			}		
+			}
 		}
+		
+		g->t->letterUVData[i * 4 + 0] = selected->uvOffset[c - 32].x;
+		g->t->letterUVData[i * 4 + 1] = selected->uvOffset[c - 32].y;
+		g->t->letterUVData[i * 4 + 2] = selected->uvScale[c - 32].x;
+		g->t->letterUVData[i * 4 + 3] = selected->uvScale[c - 32].y;
 
-		//usually, the position and scale values of the vertex shader are 0.5, but with letters on a texture map, these values must be defined based on the UV data
-		gl(Uniform2f(FontUVscaleUniformLocation, selected->uvScale[c-32].x, selected->uvScale[c - 32].y));
-		gl(Uniform2f(FontUVposUniformLocation, selected->uvOffset[c-32].x, selected->uvOffset[c-32].y));
-						
-		vec2 letterScale = selected->quadScale[c-32]; 
+		vec2 letterScale = selected->quadScale[c - 32];
 
 		xof += letterScale.x / 2; //move the scale by  width of current chashapeor
-		if(boundMode && xof *scaleRatio > r->bound->scale.x)
+		if (boundMode && xof *scaleRatio > g->scale.x)
 			continue;
 
 		float xTranslate = xof;
 		float yTranslate = selected->alignment[c - 32] - selected->tallestLetter * lineNum;
-				
-		//calculate final position of the letter
 
+		//calculate final position of the letter
 		{
 			if (!boundMode) {
 				xTranslate -= record / 2;
 				yTranslate += selected->alignmentOffset;
 				yTranslate += (selected->tallestLetter * lineCount) / 2;
 			}
-
-			letterPosX = (r->pos.x + xTranslate * scaleRatio) / resolutionWidth * 2.0f - 1.0f;
-			letterPosY = (r->pos.y + yTranslate * scaleRatio) / resolutionHeight * 2.0f - 1.0f;
+			letterPosX = (xTranslate * scaleRatio) / resolutionWidth * 2.0f;
+			letterPosY = (yTranslate * scaleRatio) / resolutionHeight * 2.0f;
 		}
 		//final scale of the letter
 		{
@@ -1218,39 +1438,23 @@ void GLCanvas::drawFont(shape * r, extraData * fontData) {
 		}
 
 		//transform
-		gl(Uniform2f(FontmScaleUniformLocation, finalScaleX, finalScaleY));
-		gl(Uniform2f(FontmPosUniformLocation, letterPosX, letterPosY));
-		gl(Uniform1f(FontmRotUniformLocation, r->angle - r->rotSpeed * currTime));
+		g->t->letterTransData[i * 4 + 0] = letterPosX;
+		g->t->letterTransData[i * 4 + 1] = letterPosY;
+		g->t->letterTransData[i * 4 + 2] = finalScaleX;
+		g->t->letterTransData[i * 4 + 3] = finalScaleY;
 
 		if (c == ' ')
 			xof += selected->spaceOff;
 		xof += letterScale.x / 2;
-
-		gl(DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
-
-	}			
-	delete lineLengths;
-	delete text;
-}
-
-void GLCanvas::drawParticleSystem(GO * g, float deltaTime)
-{
-
-
-	gl(UseProgram(ParticleShaderProgram));
-
-	ParticleSystem ps = *g->ps;
-	g->ps->updateParticles(deltaTime);
-
+	}
 	//update position buffer
-	glBindBuffer(GL_ARRAY_BUFFER, PPosVBO);
-	glBufferData(GL_ARRAY_BUFFER, ps.MaxParticles * 3 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, ps.count * sizeof(GLfloat) * 3, ps.positionSizeData);
+	glBindBuffer(GL_ARRAY_BUFFER, FTranVBO);
+	glBufferData(GL_ARRAY_BUFFER, textLength * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, textLength * sizeof(GLfloat) * 4, g->t->letterTransData);
 
-	//update color buffer
-	glBindBuffer(GL_ARRAY_BUFFER, PColVBO);
-	glBufferData(GL_ARRAY_BUFFER, ps.MaxParticles * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, ps.count * sizeof(GLubyte) * 4, ps.colorData);
+	glBindBuffer(GL_ARRAY_BUFFER, FuvVBO);
+	glBufferData(GL_ARRAY_BUFFER, textLength * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, textLength * sizeof(GLfloat) * 4, g->t->letterUVData);
 
 	//vertices
 	glEnableVertexAttribArray(1);
@@ -1263,38 +1467,163 @@ void GLCanvas::drawParticleSystem(GO * g, float deltaTime)
 		0,
 		(void*)0
 	);
-	// position and size
-	glEnableVertexAttribArray(2);
-	glBindBuffer(GL_ARRAY_BUFFER, PPosVBO);
+	// position and scale
+	glEnableVertexAttribArray(5);
+	glBindBuffer(GL_ARRAY_BUFFER, FTranVBO);
 	glVertexAttribPointer(
+		5,
+		4,
+		GL_FLOAT,
+		GL_FALSE,
+		0,
+		(void*)0
+	);
+	// UV position and scale
+	glEnableVertexAttribArray(6);
+	glBindBuffer(GL_ARRAY_BUFFER, FuvVBO);
+	glVertexAttribPointer(
+		6,
+		4,
+		GL_FLOAT,
+		GL_FALSE,
+		0,
+		(void*)0
+	);
+
+	glVertexAttribDivisor(1, 0);
+	glVertexAttribDivisor(5, 1); 
+	glVertexAttribDivisor(6, 1); 
+
+	if (boundMode) {
+		gl(Uniform2f(FontmPosUniformLocation, (g->position.x - g->scale.x/2) / resolutionWidth * 2.0f, g->position.y / resolutionHeight * 2.0f));
+	}
+	else {
+		gl(Uniform2f(FontmPosUniformLocation, g->position.x / resolutionWidth * 2.0f, g->position.y / resolutionHeight * 2.0f));
+	}
+	gl(Uniform1f(FontmRotUniformLocation, g->angle - g->rSpeed * currTime));
+
+	delete lineLengths;
+	delete text;
+}
+
+void GLCanvas::drawParticleSystem(GO * g, float deltaTime, mat4 * global)
+{
+	if (g->ps->dead)
+		return;
+
+	gl(UseProgram(ParticleShaderProgram));
+
+	//if (ps.relitivePosition) {
+		if (global) {
+			//vec4 resulting = vec4(g->position, 0, 1) * *global;
+			//g->ps->spawnLocation = vec2(resulting.y, resulting.x);
+			if(g->parent->parent)
+				g->ps->spawnLocation = g->position + g->parent->position + g->parent->parent->position;
+			else
+				g->ps->spawnLocation = g->position + g->parent->position;
+			g->ps->angle = g->angle + g->parent->angle;
+		}
+		else
+			g->ps->spawnLocation = g->position;
+	//}
+	g->ps->updateParticles(deltaTime, g->angle);
+
+	if (g->ps->dead)
+		return;
+
+	//update position buffer
+	gl(BindBuffer(GL_ARRAY_BUFFER, PPosVBO));
+	gl(BufferData(GL_ARRAY_BUFFER, g->ps->MaxParticles * 3 * sizeof(GLfloat), NULL, GL_STREAM_DRAW));
+	gl(BufferSubData(GL_ARRAY_BUFFER, 0, g->ps->count * sizeof(GLfloat) * 3, g->ps->positionSizeData));
+
+	//update color buffer
+	gl(BindBuffer(GL_ARRAY_BUFFER, PColVBO));
+	gl(BufferData(GL_ARRAY_BUFFER, g->ps->MaxParticles * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW));
+	gl(BufferSubData(GL_ARRAY_BUFFER, 0, g->ps->count * sizeof(GLubyte) * 4, g->ps->colorData));
+
+	//update UVbuffer
+	gl(BindBuffer(GL_ARRAY_BUFFER, PuvVBO));
+	gl(BufferData(GL_ARRAY_BUFFER, g->ps->MaxParticles * 2 * sizeof(GLfloat), NULL, GL_STREAM_DRAW));
+	gl(BufferSubData(GL_ARRAY_BUFFER, 0, g->ps->count * sizeof(GLfloat) * 2, g->ps->UVData));
+
+	//vertices
+	gl(EnableVertexAttribArray(1));
+	gl(BindBuffer(GL_ARRAY_BUFFER, PVertVBO));
+	gl(VertexAttribPointer(
+		1,
+		3,
+		GL_FLOAT,
+		GL_FALSE,
+		0,
+		(void*)0
+	));
+	// position and size
+	gl(EnableVertexAttribArray(2));
+	gl(BindBuffer(GL_ARRAY_BUFFER, PPosVBO));
+	gl(VertexAttribPointer(
 		2,
 		3, // x + y + size + size => 3
 		GL_FLOAT,
 		GL_FALSE,
 		0,
 		(void*)0
-	);
+	));
 	//colors
-	glEnableVertexAttribArray(3);
-	glBindBuffer(GL_ARRAY_BUFFER, PColVBO);
-	glVertexAttribPointer(
+	gl(EnableVertexAttribArray(3));
+	gl(BindBuffer(GL_ARRAY_BUFFER, PColVBO));
+	gl(VertexAttribPointer(
 		3,
 		4, // size : r + g + b + a => 4
 		GL_UNSIGNED_BYTE,
 		GL_TRUE, // normalized?
 		0,
 		(void*)0
-	);
+	));
+	// UV Data
+	gl(EnableVertexAttribArray(4));
+	gl(BindBuffer(GL_ARRAY_BUFFER, PuvVBO));
+	gl(VertexAttribPointer(
+		4,
+		2, // x + y
+		GL_FLOAT,
+		GL_FALSE,
+		0,
+		(void*)0
+	));
 
-	glVertexAttribDivisor(1, 0); // particles vertices : always reuse the same 4 vertices -> 0
-	glVertexAttribDivisor(2, 1); // positions : one per quad (its center) -> 1
-	glVertexAttribDivisor(3, 1); // color : one per quad -> 1
+	gl(VertexAttribDivisor(1, 0)); // particles vertices : always reuse the same 4 vertices -> 0
+	gl(VertexAttribDivisor(2, 1)); // positions : one per quad (its center) -> 1
+	gl(VertexAttribDivisor(3, 1)); // color : one per quad -> 1
+	gl(VertexAttribDivisor(4, 1)); // uvs
 
-	gl(Uniform2f(ParticlePosUniformLocation, (g->position.x - resolutionWidth/2), (g->position.y - resolutionHeight / 2)));
+	//wether the particles care about where the particle system moves after being spawned
+	if (g->ps->relitivePosition) {
+		gl(Uniform2f(ParticlePosUniformLocation, -camera.x , -camera.y ));
+	}
+	else if (!g->ps->relitivePosition) {
+		gl(Uniform2f(ParticlePosUniformLocation, (g->ps->spawnLocation.x - camera.x), (g->ps->spawnLocation.y - camera.y)));
+	}
+
 	gl(Uniform2f(ParticleResUniformLocation, resolutionWidth, resolutionHeight));
 
-	glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, ps.count);
+	if (g->ps->textureMode) {
+			if (!g->i) {
+			g->ps->img = imgData(g->ps->filepath);
+			g->i = &g->ps->img; //link the GO img pointer to reference the actual data in the particle system
+		}
+		setTexture(g, ParticleTextureUniformLocation);
+				
+		if(g->ps->tileMode)
+			glUniform1f(ParticleUVScaleUniformLocation, g->ps->UVScale / g->ps->resolution);
+		else
+			glUniform1f(ParticleUVScaleUniformLocation, 1.0);
+	}
+	else
+		gl(Uniform1f(ParticleUVScaleUniformLocation, 0));
 
+	gl(DrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, g->ps->count));
+
+		gl(BindTexture(GL_TEXTURE_2D, 0));
 }
 
 vec3 GLCanvas::getPixel(int x, int y){
@@ -1312,7 +1641,7 @@ void GLCanvas::updateDebugInfo() {
 	std::stringstream sstm;
 	sstm.precision(0);
 	sstm.setf(std::ios::fixed);
-	sstm << "Render Time: " << LastRenderTime << "ms  FPS: " << ceil(currentFPS) << "  Shapes: " << (shapes.size());
+	sstm << "Render Time: " << LastRenderTime << "ms  FPS: " << ceil(currentFPS) << "  Shapes: " << (GameObjects.size());
 	debugString = sstm.str();
 	windowTitleFlag = true;
 }

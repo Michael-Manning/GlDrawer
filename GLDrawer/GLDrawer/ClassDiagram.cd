@@ -1,0 +1,151 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Comment CommentText="InternalShape contains the actual data">
+    <Position X="17.148" Y="1.684" Height="0.535" Width="1.64" />
+  </Comment>
+  <Class Name="GLDrawer.Shape">
+    <Position X="15" Y="1" Width="1.5" />
+    <Members>
+      <Method Name="checkNullC" Hidden="true" />
+    </Members>
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAgAAAAgAAIAAAACAABAAAAAAEIAAQgEQAA=</HashCode>
+      <FileName>shapes.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="GLDrawer.Rectangle" Collapsed="true">
+    <Position X="9.5" Y="5.25" Width="1.5" />
+    <Compartments>
+      <Compartment Name="Methods" Collapsed="true" />
+    </Compartments>
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>shapes.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="GLDrawer.Ellipse" Collapsed="true">
+    <Position X="11.75" Y="5.25" Width="1.5" />
+    <Compartments>
+      <Compartment Name="Methods" Collapsed="true" />
+    </Compartments>
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>shapes.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="GLDrawer.Line">
+    <Position X="16.25" Y="5.25" Width="1.5" />
+    <Members>
+      <Method Name="~Line" Hidden="true" />
+      <Method Name="Line" Hidden="true" />
+      <Method Name="recalculate" Hidden="true" />
+    </Members>
+    <Compartments>
+      <Compartment Name="Methods" Collapsed="true" />
+    </Compartments>
+    <TypeIdentifier>
+      <HashCode>AAIAAQIAACABAAAAAAAAAABAAAAAAAAAAEABAQAAAAA=</HashCode>
+      <FileName>shapes.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="GLDrawer.Polygon">
+    <Position X="14" Y="5.25" Width="1.5" />
+    <Members>
+      <Method Name="~Polygon" Hidden="true" />
+      <Field Name="isidecount" Hidden="true" />
+      <Method Name="Polygon" Hidden="true" />
+    </Members>
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAgAAAAAAA=</HashCode>
+      <FileName>shapes.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="GLDrawer.Sprite">
+    <Position X="18.5" Y="5.25" Width="1.5" />
+    <Members>
+      <Method Name="~Sprite" Hidden="true" />
+      <Method Name="Sprite" Hidden="true" />
+    </Members>
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAA=</HashCode>
+      <FileName>shapes.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="GLDrawer.Text">
+    <Position X="20.75" Y="5.25" Width="1.5" />
+    <Members>
+      <Method Name="~Text" Hidden="true" />
+      <Method Name="Text" Hidden="true" />
+    </Members>
+    <TypeIdentifier>
+      <HashCode>AAAAAgAQAEAAAAAAAAABAAAAAAAAAAAAAAAAAAACAAA=</HashCode>
+      <FileName>shapes.cs</FileName>
+    </TypeIdentifier>
+    <ShowAsAssociation>
+      <Property Name="JustificationType" />
+    </ShowAsAssociation>
+  </Class>
+  <Class Name="GLDrawer.GLCanvas">
+    <Position X="1" Y="0.5" Width="1.5" />
+    <Compartments>
+      <Compartment Name="Fields" Collapsed="true" />
+      <Compartment Name="Nested Types" Collapsed="false" />
+    </Compartments>
+    <NestedTypes>
+      <Delegate Name="GLDrawer.GLCanvas.GLMouseEvent" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Input.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Delegate>
+      <Delegate Name="GLDrawer.GLCanvas.GLScrollEvent" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Input.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Delegate>
+      <Delegate Name="GLDrawer.GLCanvas.GLKeyEvent" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Input.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Delegate>
+      <Enum Name="GLDrawer.GLCanvas.keycode" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Input.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Enum>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>Bz7yKgAE7BhCp8DBEE4Gt1VgIJAYWLghYPaIAJTv1Xg=</HashCode>
+      <FileName>canvas.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Struct Name="GLDrawer.vec2">
+    <Position X="6" Y="1.25" Width="1.5" />
+    <Members>
+      <Property Name="Abs" Hidden="true" />
+      <Property Name="Max" Hidden="true" />
+      <Property Name="Zero" Hidden="true" />
+    </Members>
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAABAQAAAE8AUAAABAAQCAAIBAAABgAIAAAiA=</HashCode>
+      <FileName>vec2.cs</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="GLDrawer.Color">
+    <Position X="4.25" Y="1.25" Width="1.5" />
+    <Compartments>
+      <Compartment Name="Properties" Collapsed="true" />
+    </Compartments>
+    <TypeIdentifier>
+      <HashCode>ACAHAEFAAAAAwlAA4AUABBAABYAAFKQAAAAIqDEAAyA=</HashCode>
+      <FileName>color.cs</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Enum Name="GLDrawer.JustificationType">
+    <Position X="23.25" Y="6.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACACAAAAIAAA=</HashCode>
+      <FileName>shapes.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

@@ -10,7 +10,6 @@ uniform vec2 shapeScale;
 uniform int sideCount;
 uniform float bordWidth;
 uniform float iTime;
-uniform sampler2D Text;
 out vec4 FragColor;
 
 //scaling and position a #sided polygon precisely within a square based off an equation is impossible, but I've hard coded the first 32
@@ -33,73 +32,56 @@ void main()
     
     vec4 FillColor = Color;
     vec4 BorderColor = bordColor;
-    if(Color.w == -1.0){
+    if(Color.a == -1.0){
         FillColor = vec4(0.5 + 0.5*cos(iTime * 1.4 +(frag_uv).xyx+vec3(0,2,4)), 1.0);
     }
-    if(bordColor.w == -1.0){
+    if(bordColor.a == -1.0){
         BorderColor = vec4(0.5 + 0.5*cos((iTime + 300.0) * 1.4 +(frag_uv).xyx+vec3(0,2,4)), 1.0);
     }
     
     if(sideCount == 4){
-        float f =  smoothstep(1.0 - xblur, 1.0, frag_uv.x);
-        f += smoothstep(xblur, 0.0, frag_uv.x);
-        f +=  smoothstep(1.0 - yblur, 1.0, frag_uv.y);
-        f += smoothstep(yblur, 0.0, frag_uv.y);
+        vec2 uv =  abs(frag_uv- 0.5) * 2.0;
+        float af = fwidth(max(uv.x, uv.y)); 
+        float f = smoothstep(1.0, 1.0 - af, max(uv.x, uv.y));
+        vec4 c = vec4(BorderColor.xyz, BorderColor.w - (1.0 - f));
 
-        vec4 c = vec4(FillColor.xyz, -f + FillColor.w);
+        float bordX = (bordWidth / shapeScale.x) * 2.0;
+        float bordy = (bordWidth / shapeScale.y) * 2.0;
+        f = smoothstep(1.0 - bordX, 1.0 - bordX - af, uv.x);
+        f *= smoothstep(1.0 - bordy, 1.0 - bordy - af, uv.y);
 
-        float bx = (bordWidth / shapeScale.x);
-        float by = (bordWidth / shapeScale.y);
-        if(bordWidth > 0){
-            f =  smoothstep(1.0 - xblur - bx, 1.0 - bx, frag_uv.x);
-            f += smoothstep(xblur+ bx, 0.0 + bx, frag_uv.x);
-            f +=  smoothstep(1.0 - by - yblur, 1.0 - by, frag_uv.y);
-            f += smoothstep(yblur + by, 0.0 + by, frag_uv.y);
-            
-            f = clamp(f, 0.0, 1.0);
-            c = mix(c, BorderColor, f);
+        FragColor = mix(c, FillColor, f);
+        return;
+    }
+    if(sideCount == 1){      
+        float f; 
+        float af = fwidth(length(frag_uv - 0.5));  
+        vec4 c = vec4(FillColor.xyz, 0.0);
+        if(bordWidth > 0){         
+            f = smoothstep(0.5, 0.5 - af, length(frag_uv - 0.5));
+            c = vec4(BorderColor.xyz, BorderColor.w - (1.0 - f));
         }
-        
-        FragColor = vec4(c);
-        return;
-    }
-    if(sideCount == 1){
 
-		float f =  smoothstep(0.5 - xblur, 0.5, length(frag_uv  -0.5));
-        vec4 c = vec4(FillColor.xyz, -f + FillColor.w);
-
-        f =  smoothstep(0.5 - (bordWidth/shapeScale.x) - xblur, 0.5 - (bordWidth/shapeScale.x), length(frag_uv  -0.5));
-        f -=  smoothstep(0.5 - xblur, 0.5, length(frag_uv  -0.5));
-        c = mix(c, BorderColor, f);
-
-		FragColor = c;
-        return;
-    }
-    if(sideCount == 0){
-         FragColor = vec4(texture(Text, frag_uv));
-         return;
-    }
-    if(sideCount == -1){
-        FragColor = vec4(FillColor.xyz, texture(Text, frag_uv).x - (1.0-FillColor.w));
+        float bord = bordWidth / shapeScale.x;
+        f = smoothstep(0.5 - bord, 0.5 - bord - af, length(frag_uv - 0.5));
+        FragColor = mix(c, FillColor, f);
         return;
     }
 
-    float yoff;
-    float rad;
+    float yoff = 0.5;
+    float rad = 0.5;
     if(sideCount < 33){
         yoff = polyOffs[sideCount -3];
         rad = polyRads[sideCount -3];
     }
 
     vec2 uv = frag_uv - vec2(0.5, yoff);
-
     float a = atan(uv.x,uv.y)+PI;
     float r = TWO_PI/float(sideCount);
     float d = cos(floor(.5+a/r)*r-a)*length(uv);
     float f = -smoothstep(rad- xblur, rad,d);
 
     vec4 c = vec4(BorderColor.xyz, 1.0 + f);
-
     rad -= bordWidth / shapeScale.x;
 
     a = atan(uv.x,uv.y)+PI;
@@ -108,5 +90,5 @@ void main()
     f = -smoothstep(rad- xblur, rad,d);
     c = mix(c, FillColor, 1.0 + f);
 
-    FragColor =c ;
+    FragColor = c;
 }

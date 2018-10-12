@@ -17,7 +17,7 @@ namespace GLDrawer
     /// <summary>
     /// Canvas element and window that can render shapes within it
     /// </summary>
-    public partial class GLCanvas
+    public partial class GLCanvas : IDisposable
     {
         private bool usePackedShaders = true; //set this as true to compile the last packed version of the shaders into the executable/DLL (see shaders.h for more info)
 
@@ -32,11 +32,13 @@ namespace GLDrawer
         private bool InvertedYAxis = false; //unimplimented for public use as of now
         /// <summary>multiplier for all shape coordinates</summary>
         public int Scale = 1;
+        public bool BottomLeftZero { get => GLWrapper.centerOffset; set => GLWrapper.centerOffset = value; }
         /// <summary>wether to display debug info next to the title</summary>
         public bool ExtraInfo { set => GLWrapper.titleDetails = value; }
         /// <summary>center coordinate of the canvas</summary>
-        public vec2 Centre { get => new vec2(Width / 2, Height / 2); }
-        public vec2 Camera = vec2.Zero;
+        public vec2 Centre { get => !BottomLeftZero ? vec2.Zero : new vec2(Width / 2, Height / 2); }
+        public vec2 Camera { get => new vec2(GLWrapper.camera.x, GLWrapper.camera.y); set => GLWrapper.camera = new unmanaged_vec2(value.x, value.y); }
+        public int GameObjectCount => GORefs.Count;
         /// <summary>number of shapes being drawn on the canvas</summary>
         public int ShapeCount { get => GLWrapper.shapeCount; }
         public bool VSync { get; private set; } //these four are set at initialization
@@ -86,34 +88,45 @@ namespace GLDrawer
         }
 
         /// <summary>
-        /// an event which occurs once per frame update
+        /// an event which occurs once per frame, before the standard update
+        /// </summary>
+        public event Action EarlyUpdate = delegate { };
+        /// <summary>
+        /// an event which occurs once per frame 
         /// </summary>
         public event Action Update = delegate { };
+        /// <summary>
+        /// an event which occurs once per frame, after the standard update and after the scene has been rendered
+        /// </summary>
+        public event Action LateUpdate = delegate { };
 
 
         private unmanaged_Canvas GLWrapper;
         private Form iform;
         private Panel ipanel;
         private bool embedded = false;
-        private bool initialized;
-        private bool NullRemovalFlag = false; //used for thread safe garbage collection
+        internal bool initialized = false;
+        private bool disposed = false;
         private bool frozen = false; //used to emergency freeze the main thread in case of runtime memory alocation such as a window resize
         private bool renderNextFrame = true; //tracks manual rendering
         private List<Shape> shapeRefs = new List<Shape>();
+        private List<GameObject> GORefs = new List<GameObject>();
+        private List<DelayedCall> delayedCalls = new List<DelayedCall>(); //primary used for games
+        internal List<Action> disposeBuffer = new List<Action>();
 
         private static List<GLCanvas> activeCanvases = new List<GLCanvas>();
         private static Thread loopthread;
         private static Thread mainThread;
         private static bool threadsInitialized = false;
 
-        private void startCanvas(GLCanvas canvas)
+        private void StartCanvas(GLCanvas canvas)
         {
             activeCanvases.Add(canvas);
             if (!threadsInitialized)
             {
                 mainThread = Thread.CurrentThread;
                 threadsInitialized = true;
-                loopthread = new Thread(new ThreadStart(threadLoop));
+                loopthread = new Thread(new ThreadStart(ThreadLoop));
 
                 loopthread.Start();
             }
@@ -124,7 +137,7 @@ namespace GLDrawer
                 Thread.Sleep(1);
             }
         }
-        private static void threadLoop()
+        private static void ThreadLoop()
         {
             while (true)
             {
@@ -135,7 +148,10 @@ namespace GLDrawer
 
                 //when all canvasas are closed, the thread is aborted
                 if (activeCanvases.Count == 0)
+                {
+                    threadsInitialized = false;
                     Thread.CurrentThread.Abort();
+                }
 
                 //canvasas that have closed are simply removed from the update list
                 for (int i = 0; i < activeCanvases.Count; i++)
@@ -153,11 +169,15 @@ namespace GLDrawer
                         can.Initialize();
                     }
                     if (can.GLWrapper.shouldClose)
-                    {
-                        activeCanvases.RemoveAt(i);
-                        continue;
+                    {              
+                        if (activeCanvases[i].GLWrapper.disposed)
+                        {
+                            activeCanvases.RemoveAt(i);
+                            continue;
+                        }
+                        activeCanvases[i].Dispose();
                     }
-                    can.mainLoop();
+                    can.MainLoop();
                 }
             }
         }
@@ -174,11 +194,13 @@ namespace GLDrawer
         /// <param name="autoRender">wether to automatically render objects on the canvas each frame</param>
         /// <param name="debugMode">Display rendering information on top of the canvas</param>
         /// <param name="borderless">Wether or not the window is borderless</param>
-        public GLCanvas(int width = 800, int height = 600, string title = "Canvas Window", Color? BackColor = null, bool TitleDetails = true, bool VSync = true, bool autoRender = true, bool debugMode = false, bool borderless = false)
+        public GLCanvas(int width = 800, int height = 600, string windowTitle = "Canvas Window", Color? BackColor = null, bool TitleDetails = true, bool VSync = true, bool autoRender = true, bool debugMode = false, bool borderless = false)
         {
-            GLWrapper = new unmanaged_Canvas(usePackedShaders);
-            GLWrapper.title = title;
-            GLWrapper.titleDetails = TitleDetails;
+            GLWrapper = new unmanaged_Canvas(usePackedShaders)
+            {
+                title = windowTitle,
+                titleDetails = TitleDetails
+            };
             iWidth = width;
             iHeight = height;
             this.VSync = activeCanvases.Count > 0 ? false : VSync; //can't have more than one context with vsync, or it will run at 30fps
@@ -188,7 +210,7 @@ namespace GLDrawer
             AutoRender = autoRender;
             renderNextFrame = autoRender;
 
-            startCanvas(this);
+            StartCanvas(this);
         }
 
         //allows the native HWND process from a GLFW window to be embedded into a windows forms parnel
@@ -222,31 +244,41 @@ namespace GLDrawer
             AutoRender = autoRender;
             renderNextFrame = autoRender;
 
-            startCanvas(this);
+            StartCanvas(this);
         }
         //C++ backend needs to know where to trigger input events
         private void Initialize()
         {
-            GLWrapper.Input.setMouseCallback(MouseCallback);
-            GLWrapper.Input.setKeyCallback(KeyCallback);
-            GLWrapper.Input.setMouseMoveCallback(MouseMoveCallback);
+            GLWrapper.setMouseCallback(MouseCallback);
+            GLWrapper.setKeyCallback(KeyCallback);
+            GLWrapper.setMouseMoveCallback(MouseMoveCallback);
             initialized = true;
         }
-        private void mainLoop()
+        private void MainLoop()
         {
             iTime = GLWrapper.ellapsedTime;
             iDeltaTime = iTime - lastTime;
             lastTime = iTime;
 
+            EarlyUpdate.Invoke();
             Update.Invoke();
-            MouseScrollDirection = 0;
+            LateUpdate.Invoke();
 
-            if (NullRemovalFlag)
+            for (int i = 0; i < delayedCalls.Count; i++)
+                delayedCalls[i].timeLeft -= DeltaTime;
+            for (int i = 0; i < delayedCalls.Count; i++)
             {
-                GLWrapper.clearNullRects();
-                GC.Collect();
-                NullRemovalFlag = false;
+                if (delayedCalls[i].timeLeft <= 0 && delayedCalls[i].func != null)
+                {
+                    delayedCalls[i].func.Invoke();
+                    if (delayedCalls[i].repeating)
+                        delayedCalls[i].timeLeft = delayedCalls[i].initialTime;
+                }
             }
+
+            delayedCalls.RemoveAll(o => o.timeLeft <= 0 || o.func == null);
+
+            MouseScrollDirection = 0;
 
             if (simpleBackBuffer)
                 GLWrapper.clearBB();
@@ -265,13 +297,18 @@ namespace GLDrawer
             else
                 GLWrapper.mainloop(true);
 
+            disposeBuffer.ForEach(a => a.Invoke());
+            disposeBuffer.Clear();
+
             iWidth = GLWrapper.width;
             iHeight = GLWrapper.height;
             frozen = false;
+
+           
         }
 
         //shortcut for converting null colors to transparent colors for default parameters
-        private Color checkNullC(Color ? c)
+        private Color CheckNullC(Color ? c)
         {
             return c == null ? Color.Invisible : (Color)c;
         }
@@ -289,14 +326,17 @@ namespace GLDrawer
         /// <param name="Angle">Rotation around the center point in radians</param> 
         /// <param name="RotationSpeed">Speed of the rotation animation in radians per frame</param> 
         /// <returns>a copy of the added shape</returns>
-        public Rectangle AddRectangle(float XStart, float YStart, float Width, float Height, Color? FillColor = null, float BorderThickness = 0, Color? BorderColor = null, float Angle = 0, float RotationSpeed = 0)
+        public Polygon AddRectangle(float XStart, float YStart, float Width, float Height, Color? FillColor = null, float BorderThickness = 0, Color? BorderColor = null, float Angle = 0, float RotationSpeed = 0)
         {
             XStart *= Scale;
             YStart *= Scale;
             Width *= Scale;
             Height *= Scale;
-            Rectangle r = new Rectangle(new vec2(XStart + Width / 2f, YStart + Height / 2f), new vec2(Width, Height), FillColor, BorderThickness, BorderColor, Angle, RotationSpeed);
-            GLWrapper.addRect(r.internalShape);
+            Polygon r = new Polygon(new vec2(XStart + Width / 2f, YStart + Height / 2f), new vec2(Width, Height), Angle, 4, FillColor, BorderThickness, BorderColor, RotationSpeed)
+            {
+                DrawIndex = shapeRefs.Count
+            };
+            GLWrapper.addGO(r.internalGO);
             shapeRefs.Add(r);
             return r;
         }
@@ -313,14 +353,13 @@ namespace GLDrawer
         /// <param name="Angle">Rotation around the center point in radians</param> 
         /// <param name="RotationSpeed">Speed of the rotation animation in radians per frame</param> 
         /// <returns>a copy of the added shape</returns>
-        public Rectangle AddCenteredRectangle(float Xpos, float Ypos, float Width, float Height, Color? FillColor = null, float BorderThickness = 0, Color? BorderColor = null, float Angle = 0, float RotationSpeed = 0)
+        public Polygon AddCenteredRectangle(float Xpos, float Ypos, float Width, float Height, Color? FillColor = null, float BorderThickness = 0, Color? BorderColor = null, float Angle = 0, float RotationSpeed = 0)
         {
-            Xpos *= Scale;
-            Ypos *= Scale;
-            Width *= Scale;
-            Height *= Scale;
-            Rectangle r = new Rectangle(new vec2(Xpos, Ypos), new vec2(Width, Height), FillColor, BorderThickness, BorderColor, Angle, RotationSpeed);
-            GLWrapper.addRect(r.internalShape);
+            Polygon r = new Polygon(new vec2(Xpos, Ypos) * Scale, new vec2(Width, Height) * Scale, Angle, 4, FillColor, BorderThickness, BorderColor, RotationSpeed)
+            {
+                DrawIndex = shapeRefs.Count
+            };
+            GLWrapper.addGO(r.internalGO);
             shapeRefs.Add(r);
             return r;
         }
@@ -337,14 +376,17 @@ namespace GLDrawer
         /// <param name="Angle">Rotation around the center point in radians</param> 
         /// <param name="RotationSpeed">Speed of the rotation animation in radians per frame</param> 
         /// <returns>a copy of the added shape</returns>
-        public Ellipse AddEllipse(float XStart, float YStart, float Width, float Height, Color? FillColor = null, float BorderThickness = 0, Color? BorderColor = null, float Angle = 0, float RotationSpeed = 0)
+        public Polygon AddEllipse(float XStart, float YStart, float Width, float Height, Color? FillColor = null, float BorderThickness = 0, Color? BorderColor = null, float Angle = 0, float RotationSpeed = 0)
         {
             XStart *= Scale;
             YStart *= Scale;
             Width *= Scale;
             Height *= Scale;
-            Ellipse e = new Ellipse(new vec2(XStart + Width / 2f, YStart + Height / 2f), new vec2(Width, Height), FillColor, BorderThickness, BorderColor, Angle, RotationSpeed);
-            GLWrapper.addRect(e.internalShape);
+            Polygon e = new Polygon(new vec2(XStart + Width / 2f, YStart + Height / 2f), new vec2(Width, Height), Angle, 1, FillColor, BorderThickness, BorderColor, RotationSpeed)
+            {
+                DrawIndex = shapeRefs.Count
+            };
+            GLWrapper.addGO(e.internalGO);
             shapeRefs.Add(e);
             return e;
         }
@@ -361,14 +403,13 @@ namespace GLDrawer
         /// <param name="Angle">Rotation around the center point in radians</param> 
         /// <param name="RotationSpeed">Speed of the rotation animation in radians per frame</param> 
         /// <returns>a copy of the added shape</returns>
-        public Ellipse AddCenteredEllipse(float Xpos, float Ypos, float Width, float Height, Color? FillColor = null, float BorderThickness = 0, Color? BorderColor = null, float Angle = 0, float RotationSpeed = 0)
+        public Polygon AddCenteredEllipse(float Xpos, float Ypos, float Width, float Height, Color? FillColor = null, float BorderThickness = 0, Color? BorderColor = null, float Angle = 0, float RotationSpeed = 0)
         {
-            Xpos *= Scale;
-            Ypos *= Scale;
-            Width *= Scale;
-            Height *= Scale;
-            Ellipse e = new Ellipse(new vec2(Xpos, Ypos), new vec2(Width, Height), FillColor, BorderThickness, BorderColor, Angle, RotationSpeed);
-            GLWrapper.addRect(e.internalShape);
+            Polygon e = new Polygon(new vec2(Xpos, Ypos) * Scale, new vec2(Width, Height) * Scale, Angle, 1, FillColor, BorderThickness, BorderColor, RotationSpeed)
+            {
+                DrawIndex = shapeRefs.Count
+            };
+            GLWrapper.addGO(e.internalGO);
             shapeRefs.Add(e);
             return e;
         }
@@ -387,12 +428,11 @@ namespace GLDrawer
         /// <returns>a copy of the added shape</returns>
         public Line AddLine(float XStart, float YStart, float XEnd, float YEnd, float Thickness, Color? LineColor = null, float BorderThickness = 0, Color? BorderColor = null, float RotationSpeed = 0)
         {
-            XStart *= Scale;
-            YStart *= Scale;
-            XEnd *= Scale;
-            YEnd *= Scale;
-            Line l = new Line(new vec2(XStart, YStart), new vec2(XEnd, YEnd), Thickness, LineColor, BorderThickness, BorderColor, RotationSpeed);
-            GLWrapper.addRect(l.internalShape);
+            Line l = new Line(new vec2(XStart, YStart) * Scale, new vec2(XEnd, YEnd) * Scale, Thickness, LineColor, BorderThickness, BorderColor, RotationSpeed)
+            {
+                DrawIndex = shapeRefs.Count
+            };
+            GLWrapper.addGO(l.internalGO);
             shapeRefs.Add(l);
             return l;
         }
@@ -412,8 +452,11 @@ namespace GLDrawer
         {
             StartPos *= Scale;
             Length *= Scale;
-            Line l = new Line(StartPos, Length, Thickness, Angle, LineColor, BorderThickness, BorderColor, RotationSpeed);
-            GLWrapper.addRect(l.internalShape);
+            Line l = new Line(StartPos, Length, Thickness, Angle, LineColor, BorderThickness, BorderColor, RotationSpeed)
+            {
+                DrawIndex = shapeRefs.Count
+            };
+            GLWrapper.addGO(l.internalGO);
             shapeRefs.Add(l);
             return l;
         }
@@ -437,8 +480,11 @@ namespace GLDrawer
             Ypos *= Scale;
             Width *= Scale;
             Height *= Scale;
-            Polygon p = new Polygon(new vec2(Xpos, Ypos), new vec2(Width, Height), SideCount, FillColor, BorderThickness, BorderColor, Angle, RotationSpeed);
-            GLWrapper.addRect(p.internalShape);
+            Polygon p = new Polygon(new vec2(Xpos, Ypos), new vec2(Width, Height), Angle, SideCount, FillColor, BorderThickness, BorderColor, RotationSpeed)
+            {
+                DrawIndex = shapeRefs.Count
+            };
+            GLWrapper.addGO(p.internalGO);
             shapeRefs.Add(p);
             return p;
         }
@@ -456,14 +502,13 @@ namespace GLDrawer
         /// <param name="Angle"></param>
         /// <param name="RotationSpeed">Speed of the rotation animation in radians per frame</param>
         /// <returns>Reference to the added sprite</returns>
-        public Sprite AddCenteredSprite(string FilePath, float Xpos, float Ypos, float Width, float Height, Color? FillColor = null, float BorderThickness = 0, Color? BorderColor = null, float Angle = 0, float RotationSpeed = 0)
+        public Sprite AddCenteredSprite(string FilePath, float Xpos, float Ypos, float Width, float Height, float Angle = 0, float RotationSpeed = 0)
         {
-            Xpos *= Scale;
-            Ypos *= Scale;
-            Width *= Scale;
-            Height *= Scale;
-            Sprite s = new Sprite(FilePath, new vec2(Xpos, Ypos), new vec2(Width, Height), FillColor, BorderThickness, BorderColor, Angle, RotationSpeed);
-            GLWrapper.addRect(s.internalShape);
+            Sprite s = new Sprite(FilePath, new vec2(Xpos, Ypos) * Scale, new vec2(Width, Height) * Scale, Angle, RotationSpeed)
+            {
+                DrawIndex = shapeRefs.Count
+            };
+            GLWrapper.addGO(s.internalGO);
             shapeRefs.Add(s);
             return s;
         }
@@ -481,14 +526,17 @@ namespace GLDrawer
         /// <param name="Angle"></param>
         /// <param name="RotationSpeed">Speed of the rotation animation in radians per frame</param>
         /// <returns>Reference to the added sprite</returns>
-        public Sprite AddSprite(string FilePath, float XStart, float YStart, float Width, float Height, Color? FillColor = null, float BorderThickness = 0, Color? BorderColor = null, float Angle = 0, float RotationSpeed = 0)
+        public Sprite AddSprite(string FilePath, float XStart, float YStart, float Width, float Height, Color? Color = null, float Angle = 0, float RotationSpeed = 0)
         {
             XStart *= Scale;
             YStart *= Scale;
             Width *= Scale;
             Height *= Scale;
-            Sprite s = new Sprite(FilePath, new vec2(XStart + Width / 2f, YStart + Height / 2f), new vec2(Width, Height), FillColor, BorderThickness, BorderColor, Angle, RotationSpeed);
-            GLWrapper.addRect(s.internalShape);
+            Sprite s = new Sprite(FilePath, new vec2(XStart + Width / 2f, YStart + Height / 2f), new vec2(Width, Height), Angle, RotationSpeed)
+            {
+                DrawIndex = shapeRefs.Count
+            };
+            GLWrapper.addGO(s.internalGO);
             shapeRefs.Add(s);
             return s;
         }
@@ -503,8 +551,11 @@ namespace GLDrawer
         /// <returns>a copy of the added shape</returns>
         public Text AddCenteredText(string text, float textHeight, Color ? TextColor = null, JustificationType justification = JustificationType.Center, string fontFilepath  = "c:\\windows\\fonts\\times.ttf")
         {
-            Text t = new Text(this.Centre, text, textHeight, TextColor == null ? Color.White : TextColor, justification, fontFilepath);
-            GLWrapper.addRect(t.internalShape);
+            Text t = new Text(this.Centre, text, textHeight, TextColor == null ? Color.White : TextColor, justification, fontFilepath)
+            {
+                DrawIndex = shapeRefs.Count
+            };
+            GLWrapper.addGO(t.internalGO);
             shapeRefs.Add(t);
             return t;
         }
@@ -521,10 +572,11 @@ namespace GLDrawer
         /// <returns>a copy of the added shape</returns>
         public Text AddCenteredText(string text, float textHeight, float Xpos, float Ypos, Color? TextColor = null, JustificationType justification = JustificationType.Center, string fontFilepath = "c:\\windows\\fonts\\times.ttf")
         {
-            Xpos *= Scale;
-            Ypos *= Scale;
-            Text t = new Text(new vec2(Xpos, Ypos), text, textHeight, TextColor == null ? Color.White : TextColor, justification, fontFilepath);
-            GLWrapper.addRect(t.internalShape);
+            Text t = new Text(new vec2(Xpos, Ypos) * Scale, text, textHeight, TextColor == null ? Color.White : TextColor, justification, fontFilepath)
+            {
+                DrawIndex = shapeRefs.Count
+            };
+            GLWrapper.addGO(t.internalGO);
             shapeRefs.Add(t);
             return t;
         }
@@ -540,8 +592,11 @@ namespace GLDrawer
         /// <returns>a copy of the added shape</returns>
         public Text AddText(string text, float textHeight, Rectangle BoundingRect, Color? TextColor = null, JustificationType justification = JustificationType.Center, string fontFilepath = "c:\\windows\\fonts\\times.ttf")
         {
-            Text t = new Text(text, textHeight, BoundingRect, TextColor == null ? Color.White : TextColor, justification, fontFilepath);
-            GLWrapper.addRect(t.internalShape);
+            Text t = new Text(text, textHeight, TextColor == null ? Color.White : TextColor, justification, fontFilepath)
+            {
+                DrawIndex = shapeRefs.Count
+            };
+            GLWrapper.addGO(t.internalGO);
             shapeRefs.Add(t);
             return t;
         }
@@ -564,68 +619,124 @@ namespace GLDrawer
             YStart *= Scale;
             Width *= Scale;
             Height *= Scale;
-            Rectangle BoundingRect = new Rectangle(new vec2(XStart + width, YStart + height) / 2f, new vec2(width, height));
-            Text t = new Text(text, textHeight, BoundingRect, TextColor == null ? Color.White : TextColor, justification, fontFilepath);
-            GLWrapper.addRect(t.internalShape);
+            // Rectangle BoundingRect = new Rectangle(new vec2(XStart + width, YStart + height) / 2f, new vec2(width, height));
+            Text t = new Text(text, textHeight, TextColor == null ? Color.White : TextColor, justification, fontFilepath)
+            {
+                DrawIndex = shapeRefs.Count
+            };
+            GLWrapper.addGO(t.internalGO);
             shapeRefs.Add(t);
             return t;
         }
 
         public Shape Add(Shape shape)
         {
-            GLWrapper.addRect(shape.internalShape);
+            if (shape == null)
+                throw new NullReferenceException("Shape was NULL");
+            GLWrapper.addGO(shape.internalGO);
             shapeRefs.Add(shape);
             return shape;
         }
+        public GameObject Add(GameObject gameObject)
+        {
+            if (gameObject == null)
+                throw new NullReferenceException("GameObject was NULL");
+            GLWrapper.addGO(gameObject.internalGO);
+            GORefs.Add(gameObject);
+            gameObject.can = this;
+
+            EarlyUpdate += gameObject.InternalEarlyUpdate;
+            Update += gameObject.InternalUpdate;
+            LateUpdate += gameObject.InternalLateUpdate;
+
+            return gameObject;
+        }
+        public GameObject Instantiate(GameObject original)
+        {
+            GameObject clone = original.Clone();
+            Add(clone);
+            return clone;
+        }
+        public GameObject Instantiate(GameObject original, vec2 position, float rotation = 0)
+        {
+            GameObject clone = Instantiate(original);
+            clone.transform.Position = position;
+            clone.transform.Rotation = rotation;
+            return clone;
+        }
+        public GameObject Instantiate(GameObject original, vec2 position, float rotation, GameObject parent)
+        {
+            GameObject clone = Instantiate(original, position, rotation);
+            clone.Parent = parent;
+            return clone;
+        }
+        public void LoadAsset(string filePath)
+        {
+
+        }
+        public void LoadAssets(string[] filePath, bool showLoadingScreen)
+        {
+            foreach (string s in filePath)
+            {
+                GLWrapper.loadImageAsset(s);
+            }
+        }
+
         //// <summary>renders all shapes to the screen</summary>
         public void Render() => renderNextFrame = true;
-        /// <summary>stops drawaing a shape on the canvas</summary>
-        public void RemoveShape(Shape s)
+        /// <summary>stops drawaing a shape on the canvas</summary
+        public void Remove(Shape s)
         {
             shapeRefs.Remove(s);
-            GLWrapper.removeRect(s.internalShape);
+            GLWrapper.removeGO(s.internalGO);
+        }
+        public void Remove(GameObject gameObject)
+        {
+            GORefs.Remove(gameObject);           
+            GLWrapper.removeGO(gameObject.internalGO);
+            disposeBuffer.Add(gameObject.Dispose);
         }
         /// <summary>displays a shape one index behind other shapes on the canvas</summary>
         public void SendBackward(Shape shape)
         {
-            if (!GLWrapper.checkLoaded(shape.internalShape))
-                throw new ArgumentException("Shape was not found on / wasn't added to the canvas", "shape");
+            //if (!GLWrapper.checkLoaded(shape.internalGO))
+            //    throw new ArgumentException("Shape was not found on / wasn't added to the canvas", "shape");
 
-            int shapeIndex = GLWrapper.getRectIndex(shape.internalShape);
-            if (shapeIndex > 0)
-                GLWrapper.swapOrder(shapeIndex, shapeIndex - 1);
+            //int shapeIndex = GLWrapper.getRectIndex(shape.internalGO);
+            //if (shapeIndex > 0)
+            //    GLWrapper.swapOrder(shapeIndex, shapeIndex - 1);
         }
         /// <summary>displays a shape one index in front of the other shapes on the canvas</summary>
         public void SendForward(Shape shape)
         {
-            if (!GLWrapper.checkLoaded(shape.internalShape))
-                throw new ArgumentException("Shape was not found on / wasn't added to the canvas", "shape");
+            //if (!GLWrapper.checkLoaded(shape.internalGO))
+            //    throw new ArgumentException("Shape was not found on / wasn't added to the canvas", "shape");
 
-            int shapeIndex = GLWrapper.getRectIndex(shape.internalShape);
-            if(shapeIndex < ShapeCount -1)
-                GLWrapper.swapOrder(shapeIndex, shapeIndex +1);
+            //int shapeIndex = GLWrapper.getRectIndex(shape.internalGO);
+            //if(shapeIndex < ShapeCount -1)
+            //    GLWrapper.swapOrder(shapeIndex, shapeIndex +1);
         }
         /// <summary>sets a shape to be drawn behind every other shape on the canvas</summary>
         public void SendToBack(Shape shape)
         {
-            if (!GLWrapper.checkLoaded(shape.internalShape))
-                throw new ArgumentException("Shape was not found on / wasn't added to the canvas", "shape");
+            //if (!GLWrapper.checkLoaded(shape.internalGO))
+            //    throw new ArgumentException("Shape was not found on / wasn't added to the canvas", "shape");
 
-            int shapeIndex = GLWrapper.getRectIndex(shape.internalShape);
-            for (int i = shapeIndex; i > 0; i--)
-                GLWrapper.swapOrder(i, i - 1);
+            //int shapeIndex = GLWrapper.getRectIndex(shape.internalGO);
+            //for (int i = shapeIndex; i > 0; i--)
+            //    GLWrapper.swapOrder(i, i - 1);
         }
         /// <summary>sets a shape to be drawn in front of every other shape on the canvas</summary>
         public void SendToFront(Shape shape)
         {
-            if (!GLWrapper.checkLoaded(shape.internalShape))
-                throw new ArgumentException("Shape was not found on / wasn't added to the canvas", "shape");
+            //if (!GLWrapper.checkLoaded(shape.internalGO))
+            //    throw new ArgumentException("Shape was not found on / wasn't added to the canvas", "shape");
 
-            int max = ShapeCount; //CLR properties are slow
-            int shapeIndex = GLWrapper.getRectIndex(shape.internalShape);
+            //int max = ShapeCount; //CLR properties are slow
+            //int shapeIndex = GLWrapper.getRectIndex(shape.internalGO);
 
-            for (int i = shapeIndex; i < max-1; i++)
-                GLWrapper.swapOrder(i, i + 1);
+            //for (int i = shapeIndex; i < max-1; i++)
+            //    GLWrapper.swapOrder(i, i + 1);
         }
         /// <summary>
         /// swaps the drawing order of two shapes and which will apear in front of the other
@@ -645,12 +756,49 @@ namespace GLDrawer
         /// <summary>swaps the drawing order of two shapes and which will apear in front of the other</summary>
         public void SwapDrawOrder(Shape shapeA, Shape shapeB)
         {
-            if (!GLWrapper.checkLoaded(shapeA.internalShape))
-                throw new ArgumentException("Shape A was not found on / wasn't added to the canvas", "shapeA");
-            if (!GLWrapper.checkLoaded(shapeB.internalShape))
-                throw new ArgumentException("Shape B was not found on / wasn't added to the canvas", "shapeB");
-            GLWrapper.swapOrder(GLWrapper.getRectIndex(shapeA.internalShape), GLWrapper.getRectIndex(shapeB.internalShape));
+            //if (!GLWrapper.checkLoaded(shapeA.internalGO))
+            //    throw new ArgumentException("Shape A was not found on / wasn't added to the canvas", "shapeA");
+            //if (!GLWrapper.checkLoaded(shapeB.internalGO))
+            //    throw new ArgumentException("Shape B was not found on / wasn't added to the canvas", "shapeB");
+            //GLWrapper.swapOrder(GLWrapper.getRectIndex(shapeA.internalGO), GLWrapper.getRectIndex(shapeB.internalGO));
         }
+
+        /// <summary>
+        /// Calls a function after a number of seconds
+        /// </summary>
+        /// <param name="function">Function to be called</param>
+        /// <param name="time">Time is seconds before function is called</param>
+        public void Invoke(Action function, float time)
+        {
+            if (function != null)
+                delayedCalls.Add(new DelayedCall(function, time));
+        }
+        /// <summary>
+        /// Calls a function after a number of seconds
+        /// </summary>
+        /// <param name="function">Function to be called</param>
+        /// <param name="time">Time is seconds before function is called</param>
+        public void InvokeRepeating(Action function, float time)
+        {
+            if (function != null)
+                delayedCalls.Add(new DelayedCall(function, time, true));
+        }
+
+        class DelayedCall
+        {
+            public Action func;
+            public float timeLeft;
+            public float initialTime;
+            public bool repeating;
+            public DelayedCall(Action f, float t, bool repeat = false)
+            {
+                func = f;
+                timeLeft = t;
+                initialTime = t;
+                repeating = repeat;
+            }
+        }
+
         /// <summary>sets the color of a single pixel on theh back buffer</summary>
         public void SetBBPixel(int x, int y, Color color)
         { 
@@ -663,13 +811,13 @@ namespace GLDrawer
         /// <summary>draws a whole shape to the back buffer</summary>
         public Shape SetBBShape(Shape shape)
         {
-            GLWrapper.setBBShape(shape.internalShape);
+            GLWrapper.setBBShape(shape.internalGO);
             return shape;
         }
         /// <summary>gets the color of a single pixel on the canvas</summary>
-        public Color getPixel(vec2 pixel) => GLWrapper.getPixel((int)pixel.x, (int)pixel.y);
+        public Color GetPixel(vec2 pixel) => GLWrapper.getPixel((int)pixel.x, (int)pixel.y);
         /// <summary>gets the color of a single pixel on the canvas</summary>
-        public Color getPixel(int x, int y)
+        public Color GetPixel(int x, int y)
         {
             if (x < 0 || x > Width)
                 throw new ArgumentException("X coordinate must be a positive number less than the canvas width", "x");
@@ -678,10 +826,6 @@ namespace GLDrawer
 
             return GLWrapper.getPixel(x, y);
         }
-
-
-        /// <summary>removes shapes with now references from the canvas</summary>
-        public void Refresh() => NullRemovalFlag = true;
 
         /// <summary>
         /// sets the upper-left corner location of the window on the screen 
@@ -701,7 +845,6 @@ namespace GLDrawer
         public void Close()
         {
             GLWrapper.shouldClose = true;
-            //GLWrapper.dispose();
         }
         /// <summary>sets every pixel on the back buffer to the back buffer color</summary>
         public void ClearBackBuffer() => GLWrapper.clearBB();
@@ -711,12 +854,28 @@ namespace GLDrawer
             shapeRefs.Clear();
             GLWrapper.clearShapes();
         }
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        private void Dispose(bool disposing)
+        {
+            if (!disposed)
+            {
+                disposed = true;
+                GLWrapper.dispose();
+                if (disposing)
+                {
+                    //if any managed resources need to be disposed, it should be done here
+                }        
+            }
+        }
         ~GLCanvas()
         {
-            GLWrapper.dispose();
+            Dispose(false);
         }
     }
-
   
     public static class GMath
     {
@@ -744,7 +903,7 @@ namespace GLDrawer
         /// <summary>
         /// Linear interpolates between two values
         /// </summary>
-        public static float lerp(float first, float second, float time)
+        public static float Lerp(float first, float second, float time)
         {
             return first * time + second * (1 - time);
         }
