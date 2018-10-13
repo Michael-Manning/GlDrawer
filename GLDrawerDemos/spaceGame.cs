@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using GLDrawer;
 
-namespace GLDrawerDemos
+namespace spaceGame
 {
     public static class spaceGame
     {

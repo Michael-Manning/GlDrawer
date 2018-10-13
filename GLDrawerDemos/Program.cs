@@ -21,18 +21,13 @@ namespace GLDrawerDemos
         static void Main(string[] args)
         {
             //demos.fastRemoval();//demos.backBufferShapes();
-            //Console.ReadKey();
-            Console.WriteLine("rrunning");
-              spaceGame.run();
-            can = new GLCanvas();
-            can.Update += delegate
-            {
-                can.AddCenteredEllipse(0,0,100,100, Color.White);
-            };
-            can.LateUpdate += delegate
-            {
-                can.Clear();
-            };
+
+            spaceGame.spaceGame.run();
+            platformGame.platformer.run();
+
+            //demos.IntersectTest();
+            //demos.PhysicsTest();          
+
             //Application.EnableVisualStyles();
             //TestForm tform = new TestForm();
 

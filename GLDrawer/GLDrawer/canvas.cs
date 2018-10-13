@@ -21,7 +21,7 @@ namespace GLDrawer
     {
         private bool usePackedShaders = true; //set this as true to compile the last packed version of the shaders into the executable/DLL (see shaders.h for more info)
 
-        private float iTime, iDeltaTime, lastTime;
+        private float iTime = 0, iDeltaTime = 0, lastTime = 0;
         /// <summary>time in seconds since canvas creation</summary>
         public float Time { get => iTime; }
         /// <summary>time in seconds of the last frame time</summary>
@@ -101,7 +101,7 @@ namespace GLDrawer
         public event Action LateUpdate = delegate { };
 
 
-        private unmanaged_Canvas GLWrapper;
+        internal unmanaged_Canvas GLWrapper;
         private Form iform;
         private Panel ipanel;
         private bool embedded = false;
@@ -254,29 +254,37 @@ namespace GLDrawer
             GLWrapper.setMouseMoveCallback(MouseMoveCallback);
             initialized = true;
         }
+        private bool firstLoop = true;
         private void MainLoop()
         {
-            iTime = GLWrapper.ellapsedTime;
-            iDeltaTime = iTime - lastTime;
-            lastTime = iTime;
-
-            EarlyUpdate.Invoke();
-            Update.Invoke();
-            LateUpdate.Invoke();
-
-            for (int i = 0; i < delayedCalls.Count; i++)
-                delayedCalls[i].timeLeft -= DeltaTime;
-            for (int i = 0; i < delayedCalls.Count; i++)
+            //let OpenGL warm up a bit before calling time sensitive delegates
+            if (firstLoop)
             {
-                if (delayedCalls[i].timeLeft <= 0 && delayedCalls[i].func != null)
-                {
-                    delayedCalls[i].func.Invoke();
-                    if (delayedCalls[i].repeating)
-                        delayedCalls[i].timeLeft = delayedCalls[i].initialTime;
-                }
+                firstLoop = false;
             }
+            else
+            {
+                iTime = GLWrapper.ellapsedTime;
+                iDeltaTime = iTime - lastTime;
+                lastTime = iTime;
 
-            delayedCalls.RemoveAll(o => o.timeLeft <= 0 || o.func == null);
+                EarlyUpdate.Invoke();
+                Update.Invoke();
+                LateUpdate.Invoke();
+
+                for (int i = 0; i < delayedCalls.Count; i++)
+                    delayedCalls[i].timeLeft -= DeltaTime;
+                for (int i = 0; i < delayedCalls.Count; i++)
+                {
+                    if (delayedCalls[i].timeLeft <= 0 && delayedCalls[i].func != null)
+                    {
+                        delayedCalls[i].func.Invoke();
+                        if (delayedCalls[i].repeating)
+                            delayedCalls[i].timeLeft = delayedCalls[i].initialTime;
+                    }
+                }
+                delayedCalls.RemoveAll(o => o.timeLeft <= 0 || o.func == null);
+            }
 
             MouseScrollDirection = 0;
 
@@ -655,6 +663,7 @@ namespace GLDrawer
         {
             GameObject clone = original.Clone();
             Add(clone);
+            clone.updateInternals(); //Updates the internal gameobject values
             return clone;
         }
         public GameObject Instantiate(GameObject original, vec2 position, float rotation = 0)
@@ -662,12 +671,14 @@ namespace GLDrawer
             GameObject clone = Instantiate(original);
             clone.transform.Position = position;
             clone.transform.Rotation = rotation;
+            clone.updateInternals(); //Updates the internal gameobject values
             return clone;
         }
         public GameObject Instantiate(GameObject original, vec2 position, float rotation, GameObject parent)
         {
             GameObject clone = Instantiate(original, position, rotation);
             clone.Parent = parent;
+            clone.updateInternals(); //Updates the internal gameobject values
             return clone;
         }
         public void LoadAsset(string filePath)
@@ -768,7 +779,7 @@ namespace GLDrawer
         /// </summary>
         /// <param name="function">Function to be called</param>
         /// <param name="time">Time is seconds before function is called</param>
-        public void Invoke(Action function, float time)
+        public void Invoke(Action function, float time = 0)
         {
             if (function != null)
                 delayedCalls.Add(new DelayedCall(function, time));

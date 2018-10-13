@@ -164,6 +164,11 @@
   <ItemGroup>
     <Text Include="ToDo.txt" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Include\Build\Box2D.vcxproj">
+      <Project>{a434e80c-1049-10be-d9ca-b31d459e0cef}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

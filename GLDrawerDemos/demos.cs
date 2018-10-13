@@ -12,10 +12,102 @@ namespace GLDrawerDemos
     {
         static GLCanvas can;
 
+        public static void IntersectTest()
+        {
+            can = new GLCanvas();
+            Polygon rect = can.AddCenteredRectangle(-150, 0, 200, 100, Color.White, Angle: 1);
+            Polygon circ = can.AddCenteredEllipse(150, 0, 150, 150, Color.White);
+            can.Update += delegate
+            {
+                if (rect.Intersect(can.MousePositionWorldSpace))
+                    rect.FillColor = Color.Red;
+                else
+                    rect.FillColor = Color.White;
+
+                if (circ.Intersect(can.MousePositionWorldSpace))
+                    circ.FillColor = Color.Red;
+                else
+                    circ.FillColor = Color.White;
+            };
+        }
+
+        public static void PhysicsTest()
+        {
+            can = new GLCanvas(1000,1000, BackColor: new Color(50));
+
+            can.AddCenteredText("Click and drag to fling boxes and balls.", 30, new Color(255, 160));
+            can.Instantiate(new wall(), new vec2(1000, 0));
+            can.Instantiate(new wall(), new vec2(-1000, 0));
+            can.Instantiate(new wall(), new vec2(0, -1000)); 
+
+            vec2 A = vec2.Zero, B = vec2.Zero;
+            Line traj = can.Add(new Line(new vec2(), new vec2(), 8, Color.White)) as Line;
+            traj.Hidden = true;
+
+            can.Update += delegate
+            {
+                traj.End = can.MousePositionWorldSpace;
+                if (can.GetMouseDown(0))
+                {
+                    A = can.MousePositionWorldSpace;
+                    traj.Start = A;
+                    traj.Hidden = false;
+                }          
+                else if (can.GetMouseUp(0))
+                {
+                    traj.Hidden = true;
+                    B = can.MousePositionWorldSpace;
+                    can.Instantiate(new box(A - B, 4), A);             
+                }
+                else if (can.GetMouseDown(1))
+                {
+                    A = can.MousePositionWorldSpace;
+                    traj.Start = A;
+                    traj.Hidden = false;
+                }
+                else if (can.GetMouseUp(1))
+                {
+                    traj.Hidden = true;
+                    B = can.MousePositionWorldSpace;
+                    can.Instantiate(new box(A - B, 1), A);
+                }
+            };
+        }
+        class box : GameObject
+        {
+            Random rnd = new Random();
+            vec2 vel = vec2.Zero;
+            int type = 0;
+            public box(vec2 V, int t)
+            { 
+                vel = V;
+                type = t;
+            }
+            //static Random = new 
+            public override void Start()
+            {
+                vec2 sc = new vec2(rnd.Next(30, 230), rnd.Next(70, 130));
+                if (type == 1)
+                    sc = new vec2(rnd.Next(30, 230));
+                Shape box = AddChildShape(new Polygon(vec2.Zero, sc, 0, type, Color.Random, 5, Color.White));
+                rigidbody = new Rigidbody(this);
+                rigidbody.AddForce(vel);
+                rigidbody.AddTorque(100);
+            }
+        }
+        class wall : GameObject
+        {
+            public override void Start()
+            {
+                Shape s = AddChildShape(new Polygon(vec2.Zero, new vec2(1000, 1000), 0, 4, new Color(255, 50)));
+                rigidbody = new Rigidbody(this, kinematic: true);
+            }
+        }
+
         /// <summary>
         /// adds 7200 shapes to the screen to test thread safety and performance
         /// </summary>
-        public static void groupAdd()
+        public static void GroupAdd()
         {
             can = new GLCanvas(1200, 600, TitleDetails: true, VSync: true);
             can.simpleBackBuffer = true;
@@ -28,7 +120,7 @@ namespace GLDrawerDemos
         /// <summary>
         /// pushes the speed of adding and removing shapes to the limit. Usefull for causing vector errors
         /// </summary>
-        public static void fastRemoval()
+        public static void FastRemoval()
         {
             can = new GLCanvas(800, 600, TitleDetails: true, VSync: false); //good to test with vsync both off and on
             can.simpleBackBuffer = true;
@@ -49,7 +141,7 @@ namespace GLDrawerDemos
             }
         }
 
-        public static void imageLoadingAbuse(string filepath)
+        public static void ImageLoadingAbuse(string filepath)
         {
             can = new GLCanvas(800, 800, TitleDetails: true, VSync: false);
             can.simpleBackBuffer = true;
@@ -69,7 +161,7 @@ namespace GLDrawerDemos
 
         private static Polygon[] Xe = new Polygon[26];
         private static Polygon[] Ye = new Polygon[20];
-        public static void backBufferShapes()
+        public static void BackBufferShapes()
         {
             can = new GLCanvas(1300, 900, TitleDetails: true, VSync: false);
             for (int i = 0; i < 1300; i++)

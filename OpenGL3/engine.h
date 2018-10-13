@@ -3,6 +3,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <Box2D/Box2D.h>
 #include <vector>
 
 using namespace std;
@@ -158,6 +159,27 @@ public:
 	bool burstTrigger = true;
 };
 
+const float phScale = 100; //pixel/unit ratio for physics
+
+bool testCirc(vec2 circPos, float rad, vec2 test);
+bool testRect(vec2 rectPos, vec2 scale, float angle, vec2 Test);
+
+class rigBody {
+public:
+	GO * link;
+	b2World * world;
+	b2Body * body;
+	b2FixtureDef fixtureDef;
+	bool kinematic = false;
+
+	void addForce(vec2 force);
+	void addTorque(float torque);
+	void setVelocity(vec2 velocity);
+	void lockRotation();
+	vec2 GetVelocity();
+	rigBody(b2World * World, GO * Link, int type, float friction = 0.8f, bool Kinimatic = false);
+};
+
 //GameObject
 class GO {
 public:
@@ -166,6 +188,8 @@ public:
 	imgData * i;
 	textData * t;
 	ParticleSystem * ps;
+
+	rigBody * body;
 
 	vec2 position;
 	vec2 scale;
@@ -184,6 +208,7 @@ public:
 
 extern vector<const char *> fontHashLookup;
 extern vector<const char *> imgHashLookup;
+extern b2BodyDef bodyDef; //for physics
 
 //for input rollover and events
 struct description {
@@ -289,6 +314,11 @@ public :
 	void focus();
 	void mainloop(bool render = true); //steps the program forward (and maybe renders the scene)
 
+	//physics
+	b2World world = b2World(b2Vec2(0, -10)); //world with default gravity
+	int32 velocityIterations = 50; //6
+	int32 positionIterations = 20; //3
+	float32 timeStep = 1.0f / 60.0f;
 
 	vector<GO*> GameObjects;
 	vector<GO*> GOBuffer;

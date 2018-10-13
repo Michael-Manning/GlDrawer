@@ -11,14 +11,13 @@ namespace GLDrawer
 
     public abstract partial class Shape : IDisposable
     {
-        /// <summary>
         /// this simple class primarly interacts with the C++ backend.
         /// An "unmanaged_shape" is a backend structure which contains %90 of the actual shape data and functions.
         /// All shapes are contained in an unmanaged_shape and are simply rendered with different shaders depending 
         /// on the number of sides (-1 = font, 0 = texture, 1 = Ellipse, 4 = Quad, all other positive numbers = polygon).
         /// Text and Sprite contain the only supplimentary data which are their filepaths and the text to be rasterized.
         /// See GLDrawerCLR.h, and engine.h for more details
-        /// </summary>
+
         public vec2 Position { get => new vec2(internalGO.position.x, internalGO.position.y); set => internalGO.position = new unmanaged_vec2(value.x, value.y); }
         public vec2 Scale { get => new vec2(internalGO.scale.x, internalGO.scale.y); set => internalGO.scale = new unmanaged_vec2(value.x, value.y); }
         public virtual float Angle { get => internalGO.angle; set => internalGO.angle = value; }
@@ -26,6 +25,16 @@ namespace GLDrawer
         public float RotationSpeed { get => internalGO.rSpeed; set => internalGO.rSpeed = value; }
         public bool Hidden { get => internalGO.hidden; set => internalGO.hidden = value; }
         public int DrawIndex { get => internalGO.drawIndex; set => internalGO.drawIndex = value; }
+        
+        /// <summary>
+        /// returns true if the point is inside the shape
+        /// </summary>
+        /// <param name="point"> location to test</param>
+        /// <returns></returns>
+        public virtual bool Intersect(vec2 point)
+        {
+            return unmanaged_Canvas.TestRect(Position.x, Position.y, Scale.x, Scale.y, Angle, point.x, point.y);
+        }
 
         //used only with gameobjects internally
         private GameObject iparent;
@@ -38,6 +47,8 @@ namespace GLDrawer
                 iparent = value;
             }
         }
+        internal bool isCircle = false; //saves hassel with physics
+
         public void ClearParent()
         {
             internalGO.clearParent();
@@ -177,6 +188,7 @@ namespace GLDrawer
                     throw new ArgumentOutOfRangeException("sideCount", value, "Polygon must have a minimum of 3 sides");
                 isidecount = value;
                 internalPoly.sides = value;
+                isCircle = SideCount == 1;
             }
         }
         public Polygon(vec2 position, vec2 scale, float angle = 0, int sideCount = 4, Color? fillColor = null, float borderWidth = 0, Color? borderColor = null, float rotationSpeed = 0)
@@ -184,6 +196,14 @@ namespace GLDrawer
             internalPoly = new unmanaged_polyData(CheckNullC(fillColor), CheckNullC(borderColor), borderWidth, sideCount);
             internalGO = new unmanaged_GO(internalPoly, position.x, position.y, scale.x, scale.y, angle, rotationSpeed);
             SideCount = sideCount;
+            isCircle = SideCount == 1;
+        }
+        public override bool Intersect(vec2 point)
+        {
+            if (SideCount == 1)
+                return unmanaged_Canvas.TestRect(Position.x, Position.y, Scale.x, Scale.y, Angle, point.x, point.y);
+            else
+                return base.Intersect(point);
         }
         public override void Dispose()
         {

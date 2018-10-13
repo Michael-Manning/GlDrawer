@@ -60,7 +60,58 @@ namespace GLDrawer
                 return can;
             }     
         }
-        private List<Shape> shapeChildren = new List<Shape>();
+
+        private Rigidbody irig;
+        public Rigidbody rigidbody
+        {
+            get
+            {
+                return irig;
+            }
+            set
+            {
+                CheckCan();
+                irig = value;
+                internalGO.setBody(irig.internalBody);
+            }
+        }
+        private Collider icol;
+        public Collider collider
+        {
+            get
+            {
+                return icol;
+            }
+            set
+            {
+                CheckCan();
+                icol = value;
+            }
+        }
+
+        internal int colliderType = -1;
+        public bool TriggerCollider { get; private set; } = false;
+        public void SetBoxCollider(vec2 scale, bool triggermode = false)
+        {
+            internalGO.scale = new unmanaged_vec2(scale.x, scale.y);
+            colliderType = 1;
+            TriggerCollider = triggermode;
+        }
+        public void SetCircleCollider(float radius, bool triggermode = false)
+        {
+            internalGO.scale = new unmanaged_vec2(radius, radius);
+            colliderType = 0;
+            TriggerCollider = triggermode;
+        }
+        public void setColliderFromShape(Shape s)
+        {
+            if (s.isCircle)
+                SetCircleCollider(s.Scale.x);
+            else
+                SetBoxCollider(s.Scale);
+        }
+
+        internal List<Shape> shapeChildren = new List<Shape>(); //used by rigidbodies
         protected Shape AddChildShape(Shape s)
         {
             CheckCan();
@@ -145,6 +196,12 @@ namespace GLDrawer
                 startFlag = true;
                 Start();
             }
+            //rigidbodies affect the position between frames
+            if(rigidbody != null)
+            {
+                transform.Position = new vec2(internalGO.position.x, internalGO.position.y);
+                transform.Rotation = internalGO.angle;
+            }
             EarlyUpdate();
         }
         internal void InternalUpdate()
@@ -154,6 +211,10 @@ namespace GLDrawer
         internal void InternalLateUpdate()
         {
             LateUpdate();
+            updateInternals();
+        }
+        internal void updateInternals()
+        {
             transform.Position += transform.Velocity;
             internalGO.position = new unmanaged_vec2(transform.Position.x, transform.Position.y);
             internalGO.angle = transform.Rotation;

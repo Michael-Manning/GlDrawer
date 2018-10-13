@@ -59,11 +59,10 @@ namespace GLDrawer
             return new vec2(this.x / distance, this.y / distance);
         }
         /// <summary>linear interpolation between vectors</summary>
-        public vec2 
-            Lerp(vec2 target, float time)
+        public static vec2 Lerp(vec2 current, vec2 target, float time)
         {
-            float retX = x * time + target.x * (1 - time);
-            float retY = y * time + target.y * (1 - time);
+            float retX = current.x * time + target.x * (1 - time);
+            float retY = current.y * time + target.y * (1 - time);
             return new vec2(retX, retY);
         }
         //implicit vec2 to PointF

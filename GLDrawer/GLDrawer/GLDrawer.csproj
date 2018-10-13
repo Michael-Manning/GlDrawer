@@ -86,6 +86,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="physics.cs" />
     <Compile Include="shapes.cs" />
     <Compile Include="vec2.cs" />
   </ItemGroup>

@@ -44,11 +44,11 @@ namespace GLDrawer
         {
             Keys k = IntToKeys(key);
             //Console.WriteLine(k.ToString() + " " + (action == 1 ? "PRESSED" : "LIFTED"));
-            if (key >= (int)Keycode.D0 && key <= (int)Keycode.D9)
-                lastNumber = key - (int)Keycode.D0;
+            if (key >= (int)SpecialKeys.D0 && key <= (int)SpecialKeys.D9)
+                lastNumber = key - (int)SpecialKeys.D0;
             //ignores numlock
-            else if (key >= (int)Keycode.NP0 && key <= (int)Keycode.NP9)
-                lastNumber = key - (int)Keycode.NP0;
+            else if (key >= (int)SpecialKeys.NP0 && key <= (int)SpecialKeys.NP9)
+                lastNumber = key - (int)SpecialKeys.NP0;
      
             if (action == 1)
                 KeyDown.Invoke(k, this);
@@ -160,7 +160,7 @@ namespace GLDrawer
         /// Returns true if the key is being held down
         /// <param name="button">keycode to check if pressed</param>
         /// </summary>
-        public bool GetSpecialKey(Keycode button)
+        public bool GetSpecialKey(SpecialKeys button)
         {
             return GLWrapper.getKey((int)button);
         }
@@ -168,7 +168,7 @@ namespace GLDrawer
         /// Returns true if the key was was pressed during tthe current frame
         /// <param name="button">keycode to check if pressed</param>>
         /// </summary>
-        public bool GetSpecialKeyDown(Keycode button)
+        public bool GetSpecialKeyDown(SpecialKeys button)
         {
             return GLWrapper.getKeyDown((int)button);
         }
@@ -176,7 +176,7 @@ namespace GLDrawer
         /// Returns true if the key was lifted during the current frame
         /// <param name="button">keycode to check if lifted</param>>
         /// </summary>
-        public bool GetSpecialKeyUp(Keycode button)
+        public bool GetSpecialKeyUp(SpecialKeys button)
         {
             return GLWrapper.getKeyUp((int)button);
         }
@@ -320,102 +320,7 @@ namespace GLDrawer
         #endregion GDIDrawer mouse functions
 
         //LIST: http://www.glfw.org/docs/latest/group__keys.html
-        public enum Keycode
-        {
-            UNKNOWN = -1,
-            SPACE = 32,
-            APOSTROPHE = 39,
-            COMMA = 44,
-            MINUS = 45,
-            PERIOD = 46,
-            FORWARDSLASH = 47,
-            D0 = 48,
-            D1 = 49,
-            D2 = 50,
-            D3 = 51,
-            D4 = 52,
-            D5 = 53,
-            D6 = 54,
-            D7 = 55,
-            D8 = 56,
-            D9 = 57,
-            SEMICOLON = 59,
-            EQUALS = 61,
-            LEFTBRACKET = 91,
-            BACKSLASH = 92,
-            RIGHTBRACKED = 93,
-            GRAVEACCENT = 96,
-            ESCAPE = 256,
-            ENTER = 257,
-            TAB = 258,
-            BACKSPACE = 259,
-            INSERT = 260,
-            DELETE = 261,
-            RIGHT = 262,
-            LEFT = 263,
-            DOWN = 264,
-            UP = 265,
-            PAGEUP = 266,
-            PAGEDOWN = 267,
-            HOME = 268,
-            END = 269,
-            CAPSLOCK = 280,
-            SCROLLLOCK = 281,
-            NUMLOCK = 282,
-            PRINTSCREEN = 283,
-            PAUSE = 84,
-            F1 = 290,
-            F2 = 291,
-            F3 = 292,
-            F4 = 293,
-            F5 = 294,
-            F6 = 295,
-            F7 = 296,
-            F8 = 297,
-            F9 = 298,
-            F10 = 299,
-            F11 = 300,
-            F12 = 301,
-            F13 = 302,
-            F14 = 303,
-            F15 = 304,
-            F16 = 305,
-            F17 = 306,
-            F18 = 307,
-            F19 = 308,
-            F20 = 309,
-            F21 = 310,
-            F22 = 311,
-            F23 = 312,
-            F24 = 313,
-            F25 = 314,
-            NP0 = 320,
-            NP1 = 321,
-            NP2 = 322,
-            NP3 = 323,
-            NP4 = 324,
-            NP5 = 325,
-            NP6 = 326,
-            NP7 = 327,
-            NP8 = 328,
-            NP9 = 329,
-            NPDECIMAL = 330,
-            NPDIVIDE = 331,
-            NPMULTIPLY = 332,
-            NPSUBTRACT = 333,
-            NPADD = 334,
-            KPENTER = 335,
-            KPEQUAL = 336,
-            LEFTSHIFT = 340,
-            LEFTCONTROL = 341,
-            LEFTALT = 342,
-            LEFTSUPER = 343,
-            RIGHTSHIFT = 344,
-            RIGHTCONTROL = 345,
-            RIGHTALT = 346,
-            RIGHTSUPER = 347,
-            MENUE = 348
-        };
+       
 
         //I'm not proud of this, but it only really exsists prove GLDrawer contains every input function found in GDIDrawer 
         Keys IntToKeys(int key)
@@ -668,4 +573,100 @@ namespace GLDrawer
             return code;
         }
     }
+    public enum SpecialKeys
+    {
+        UNKNOWN = -1,
+        SPACE = 32,
+        APOSTROPHE = 39,
+        COMMA = 44,
+        MINUS = 45,
+        PERIOD = 46,
+        FORWARDSLASH = 47,
+        D0 = 48,
+        D1 = 49,
+        D2 = 50,
+        D3 = 51,
+        D4 = 52,
+        D5 = 53,
+        D6 = 54,
+        D7 = 55,
+        D8 = 56,
+        D9 = 57,
+        SEMICOLON = 59,
+        EQUALS = 61,
+        LEFTBRACKET = 91,
+        BACKSLASH = 92,
+        RIGHTBRACKED = 93,
+        GRAVEACCENT = 96,
+        ESCAPE = 256,
+        ENTER = 257,
+        TAB = 258,
+        BACKSPACE = 259,
+        INSERT = 260,
+        DELETE = 261,
+        RIGHT = 262,
+        LEFT = 263,
+        DOWN = 264,
+        UP = 265,
+        PAGEUP = 266,
+        PAGEDOWN = 267,
+        HOME = 268,
+        END = 269,
+        CAPSLOCK = 280,
+        SCROLLLOCK = 281,
+        NUMLOCK = 282,
+        PRINTSCREEN = 283,
+        PAUSE = 84,
+        F1 = 290,
+        F2 = 291,
+        F3 = 292,
+        F4 = 293,
+        F5 = 294,
+        F6 = 295,
+        F7 = 296,
+        F8 = 297,
+        F9 = 298,
+        F10 = 299,
+        F11 = 300,
+        F12 = 301,
+        F13 = 302,
+        F14 = 303,
+        F15 = 304,
+        F16 = 305,
+        F17 = 306,
+        F18 = 307,
+        F19 = 308,
+        F20 = 309,
+        F21 = 310,
+        F22 = 311,
+        F23 = 312,
+        F24 = 313,
+        F25 = 314,
+        NP0 = 320,
+        NP1 = 321,
+        NP2 = 322,
+        NP3 = 323,
+        NP4 = 324,
+        NP5 = 325,
+        NP6 = 326,
+        NP7 = 327,
+        NP8 = 328,
+        NP9 = 329,
+        NPDECIMAL = 330,
+        NPDIVIDE = 331,
+        NPMULTIPLY = 332,
+        NPSUBTRACT = 333,
+        NPADD = 334,
+        KPENTER = 335,
+        KPEQUAL = 336,
+        LEFTSHIFT = 340,
+        LEFTCONTROL = 341,
+        LEFTALT = 342,
+        LEFTSUPER = 343,
+        RIGHTSHIFT = 344,
+        RIGHTCONTROL = 345,
+        RIGHTALT = 346,
+        RIGHTSUPER = 347,
+        MENUE = 348
+    };
 }

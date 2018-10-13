@@ -26,7 +26,7 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
-//#include "Input.h"
+#include <Box2D/Box2D.h>
 #include "engine.h"
 #include "shaders.h"
 
@@ -447,6 +447,7 @@ GO::GO(vec2 pos, vec2 Scale, float Angle, float rotationSpeed) {
 	t = NULL;
 	ps = NULL;
 	parent = NULL;
+	body = NULL;
 }
 GO::GO(polyData * poly, vec2 pos, vec2 Scale, float Angle, float rotationSpeed) : GO(pos, Scale, Angle, rotationSpeed)
 {
@@ -509,11 +510,11 @@ void genFramBuffer(GLuint * textID, GLuint * fboID, int width, int height) {
 
 void GLCanvas::onKeyboard(int key, int scancode, int action, int mods) {
 	//Likely redundant
-	if (keyStates[key] == action)
+	/*if (keyStates[key] == action)
 		return;
 	for (int i = 0; i < 10; i++)
 		if (keyBuffer[i].read)
-			keyBuffer[i] = description{ key,action, false };
+			keyBuffer[i] = description{ key,action, false };*/
 	keyStates[key] = action;
 }
 void GLCanvas::onMouse(int button, int action, int mods) {
@@ -985,6 +986,9 @@ void GLCanvas::mainloop(bool render) {
 	resolutionV2f = vec2((float)resolutionWidth, (float)resolutionHeight);
 	aspect = resolutionV2f.y / resolutionV2f.x;
 		
+	//update physics
+	world.Step(timeStep, velocityIterations, positionIterations);
+
 	gl(Viewport(0, 0, resolutionWidth, resolutionHeight));
 
 	//if the window size is changed, the back buffer and setpixel buffer needs to be re-created 
@@ -1189,7 +1193,7 @@ void GLCanvas::mainloop(bool render) {
 		shapeCount += g->t != nullptr;
 		shapeCount += g->ps != nullptr;
 		if (shapeCount > 1)
-			cout << "Warning: GO with multiple draw targets detected\n";
+			cout << "Debug warning : GO with multiple draw targets detected\n";
 #endif
 
 		if (g->hidden)
@@ -1197,6 +1201,12 @@ void GLCanvas::mainloop(bool render) {
 
 		if (g->parent)
 			m = makeLocalTransform(g);
+
+		if (g->body) {
+			b2Vec2 pos = g->body->body->GetPosition();
+			g->position = vec2(pos.x, pos.y) * phScale;
+			g->angle = g->body->body->GetAngle();
+		}
 
 		if (g->ps) {
 			if (g->parent)
@@ -1645,3 +1655,112 @@ void GLCanvas::updateDebugInfo() {
 	debugString = sstm.str();
 	windowTitleFlag = true;
 }
+
+
+
+
+
+////////////// physics stuff
+
+b2CircleShape circCollider;
+b2PolygonShape rectCollider;
+b2BodyDef bodyDef; //defined in header
+
+b2Vec2 toB2(vec2 v) {
+	return b2Vec2(v.x / phScale, v.y / phScale);
+}
+
+bool testCirc(vec2 circPos, float rad, vec2 test)
+{
+	circCollider.m_radius = rad / phScale / 2;
+	return circCollider.TestPoint(b2Transform(toB2(circPos), b2Rot()), toB2(test));
+	return true;
+}
+
+bool testRect(vec2 rectPos, vec2 scale, float angle, vec2 test)
+{
+	rectCollider.SetAsBox(scale.x / phScale / 2, scale.y / phScale / 2);
+	return rectCollider.TestPoint(b2Transform(toB2(rectPos), b2Rot(angle)), toB2(test));
+	return true;
+}
+
+rigBody::rigBody(b2World * World, GO * Link, int type, float friction, bool Kinimatik)
+{
+	link = Link;
+	world = World;
+	kinematic = Kinimatik;
+
+#ifdef _DEBUG
+	if(link->scale.x < 1 || link->scale.y < 1){
+		cout << "Debug warning: < 1 pixel rigidbody scale detected\n";
+		return;
+	}
+#endif
+
+	//as rect
+	if( type == 1) {
+		// Define the dynamic body. We set its position and call the body factory.
+		bodyDef.position.Set((link->position.x / phScale), (link->position.y / phScale));
+		bodyDef.angle = link->angle;
+		body = world->CreateBody(&bodyDef);
+
+		// Define another box shape for our dynamic body.
+		b2PolygonShape dynamicBox;
+		dynamicBox.SetAsBox(link->scale.x / phScale / 2.0f, link->scale.y / phScale / 2.0f);
+
+		// Define the dynamic body fixture.
+		fixtureDef.shape = &dynamicBox;
+
+		// Set the box density to be non-zero, so it will be dynamic.
+		fixtureDef.density = 1.0f;
+		// Override the default friction.
+		fixtureDef.friction = friction;
+
+		// Add the shape to the body.
+		body->CreateFixture(&fixtureDef);
+	}
+	//as circle
+	else {
+		bodyDef.position.Set((link->position.x / phScale), (link->position.y / phScale));
+		body = world->CreateBody(&bodyDef);
+
+
+		b2CircleShape dynamicCirc;
+		dynamicCirc.m_radius = link->scale.x / phScale / 2;
+
+		fixtureDef.shape = &dynamicCirc;
+		fixtureDef.density = 1.0f;
+		fixtureDef.friction = friction;
+
+		body->CreateFixture(&fixtureDef);
+	}
+
+	if (kinematic)
+		body->SetType(b2_kinematicBody);
+	else
+		body->SetType(b2_dynamicBody);
+}
+
+void rigBody::addForce(vec2 force)
+{
+	body->ApplyForceToCenter(b2Vec2(force.x, force.y), true);
+}
+
+void rigBody::addTorque(float torque)
+{
+	body->ApplyTorque(torque, false);
+}
+
+void rigBody::setVelocity(vec2 velocity)
+{
+	body->SetLinearVelocity(toB2(velocity));
+}
+
+vec2 rigBody::GetVelocity()
+{
+	b2Vec2 v = body->GetLinearVelocity();
+	return vec2(v.x, v.y);
+}
+//void rigBody::lockRotation(bool flag){
+//	body->SetFixedRotation(flag);
+//}
