@@ -6,6 +6,8 @@ Things left to work on for version 1.0:
 -add outer anti ailiasing with rectangles
 -add file type validation for sprites and fonts
 fix text again
+finish load asset
+fix reordering tools
 mouseposwordspace isnt worldspace
 
 things to test:

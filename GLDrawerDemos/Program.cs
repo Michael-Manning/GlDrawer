@@ -21,12 +21,11 @@ namespace GLDrawerDemos
         static void Main(string[] args)
         {
             //demos.fastRemoval();//demos.backBufferShapes();
-
-            spaceGame.spaceGame.run();
+            //spaceGame.spaceGame.run();
             platformGame.platformer.run();
 
             //demos.IntersectTest();
-            //demos.PhysicsTest();          
+            //demos.PhysicsTest();                 
 
             //Application.EnableVisualStyles();
             //TestForm tform = new TestForm();

@@ -87,6 +87,17 @@ namespace GLDrawer
             }
         }
 
+        /// <summary>direction and amount of gravity for physics/summary>
+        public vec2 Gravity
+        {
+            get
+            {
+                unmanaged_vec2 v = GLWrapper.getGravity();
+                return new vec2(v.x, v.y);
+            }
+            set => GLWrapper.setGravity(value.x, value.y);
+        }
+
         /// <summary>
         /// an event which occurs once per frame, before the standard update
         /// </summary>
@@ -681,6 +692,14 @@ namespace GLDrawer
             clone.updateInternals(); //Updates the internal gameobject values
             return clone;
         }
+
+        public bool RayCast(vec2 start, vec2 end)
+        {
+            if (start == end)
+                return false;
+            return GLWrapper.raycast(start.x, start.y, end.x, end.y);
+        }
+
         public void LoadAsset(string filePath)
         {
 

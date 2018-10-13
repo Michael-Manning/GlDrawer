@@ -43,7 +43,7 @@ namespace GLDrawer
         public GameObject Clone()
         {
             GameObject clone = (GameObject) this.MemberwiseClone();
-            clone.transform = new Transform(transform.Position, transform.Rotation, transform.Velocity);
+            clone.transform = new Transform(transform.Position, transform.Rotation);
             clone.ClearParent();
             clone.ClearChildren();
             clone.internalGO = new unmanaged_GO(); //prevent garbage collector from collecting twice
@@ -61,6 +61,11 @@ namespace GLDrawer
             }     
         }
 
+        internal void setPositionFlag()
+        {
+            if (rigidbody != null)
+                rigidbody.internalBody.setPositionFlag = true;
+        }
         private Rigidbody irig;
         public Rigidbody rigidbody
         {
@@ -75,19 +80,20 @@ namespace GLDrawer
                 internalGO.setBody(irig.internalBody);
             }
         }
-        private Collider icol;
-        public Collider collider
-        {
-            get
-            {
-                return icol;
-            }
-            set
-            {
-                CheckCan();
-                icol = value;
-            }
-        }
+        public void SetDefaultRigidbody() => rigidbody = new Rigidbody(this);
+        //private Collider icol;
+        //public Collider collider
+        //{
+        //    get
+        //    {
+        //        return icol;
+        //    }
+        //    set
+        //    {
+        //        CheckCan();
+        //        icol = value;
+        //    }
+        //}
 
         internal int colliderType = -1;
         public bool TriggerCollider { get; private set; } = false;
@@ -194,18 +200,29 @@ namespace GLDrawer
             if (!startFlag)
             {
                 startFlag = true;
+                transform.link = this;
                 Start();
             }
             //rigidbodies affect the position between frames
             if(rigidbody != null)
             {
-                transform.Position = new vec2(internalGO.position.x, internalGO.position.y);
-                transform.Rotation = internalGO.angle;
+                transform.iposition = new vec2(internalGO.position.x, internalGO.position.y);
+                transform.irotation = internalGO.angle;
             }
             EarlyUpdate();
         }
         internal void InternalUpdate()
         {
+            if(rigidbody != null && rigidbody.internalBody.collisionEnter)
+            {
+                rigidbody.internalBody.collisionEnter = false;
+                OnCollisionEnter();
+            }
+            else if (rigidbody != null && rigidbody.internalBody.collisionExit)
+            {
+                rigidbody.internalBody.collisionExit = false;
+                OnCollisionExit();
+            }
             Update();
         }
         internal void InternalLateUpdate()
@@ -215,7 +232,7 @@ namespace GLDrawer
         }
         internal void updateInternals()
         {
-            transform.Position += transform.Velocity;
+            //transform.iposition += transform.Velocity;
             internalGO.position = new unmanaged_vec2(transform.Position.x, transform.Position.y);
             internalGO.angle = transform.Rotation;
         }
@@ -232,6 +249,8 @@ namespace GLDrawer
         public virtual void EarlyUpdate() { }
         public virtual void Update() { }
         public virtual void LateUpdate() { }
+        public virtual void OnCollisionEnter() { }
+        public virtual void OnCollisionExit() { }
 
         internal unmanaged_GO internalGO = new unmanaged_GO();
 
@@ -247,6 +266,8 @@ namespace GLDrawer
             {
                 disposed = true;
                 internalGO.dispose();
+                if (rigidbody != null)
+                    rigidbody.Dispose();
                 if (disposing)
                 {
                     //if any managed resources need to be disposed, it should be done here
@@ -270,9 +291,40 @@ namespace GLDrawer
     /// <param name="maxAngularVelocity">Speed cap of the transform at any angle. OVERRIDDIN BY RIGIDBODIES </param>
     public class Transform
     {
-        public vec2 Position;
-        public vec2 Velocity;
-        public float Rotation;
+        internal vec2 iposition;
+        internal float irotation;
+
+        public vec2 Position
+        {
+            get
+            {
+                return iposition;
+            }
+            set
+            {
+                iposition = value;
+                if (link != null)
+                    link.setPositionFlag();
+            }
+        }
+        public float Rotation
+        {
+            get
+            {
+                return irotation;
+            }
+            set
+            {
+                irotation = value;
+                if (link != null)
+                    link.setPositionFlag();
+            }
+        }
+
+        //public vec2 Velocity; // moved to rigidbody
+
+
+        internal GameObject link; //used exclusively to know when to ovveride physics position
 
         public Transform()
         {
@@ -284,9 +336,9 @@ namespace GLDrawer
             Position = position;
             Rotation = rotation;
         }
-        public Transform(vec2 position, float rotation, vec2 velocity) : this(position, rotation)
-        {
-            Velocity = velocity;
-        }
+        //public Transform(vec2 position, float rotation, vec2 velocity) : this(position, rotation)
+        //{
+        //    Velocity = velocity;
+        //}
     }
 }

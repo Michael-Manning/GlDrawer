@@ -171,11 +171,13 @@ public:
 	b2Body * body;
 	b2FixtureDef fixtureDef;
 	bool kinematic = false;
+	bool setPositionFlag = false; //for C# transform setting
+	bool collisionEnter = false;
+	bool collisionExit = false;
 
 	void addForce(vec2 force);
 	void addTorque(float torque);
 	void setVelocity(vec2 velocity);
-	void lockRotation();
 	vec2 GetVelocity();
 	rigBody(b2World * World, GO * Link, int type, float friction = 0.8f, bool Kinimatic = false);
 };
@@ -209,6 +211,49 @@ public:
 extern vector<const char *> fontHashLookup;
 extern vector<const char *> imgHashLookup;
 extern b2BodyDef bodyDef; //for physics
+b2Vec2 toB2(vec2 v);
+
+//box2d collision events
+class MyContactListener : public b2ContactListener
+{
+public:
+	void BeginContact(b2Contact* contact);
+	void EndContact(b2Contact* contact);
+	void PreSolve(b2Contact* contact, const b2Manifold* oldManifold) {}
+	void PostSolve(b2Contact* contact, const b2ContactImpulse* impulse) {}
+};
+//class raycastCallback : public b2RayCastCallback {
+//public:
+//	b2Fixture* m_fixture;
+//	b2Vec2 m_point;
+//	b2Vec2 m_normal;
+//	float32 m_fraction;
+//
+//	rayCastCallback() : m_fixture(NULL) {}
+//
+//	float32 ReportFixture(b2Fixture* fixture, const b2Vec2& point, const b2Vec2& normal, float32 fraction);
+//};
+
+class RayCastCallback : public b2RayCastCallback
+{
+public:
+	RayCastCallback() : m_fixture(NULL) {
+	}
+
+	float32 ReportFixture(b2Fixture* fixture, const b2Vec2& point, const b2Vec2& normal, float32 fraction) {
+		m_fixture = fixture;
+		m_point = point;
+		m_normal = normal;
+		m_fraction = fraction;
+		return fraction;
+	}
+
+	b2Fixture* m_fixture;
+	b2Vec2 m_point;
+	b2Vec2 m_normal;
+	float32 m_fraction;
+
+};
 
 //for input rollover and events
 struct description {
@@ -316,6 +361,9 @@ public :
 
 	//physics
 	b2World world = b2World(b2Vec2(0, -10)); //world with default gravity
+	MyContactListener contactListener;
+	RayCastCallback raycastCB;
+	bool raycast(vec2 start, vec2 end); //has the ability to report what it hit, but doesn't right now
 	int32 velocityIterations = 50; //6
 	int32 positionIterations = 20; //3
 	float32 timeStep = 1.0f / 60.0f;

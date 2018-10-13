@@ -17,6 +17,7 @@ namespace spaceGame
         public static void run()
         {
             can = new GLCanvas(800, 1100);
+            can.Gravity = vec2.Zero;
             can.LoadAssets(new string[] {
                 "../../../data/images/spaceship.png",
                 "../../../data/images/enemy1.png",
@@ -89,13 +90,12 @@ namespace spaceGame
             myTime = Time;
             
             shipRef = AddChildShape(new Sprite("../../../data/images/enemy1.png", vec2.Zero, new vec2(80),angle: 3.1459f)) as Sprite;
-            transform.Velocity = new vec2(0, -7);
             Instantiate(new rocketFire(), new vec2(0, +20), 3.1459f / 2.0f, this);
             spaceGame.enemies.Add(this);
         }
         public override void Update()
         {
-            transform.Position += new vec2((float)Math.Sin((myTime+ Time) * 2) * 3f, 0);
+            transform.Position += new vec2((float)Math.Sin((myTime+ Time) * 2) * 3f, - 6.5f);
             if (transform.Position.y < -600)
             {
                 spaceGame.enemies.Remove(this);
@@ -126,12 +126,12 @@ namespace spaceGame
         public override void Start()
         {
             DrawIndex = 2;
-            AddChildShape( new Polygon(vec2.Zero, new vec2(7, 20), 0, 4, new Color(200,200,255)));
-            transform.Velocity = new vec2(0, 30);
+            AddChildShape( new Polygon(vec2.Zero, new vec2(7, 30), 0, 4, new Color(200,200,255)));
             Destroy(2);
         }
         public override void Update()
         {
+            transform.Position += new vec2(0, 30);
             List<enemySmall> list = spaceGame.enemies.ToList();
             for (int i = 0; i < list.Count; i++)
             {

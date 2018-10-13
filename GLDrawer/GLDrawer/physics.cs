@@ -7,7 +7,7 @@ using GLDrawerCLR;
 
 namespace GLDrawer
 {
-    public class Rigidbody
+    public class Rigidbody : IDisposable
     {
         private GameObject go;
         internal unmanaged_rigBody internalBody;
@@ -29,6 +29,8 @@ namespace GLDrawer
                 internalBody.setVelocity(value.x, value.y);
             }
         }
+
+        public float AngularVelocity { get => internalBody.angularVelocity; set => internalBody.angularVelocity = value; }
 
         public Rigidbody(GameObject gameObject, float friction = 0.8f, bool kinematic = false)
         {
@@ -58,50 +60,66 @@ namespace GLDrawer
             Kinematic = kinematic;             
             internalBody = new unmanaged_rigBody(gameObject.can.GLWrapper, gameObject.internalGO, gameObject.colliderType, friction, kinematic);
         }
+
+        private bool disposed;
+        public void Dispose()
+        {
+            if (disposed)
+                return;
+            disposed = true;
+
+            internalBody.dispose();
+            GC.SuppressFinalize(this);
+        }
+
+        ~Rigidbody()
+        {
+            Dispose();
+        }
     }
 
 
-    public abstract class Collider
-    {
-        protected GameObject go;
+    //public abstract class Collider
+    //{
+    //    protected GameObject go;
 
-        public bool IsTrigger;
-        // get intersecting gameobjects()
-        public abstract bool Intersect(vec2 point);
-        public static Collider FromShape(GameObject gameObject, Shape shape)
-        {
-            if (shape.isCircle)
-                return new CircleCollider(gameObject, shape.Scale.x);
-            return new BoxCollider(gameObject, shape.Scale);
-        }
+    //    public bool IsTrigger;
+    //    // get intersecting gameobjects()
+    //    public abstract bool Intersect(vec2 point);
+    //    public static Collider FromShape(GameObject gameObject, Shape shape)
+    //    {
+    //        if (shape.isCircle)
+    //            return new CircleCollider(gameObject, shape.Scale.x);
+    //        return new BoxCollider(gameObject, shape.Scale);
+    //    }
 
-    }
-    public class BoxCollider : Collider
-    {
-        public vec2 Scale;
-        public BoxCollider(GameObject gameObject, vec2 scale, bool isTrigger = false)
-        {
-            Scale = scale;
-            IsTrigger = isTrigger;
-            go = gameObject;
-        }
-        public override bool Intersect(vec2 point)
-        {
-            return unmanaged_Canvas.TestRect(go.transform.Position.x, go.transform.Position.y, Scale.x, Scale.y, go.transform.Rotation, point.x, point.y);
-        }
-    }
-    public class CircleCollider : Collider
-    {
-        public float Radius;
-        public CircleCollider(GameObject gameObject, float radius, bool isTrigger = false)
-        {
-            Radius = radius;
-            IsTrigger = isTrigger;
-            go = gameObject;
-        }
-        public override bool Intersect(vec2 point)
-        {
-            return unmanaged_Canvas.TestCirc(go.transform.Position.x, go.transform.Position.y, Radius, point.x, point.y);
-        }
-    }
+    //}
+    //public class BoxCollider : Collider
+    //{
+    //    public vec2 Scale;
+    //    public BoxCollider(GameObject gameObject, vec2 scale, bool isTrigger = false)
+    //    {
+    //        Scale = scale;
+    //        IsTrigger = isTrigger;
+    //        go = gameObject;
+    //    }
+    //    public override bool Intersect(vec2 point)
+    //    {
+    //        return unmanaged_Canvas.TestRect(go.transform.Position.x, go.transform.Position.y, Scale.x, Scale.y, go.transform.Rotation, point.x, point.y);
+    //    }
+    //}
+    //public class CircleCollider : Collider
+    //{
+    //    public float Radius;
+    //    public CircleCollider(GameObject gameObject, float radius, bool isTrigger = false)
+    //    {
+    //        Radius = radius;
+    //        IsTrigger = isTrigger;
+    //        go = gameObject;
+    //    }
+    //    public override bool Intersect(vec2 point)
+    //    {
+    //        return unmanaged_Canvas.TestCirc(go.transform.Position.x, go.transform.Position.y, Radius, point.x, point.y);
+    //    }
+    //}
 }

@@ -437,6 +437,7 @@ int textData::getHashIndex() {
 	else
 		return hashIndex;
 }
+
 GO::GO(vec2 pos, vec2 Scale, float Angle, float rotationSpeed) {
 	position = pos;
 	scale = Scale;
@@ -510,11 +511,11 @@ void genFramBuffer(GLuint * textID, GLuint * fboID, int width, int height) {
 
 void GLCanvas::onKeyboard(int key, int scancode, int action, int mods) {
 	//Likely redundant
-	/*if (keyStates[key] == action)
-		return;
-	for (int i = 0; i < 10; i++)
-		if (keyBuffer[i].read)
-			keyBuffer[i] = description{ key,action, false };*/
+	//if (keyStates[key] == action)
+	//	return;
+	//for (int i = 0; i < 10; i++)
+	//	if (keyBuffer[i].read)
+	//		keyBuffer[i] = description{ key,action, false };
 	keyStates[key] = action;
 }
 void GLCanvas::onMouse(int button, int action, int mods) {
@@ -765,6 +766,7 @@ int GLCanvas::createCanvas(int width, int height, bool borderd, vec3 backcol, bo
 
 	setPixelData = new unsigned char[width * height * 4];
 	clearSetPixelData();
+	world.SetContactListener(&contactListener);
 
 	camera = vec2();
     prevTime = (float)glfwGetTime();
@@ -961,7 +963,6 @@ void GLCanvas::mainloop(bool render) {
 	glfwMakeContextCurrent(window);
 	clearStates();
 	glfwPollEvents();
-
 	if (glfwWindowShouldClose(window) || closeFlag) {
 		closeFlag = true;
 		dispose();
@@ -1199,13 +1200,19 @@ void GLCanvas::mainloop(bool render) {
 		if (g->hidden)
 			continue;
 
-		if (g->parent)
+		if (g->parent) 
 			m = makeLocalTransform(g);
 
 		if (g->body) {
-			b2Vec2 pos = g->body->body->GetPosition();
-			g->position = vec2(pos.x, pos.y) * phScale;
-			g->angle = g->body->body->GetAngle();
+			if (g->body->setPositionFlag) {
+				g->body->body->SetTransform(toB2(g->position), g->angle);
+				g->body->setPositionFlag = false;
+			}
+			else {
+				b2Vec2 pos = g->body->body->GetPosition();
+				g->position = vec2(pos.x, pos.y) * phScale;
+				g->angle = g->body->body->GetAngle();
+			}
 		}
 
 		if (g->ps) {
@@ -1739,6 +1746,10 @@ rigBody::rigBody(b2World * World, GO * Link, int type, float friction, bool Kini
 		body->SetType(b2_kinematicBody);
 	else
 		body->SetType(b2_dynamicBody);
+
+
+	body->SetUserData(Link);
+
 }
 
 void rigBody::addForce(vec2 force)
@@ -1761,6 +1772,57 @@ vec2 rigBody::GetVelocity()
 	b2Vec2 v = body->GetLinearVelocity();
 	return vec2(v.x, v.y);
 }
-//void rigBody::lockRotation(bool flag){
-//	body->SetFixedRotation(flag);
-//}
+
+void MyContactListener::BeginContact(b2Contact * contact)
+{
+	b2Fixture* fixtureA = contact->GetFixtureA();
+	b2Body* bodyA = fixtureA->GetBody();
+	GO* actorA = (GO*)bodyA->GetUserData();
+	
+	b2Fixture* fixtureB = contact->GetFixtureB();
+	b2Body* bodyB = fixtureB->GetBody();
+	GO* actorB = (GO*)bodyB->GetUserData();
+
+	actorA->body->collisionEnter = true;
+	actorB->body->collisionEnter = true;
+	actorA->body->collisionExit = false;
+	actorB->body->collisionExit = false;
+}
+
+void MyContactListener::EndContact(b2Contact * contact)
+{
+	b2Fixture* fixtureA = contact->GetFixtureA();
+	b2Body* bodyA = fixtureA->GetBody();
+	GO* actorA = (GO*)bodyA->GetUserData();
+
+	b2Fixture* fixtureB = contact->GetFixtureB();
+	b2Body* bodyB = fixtureB->GetBody();
+	GO* actorB = (GO*)bodyB->GetUserData();
+
+	actorA->body->collisionEnter = false;
+	actorB->body->collisionEnter = false;
+	actorA->body->collisionExit = true;
+	actorB->body->collisionExit = true;
+}
+bool GLCanvas::raycast(vec2 start, vec2 end)
+{
+	RayCastCallback rc;
+	world.RayCast(&rc, toB2(start), toB2(end));
+	if (rc.m_fixture) {
+		//GO* g = (GO*)(rc.m_fixture->GetBody()->GetUserData());
+		//g->hidden = true;
+		return true;
+	}
+	return false;
+
+	//world.RayCast(&raycastCB, toB2(start), toB2(end));
+	//return raycastCB.m_fixture;
+
+	//this version could report what was hit
+
+	//	can.world.RayCast(&can.raycastCB, toB2(pos), toB2(pos - vec2(0, 500)));
+//	if (can.raycastCB.m_fixture) {
+//		GO* g = (GO*)(can.raycastCB.m_fixture->GetBody()->GetUserData());
+//		g->p->fColor = vec4(1);
+//	}
+}
