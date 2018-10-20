@@ -16,6 +16,8 @@ namespace GLDrawer
         public delegate void GLMouseEvent(vec2 Position, GLCanvas Canvas);
         public delegate void GLScrollEvent(int Delta, GLCanvas Canvas);
         public delegate void GLKeyEvent(Keys Code, GLCanvas Canvas);
+        public delegate void GLResizeEvent(int Width, int Height, GLCanvas Canvas);
+        public event GLResizeEvent CanvasResized = delegate { };
         public event GLMouseEvent MouseLeftClick = delegate { };
         public event GLMouseEvent MouseRightClick = delegate { };
         public event GLMouseEvent MouseMiddleClick = delegate { };

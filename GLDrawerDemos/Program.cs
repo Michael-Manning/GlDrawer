@@ -22,7 +22,7 @@ namespace GLDrawerDemos
         {
             //demos.fastRemoval();//demos.backBufferShapes();
             //spaceGame.spaceGame.run();
-            platformGame.platformer.run();
+            //platformGame.platformer.run();
 
             //demos.IntersectTest();
             //demos.PhysicsTest();                 
@@ -46,10 +46,19 @@ namespace GLDrawerDemos
 
             //Console.ReadKey();
 
-            //can = new GLCanvas(1000);
-            //can.AddCenteredEllipse(0, 0, 200, 200, Color.White, 10, Color.Red);
+           can = new GLCanvas();
+            
+            can.AddCenteredEllipse(0, 0, 200, 200, Color.White, 10, Color.Red);
+            can.AddCenteredText("test", 40, Color.Black);
 
+            can.Update += delegate { if (can.GetKey('a')) can.CameraPosition += new vec2(5, 0); };
+            can.CanvasResized += Can_CanvasResized;
             Console.ReadKey();
+        }
+
+        private static void Can_CanvasResized(int Width, int Height, GLCanvas Canvas)
+        {
+            throw new NotImplementedException();
         }
 
         private static void Can_MouseMove(vec2 Position, GLCanvas Canvas)

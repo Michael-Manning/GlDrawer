@@ -16,12 +16,13 @@ namespace platformGame
 
         public static void run()
         {
-            GLDrawerDemos.levelEditorProgram.run();
+           // GLDrawerDemos.levelEditorProgram.run();
 
             can = new GLCanvas(1200, 800, BackColor: new Color(66, 223, 244));
             loadLevel();
             can.Gravity = new vec2(0, -11);
             //can.Add(new sky());
+            can.AddCenteredText("test", 40, Color.White);
             can.Add(new player());
             can.MouseScrolled += (i, c) => c.CamerZoom += i * 0.01f;
         }

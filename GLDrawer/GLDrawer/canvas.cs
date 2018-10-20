@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Collections.Concurrent;
 using GLDrawerCLR;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -125,6 +126,8 @@ namespace GLDrawer
         private List<GameObject> GORefs = new List<GameObject>();
         private List<DelayedCall> delayedCalls = new List<DelayedCall>(); //primary used for games
         internal List<Action> disposeBuffer = new List<Action>();
+        private ConcurrentQueue<unmanaged_GO> shapeAddBuffer = new ConcurrentQueue<unmanaged_GO>();
+        private ConcurrentQueue<unmanaged_GO> shapeRemoveBuffer = new ConcurrentQueue<unmanaged_GO>();
 
         private static List<GLCanvas> activeCanvases = new List<GLCanvas>();
         private static Thread loopthread;
@@ -280,6 +283,13 @@ namespace GLDrawer
                 iDeltaTime = iTime - lastTime;
                 lastTime = iTime;
 
+                unmanaged_GO bufferGO;
+                while (shapeAddBuffer.TryDequeue(out bufferGO))
+                    GLWrapper.addGO(bufferGO);
+
+                while (shapeRemoveBuffer.TryDequeue(out bufferGO))
+                    GLWrapper.removeGO(bufferGO);
+
                 EarlyUpdate.Invoke();
                 Update.Invoke();
                 LateUpdate.Invoke();
@@ -325,13 +335,37 @@ namespace GLDrawer
             iHeight = GLWrapper.height;
             frozen = false;
 
-           
+            if (GLWrapper.reSize)
+            {
+                GLWrapper.reSize = false;
+                CanvasResized.Invoke(iWidth, iHeight, this);
+            }
         }
 
         //shortcut for converting null colors to transparent colors for default parameters
         private Color CheckNullC(Color ? c)
         {
             return c == null ? Color.Invisible : (Color)c;
+        }
+
+        private void AddToBuffer(Shape s)
+        {
+            //GLWrapper.addGO(s.internalGO);
+            shapeAddBuffer.Enqueue(s.internalGO);
+            shapeRefs.Add(s);
+        }
+        private void AddToRemoveBuffer(Shape s)
+        {
+            //GLWrapper.addGO(s.internalGO);
+                        shapeRefs.Remove(s);
+            shapeRemoveBuffer.Enqueue(s.internalGO);
+        }
+
+        private int lastDrawIndex = 1;
+        private int nextDrawIndex()
+        {
+            lastDrawIndex--;
+            return (lastDrawIndex);
         }
 
         /// <summary>
@@ -355,10 +389,9 @@ namespace GLDrawer
             Height *= Scale;
             Polygon r = new Polygon(new vec2(XStart + Width / 2f, YStart + Height / 2f), new vec2(Width, Height), Angle, 4, FillColor, BorderThickness, BorderColor, RotationSpeed)
             {
-                DrawIndex = shapeRefs.Count
+                DrawIndex = nextDrawIndex()
             };
-            GLWrapper.addGO(r.internalGO);
-            shapeRefs.Add(r);
+            AddToBuffer(r);
             return r;
         }
         /// <summary>
@@ -378,10 +411,9 @@ namespace GLDrawer
         {
             Polygon r = new Polygon(new vec2(Xpos, Ypos) * Scale, new vec2(Width, Height) * Scale, Angle, 4, FillColor, BorderThickness, BorderColor, RotationSpeed)
             {
-                DrawIndex = shapeRefs.Count
+                DrawIndex = nextDrawIndex()
             };
-            GLWrapper.addGO(r.internalGO);
-            shapeRefs.Add(r);
+            AddToBuffer(r);
             return r;
         }
         /// <summary>
@@ -405,10 +437,9 @@ namespace GLDrawer
             Height *= Scale;
             Polygon e = new Polygon(new vec2(XStart + Width / 2f, YStart + Height / 2f), new vec2(Width, Height), Angle, 1, FillColor, BorderThickness, BorderColor, RotationSpeed)
             {
-                DrawIndex = shapeRefs.Count
+                DrawIndex = nextDrawIndex()
             };
-            GLWrapper.addGO(e.internalGO);
-            shapeRefs.Add(e);
+            AddToBuffer(e);
             return e;
         }
         /// <summary>
@@ -428,10 +459,9 @@ namespace GLDrawer
         {
             Polygon e = new Polygon(new vec2(Xpos, Ypos) * Scale, new vec2(Width, Height) * Scale, Angle, 1, FillColor, BorderThickness, BorderColor, RotationSpeed)
             {
-                DrawIndex = shapeRefs.Count
+                DrawIndex = nextDrawIndex()
             };
-            GLWrapper.addGO(e.internalGO);
-            shapeRefs.Add(e);
+            AddToBuffer(e);
             return e;
         }
         /// <summary>
@@ -451,10 +481,9 @@ namespace GLDrawer
         {
             Line l = new Line(new vec2(XStart, YStart) * Scale, new vec2(XEnd, YEnd) * Scale, Thickness, LineColor, BorderThickness, BorderColor, RotationSpeed)
             {
-                DrawIndex = shapeRefs.Count
+                DrawIndex = nextDrawIndex()
             };
-            GLWrapper.addGO(l.internalGO);
-            shapeRefs.Add(l);
+            AddToBuffer(l);
             return l;
         }
         /// <summary>
@@ -475,10 +504,9 @@ namespace GLDrawer
             Length *= Scale;
             Line l = new Line(StartPos, Length, Thickness, Angle, LineColor, BorderThickness, BorderColor, RotationSpeed)
             {
-                DrawIndex = shapeRefs.Count
+                DrawIndex = nextDrawIndex()
             };
-            GLWrapper.addGO(l.internalGO);
-            shapeRefs.Add(l);
+            AddToBuffer(l);
             return l;
         }
         /// <summary>
@@ -503,10 +531,9 @@ namespace GLDrawer
             Height *= Scale;
             Polygon p = new Polygon(new vec2(Xpos, Ypos), new vec2(Width, Height), Angle, SideCount, FillColor, BorderThickness, BorderColor, RotationSpeed)
             {
-                DrawIndex = shapeRefs.Count
+                DrawIndex = nextDrawIndex()
             };
-            GLWrapper.addGO(p.internalGO);
-            shapeRefs.Add(p);
+            AddToBuffer(p);
             return p;
         }
         /// <summary>
@@ -527,10 +554,9 @@ namespace GLDrawer
         {
             Sprite s = new Sprite(FilePath, new vec2(Xpos, Ypos) * Scale, new vec2(Width, Height) * Scale, Angle, rotationSpeed: RotationSpeed)
             {
-                DrawIndex = shapeRefs.Count
+                DrawIndex = nextDrawIndex()
             };
-            GLWrapper.addGO(s.internalGO);
-            shapeRefs.Add(s);
+            AddToBuffer(s);
             return s;
         }
         /// <summary>
@@ -553,12 +579,11 @@ namespace GLDrawer
             YStart *= Scale;
             Width *= Scale;
             Height *= Scale;
-            Sprite s = new Sprite(FilePath, new vec2(XStart + Width / 2f, YStart + Height / 2f), new vec2(Width, Height), Angle,rotationSpeed:  RotationSpeed)
+            Sprite s = new Sprite(FilePath, new vec2(XStart + Width / 2f, YStart + Height / 2f), new vec2(Width, Height), Angle, rotationSpeed: RotationSpeed)
             {
-                DrawIndex = shapeRefs.Count
+                DrawIndex = nextDrawIndex()
             };
-            GLWrapper.addGO(s.internalGO);
-            shapeRefs.Add(s);
+            AddToBuffer(s);
             return s;
         }
         /// <summary>
@@ -574,10 +599,9 @@ namespace GLDrawer
         {
             Text t = new Text(this.Centre, text, textHeight, TextColor == null ? Color.White : TextColor, justification, fontFilepath)
             {
-                DrawIndex = shapeRefs.Count
+                DrawIndex = nextDrawIndex()
             };
-            GLWrapper.addGO(t.internalGO);
-            shapeRefs.Add(t);
+            AddToBuffer(t);
             return t;
         }
         /// <summary>
@@ -595,10 +619,9 @@ namespace GLDrawer
         {
             Text t = new Text(new vec2(Xpos, Ypos) * Scale, text, textHeight, TextColor == null ? Color.White : TextColor, justification, fontFilepath)
             {
-                DrawIndex = shapeRefs.Count
+                DrawIndex = nextDrawIndex()
             };
-            GLWrapper.addGO(t.internalGO);
-            shapeRefs.Add(t);
+            AddToBuffer(t);
             return t;
         }
         /// <summary>
@@ -615,10 +638,9 @@ namespace GLDrawer
         {
             Text t = new Text(text, textHeight, TextColor == null ? Color.White : TextColor, justification, fontFilepath)
             {
-                DrawIndex = shapeRefs.Count
+                DrawIndex = nextDrawIndex()
             };
-            GLWrapper.addGO(t.internalGO);
-            shapeRefs.Add(t);
+            AddToBuffer(t);
             return t;
         }
         /// <summary>
@@ -643,10 +665,9 @@ namespace GLDrawer
             // Rectangle BoundingRect = new Rectangle(new vec2(XStart + width, YStart + height) / 2f, new vec2(width, height));
             Text t = new Text(text, textHeight, TextColor == null ? Color.White : TextColor, justification, fontFilepath)
             {
-                DrawIndex = shapeRefs.Count
+                DrawIndex = nextDrawIndex()
             };
-            GLWrapper.addGO(t.internalGO);
-            shapeRefs.Add(t);
+            AddToBuffer(t);
             return t;
         }
 
@@ -654,8 +675,7 @@ namespace GLDrawer
         {
             if (shape == null)
                 throw new NullReferenceException("Shape was NULL");
-            GLWrapper.addGO(shape.internalGO);
-            shapeRefs.Add(shape);
+            AddToBuffer(shape);
             return shape;
         }
         public GameObject Add(GameObject gameObject)
@@ -721,8 +741,7 @@ namespace GLDrawer
         {
             if (s == null)
                 throw new NullReferenceException("Shape was null");
-            shapeRefs.Remove(s);
-            GLWrapper.removeGO(s.internalGO);
+            AddToRemoveBuffer(s);
         }
         public void Remove(GameObject gameObject)
         {

@@ -367,6 +367,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 //unexpected resize + set pixel = death
 void window_size_callback(GLFWwindow* window, int width, int height) {
 	GLCanvas * base = static_cast<GLCanvas*>(glfwGetWindowUserPointer(window));
+	base->reSizeEvent = true;
 	base->windowSizeChanged = true;
 }
 
@@ -1157,6 +1158,11 @@ void GLCanvas::mainloop(bool render) {
 		//thread safe transfer object buffer to canvas draw list
 		shapeCopyFlag = true;
 
+		if (clearShapeFlag) {
+			GameObjects.clear();
+			clearShapeFlag = false;
+		}
+
 		//thread safe transfer of gameobjects
 		for (int i = 0; i < GOBuffer.size(); i++)
 			GameObjects.push_back(GOBuffer[i]);
@@ -1169,11 +1175,6 @@ void GLCanvas::mainloop(bool render) {
 				if (GameObjects[i] == GORemoveBuffer[j]) 
 					GameObjects.erase(GameObjects.begin() + i);
 		GORemoveBuffer.clear();
-
-		if (clearShapeFlag) {
-			GameObjects.clear();
-			clearShapeFlag = false;
-		}
 
 		int length = GameObjects.size();
 
@@ -1562,10 +1563,10 @@ void GLCanvas::setFont(GO * g) {
 	glVertexAttribDivisor(6, 1); 
 
 	if (boundMode) {
-		gl(Uniform2f(FontmPosUniformLocation, (g->position.x - g->scale.x/2) / resolutionWidth * 2.0f, g->position.y / resolutionHeight * 2.0f));
+		gl(Uniform2f(FontmPosUniformLocation, ((g->position.x - camera.x) - g->scale.x/2) / resolutionWidth * 2.0f, (g->position.y - camera.y) / resolutionHeight * 2.0f));
 	}
 	else {
-		gl(Uniform2f(FontmPosUniformLocation, g->position.x / resolutionWidth * 2.0f, g->position.y / resolutionHeight * 2.0f));
+		gl(Uniform2f(FontmPosUniformLocation, (g->position.x - camera.x) / resolutionWidth * 2.0f, (g->position.y - camera.y) / resolutionHeight * 2.0f));
 	}
 	gl(Uniform1f(FontmRotUniformLocation, g->angle - g->rSpeed * currTime));
 

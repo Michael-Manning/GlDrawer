@@ -321,6 +321,7 @@ public :
 	bool disposed = false; //to prevent multiple cleanups
 	bool clearColorFlag = true; //resets the back buffer in the next from if true
 	bool debugMode = false;
+	bool reSizeEvent = false; //window resize
 	void setWindowSize(int w, int h);
 	int resolutionWidth;
 	int resolutionHeight;

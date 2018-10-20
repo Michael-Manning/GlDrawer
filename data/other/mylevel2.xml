@@ -106,4 +106,8 @@
       0,0 0,0 0,0 0,0 0,0 0,0 0,0 0,0 0,0 0,0 0,0 0,0 0,0 0,0 0,0 0,0 0,0 0,0 0,0 0,0 
     </opgrid>
   </spriteMap>
+  <entities>
+    <entity preview="sprite">filepath</entity>
+	<entity preview="animation">filepath</entity>
+  </entities>
 </tileMap>
