@@ -64,16 +64,18 @@ template <typename F> _scope_exit_t<F> _make_scope_exit_t(F f) {
 		} \
 	}
 #endif
-#define polyTransUniforms PaspectUniformLocation, PmScaleUniformLocation, PmPosUniformLocation, PmRotUniformLocation
-#define textTransUniforms FaspectUniformLocation, FmScaleUniformLocation, FmPosUniformLocation, FmRotUniformLocation
+#define polyTransUniforms PaspectUniformLocation, PmScaleUniformLocation, PmPosUniformLocation, PmRotUniformLocation, PzoomUniformLocation
+#define textTransUniforms FaspectUniformLocation, FmScaleUniformLocation, FmPosUniformLocation, FmRotUniformLocation, FzoomUniformLocation
 #define fontTransUniforms FontaspectUniformLocation, FontmScaleUniformLocation, FontmPosUniformLocation, FontmRotUniformLocation
 #define FBOUniforms() 		gl(Uniform2f(FmScaleUniformLocation, 1.0, 1.0f));\
 							gl(Uniform2f(FmPosUniformLocation, 0, 0));\
 							gl(Uniform1f(FmRotUniformLocation, 0.0f));\
-							gl(Uniform2f(FUVscaleUniformLocation, 0.5f, 0.5f));\
-							gl(Uniform2f(FUVposUniformLocation, 0.5f, 0.5f));\
+							gl(Uniform2f(FUVscaleUniformLocation, 1, 1));\
+							gl(Uniform2f(FUVposUniformLocation, 0, 0));\
 							gl(Uniform1f(FaspectUniformLocation, aspect));\
 						    gl(Uniform4f(FColorUniformLocation, 0, 0,0,0));\
+							gl(Uniform1f(FzoomUniformLocation, 1));\
+							gl(Uniform1f(FOpacityUniformLocation, 1));\
 
 #define asizei(a) (int)(sizeof(a)/sizeof(a[0]))
 
@@ -376,11 +378,25 @@ polyData::polyData(vec4 fCol, vec4 bCol, float BWidth, int Sides)
 	bWidth = BWidth;
 	sides = Sides;
 }
-imgData::imgData(const char * path, vec4 tintCol)
+imgData::imgData(const char * path, vec4 tintCol, vec2 uvpos, vec2 uvscale)
 {
 	filepath = path;
 	tint = tintCol;
+	UVpos = uvpos;
+	UVscale = uvscale;
+	adata = NULL;
 }
+animationData::animationData(int size, int cell, float freq)
+{
+	sheetSize = size;
+	cells = cell * cell;
+	cellSize = size / cell;
+	cellsPerLine = cell;
+
+	frequency = freq;
+}
+
+
 int imgData::getHashIndex() {
 	if (hashIndex == -1) {
 		if (imgHashLookup.size() == 0) {
@@ -511,11 +527,11 @@ void genFramBuffer(GLuint * textID, GLuint * fboID, int width, int height) {
 
 void GLCanvas::onKeyboard(int key, int scancode, int action, int mods) {
 	//Likely redundant
-	//if (keyStates[key] == action)
-	//	return;
-	//for (int i = 0; i < 10; i++)
-	//	if (keyBuffer[i].read)
-	//		keyBuffer[i] = description{ key,action, false };
+	if (keyStates[key] == action)
+		return;
+	for (int i = 0; i < 10; i++)
+		if (keyBuffer[i].read)
+			keyBuffer[i] = description{ key,action, false };
 	keyStates[key] = action;
 }
 void GLCanvas::onMouse(int button, int action, int mods) {
@@ -594,7 +610,7 @@ int GLCanvas::createCanvas(int width, int height, bool borderd, vec3 backcol, bo
 		 return 1;
 	}
 	
-
+	Borderd = borderd;
 	glfwWindowHint(GLFW_DECORATED, borderd);
 	glfwWindowHint(GLFW_FLOATING, !borderd);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -709,12 +725,13 @@ int GLCanvas::createCanvas(int width, int height, bool borderd, vec3 backcol, bo
 	PborderWidthUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "bordWidth"));
 	//PtextureUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "Text"));
 	PtimeUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "iTime"));
+	PzoomUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "zoom"));
 
 	PmPosUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "position"));
 	PmScaleUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "scale"));
 	PmRotUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "rotation"));
-	PUVscaleUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "scaleOffset"));
-	PUVposUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "posOffset"));
+	//PUVscaleUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "scaleOffset"));
+	//PUVposUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "posOffset"));
 	PaspectUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "aspect"));
 
 	//fbo shader uniforms
@@ -728,6 +745,8 @@ int GLCanvas::createCanvas(int width, int height, bool borderd, vec3 backcol, bo
 	FUVposUniformLocation = gl(GetUniformLocation(textureShaderProgram, "posOffset"));
 	FaspectUniformLocation = gl(GetUniformLocation(textureShaderProgram, "aspect"));
 	FxformUniformLocation = gl(GetUniformLocation(textureShaderProgram, "xform"));
+	FzoomUniformLocation = gl(GetUniformLocation(textureShaderProgram, "zoom"));
+	FOpacityUniformLocation = gl(GetUniformLocation(textureShaderProgram, "opacity"));
 
 	//font shader uniforms
 	FonttextureUniformLocation = gl(GetUniformLocation(fontShaderProgram, "Text"));
@@ -741,6 +760,7 @@ int GLCanvas::createCanvas(int width, int height, bool borderd, vec3 backcol, bo
 	FontUVposUniformLocation = gl(GetUniformLocation(fontShaderProgram, "posOffset"));
 	FontaspectUniformLocation = gl(GetUniformLocation(fontShaderProgram, "aspect"));
 	FontxformUniformLocation = gl(GetUniformLocation(fontShaderProgram, "xform"));
+	FontzoomUniformLocation = gl(GetUniformLocation(fontShaderProgram, "zoom"));
 
 	//particle shader uniforms
 	ParticlePosUniformLocation = gl(GetUniformLocation(ParticleShaderProgram, "position"));
@@ -908,14 +928,16 @@ void GLCanvas::setPolygon(GO * g) {
 	gl(Uniform1f(PborderWidthUniformLocation, g->p->bWidth));
 	gl(Uniform4f(PbordColorUniformLocation, g->p->bColor.r, g->p->bColor.g, g->p->bColor.b, g->p->bColor.a));
 	gl(Uniform1f(PtimeUniformLocation, currTime));
+	gl(Uniform1f(PzoomUniformLocation, cameraZoom));
 }
 
-void GLCanvas::setGOTransform(GO * g, GLuint Aspect, GLuint scale, GLuint pos, GLuint rot) {
+void GLCanvas::setGOTransform(GO * g, GLuint Aspect, GLuint scale, GLuint pos, GLuint rot, GLuint zoom) {
 	//transform
 	gl(Uniform1f(Aspect, aspect));
 	gl(Uniform2f(scale, g->scale.x / resolutionV2f.x, g->scale.y / resolutionV2f.y));
 	gl(Uniform2f(pos, (g->position.x - camera.x) / resolutionWidth * 2.0f, (g->position.y - camera.y) / resolutionHeight * 2.0f));
 	gl(Uniform1f(rot, g->angle - g->rSpeed * currTime));
+	gl(Uniform1f(zoom, cameraZoom));
 }
 
 void GLCanvas::LocalTransformHelper(GO * child,  mat4 * m) {
@@ -942,9 +964,7 @@ mat4 GLCanvas::makeLocalTransform(GO * child) {
 
 	return m;
 }
-void GLCanvas::drawGameobjectShape(GO * g) {
 
-}
 
 GLCanvas::GLCanvas()
 {
@@ -1124,6 +1144,8 @@ void GLCanvas::mainloop(bool render) {
 		gl(Uniform1f(FmRotUniformLocation, 0.0f));
 
 		gl(UniformMatrix4fv(FxformUniformLocation, 1, GL_FALSE, value_ptr(empty)));
+		gl(Uniform1f(FzoomUniformLocation, 1));
+		gl(Uniform1f(FOpacityUniformLocation, 1));
 
 		gl(DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
 		gl(BindTexture(GL_TEXTURE_2D, 0));
@@ -1153,8 +1175,10 @@ void GLCanvas::mainloop(bool render) {
 			clearShapeFlag = false;
 		}
 
+		int length = GameObjects.size();
+
 		shapeCopyFlag = false;
-		for (int i = 0; i < newGOs; i++)
+		for (int i = 0; i < length; i++)
 		{
 			bool change = false;
 			int s = GameObjects.size() - 1; //only works when declared outside the loop?
@@ -1181,10 +1205,6 @@ void GLCanvas::mainloop(bool render) {
 	mat4 m; //used if parent transforms are involved
 	for (int i = 0; i < GoSize; ++i)
 	{
-	/*	GO  gg = *GameObjects[i];
-		GO * g = &gg;
-		if(centerOffset)
-			g->position -= resolutionV2f / 2.f;*/
 		GO * g = GameObjects[i];
 
 #ifdef _DEBUG
@@ -1203,6 +1223,7 @@ void GLCanvas::mainloop(bool render) {
 		if (g->parent) 
 			m = makeLocalTransform(g);
 
+		//update physics
 		if (g->body) {
 			if (g->body->setPositionFlag) {
 				g->body->body->SetTransform(toB2(g->position), g->angle);
@@ -1214,7 +1235,7 @@ void GLCanvas::mainloop(bool render) {
 				g->angle = g->body->body->GetAngle();
 			}
 		}
-
+		//particle system
 		if (g->ps) {
 			if (g->parent)
 				drawParticleSystem(g, deltaTime, &m);
@@ -1223,12 +1244,38 @@ void GLCanvas::mainloop(bool render) {
 			gl(BindVertexArray(VAO));
 			gl(UseProgram(PolygonShaderProgram));
 		}
+		//sprite
 		else if (g->i) {
 			gl(UseProgram(textureShaderProgram));
 			setTexture(g, FtextureUniformLocation);
+			gl(Uniform1f(FOpacityUniformLocation, g->i->opacity));
+			//animation
+			if (g->i->adata) {
+				animationData * a = g->i->adata;
+
+				float fuck = (a->iTime / a->frequency);
+				int current = a->cells * fuck;
+
+				float x = current % a->cellsPerLine * a->cellSize ;
+				float y = -current / a->cellsPerLine * a->cellSize ;
+				gl(Uniform2f(FUVposUniformLocation, x/a->sheetSize, y/a->sheetSize));
+				float sc = a->cellSize / (float)a->sheetSize;
+				gl(Uniform2f(FUVscaleUniformLocation,sc, sc));
+
+				a->iTime += deltaTime;
+				if (a->iTime > a->frequency)
+					a->iTime = 0;
+			}
+			//no animation
+			else {
+				gl(Uniform2f(FUVposUniformLocation, g->i->UVpos.x, g->i->UVpos.y));
+				gl(Uniform2f(FUVscaleUniformLocation, g->i->UVscale.x, g->i->UVscale.y));			
+			}
+
 			if (g->parent) {
 				m = scale(m, vec3(g->scale / resolutionV2f, 1.0f));
 				gl(UniformMatrix4fv(FxformUniformLocation, 1, GL_FALSE, value_ptr(m)));
+				gl(Uniform1f(FzoomUniformLocation, cameraZoom)); 
 				gl(DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
 			}
 			else {
@@ -1238,6 +1285,7 @@ void GLCanvas::mainloop(bool render) {
 			}
 			gl(UseProgram(PolygonShaderProgram));
 		}
+		//text
 		else if (g->t) {
 			setFont(g);
 			if (g->parent) {
@@ -1250,12 +1298,14 @@ void GLCanvas::mainloop(bool render) {
 			}
 			gl(UseProgram(PolygonShaderProgram));
 		}
+		//polygon
 		else if (g->p) {
 			gl(UseProgram(PolygonShaderProgram));
 			setPolygon(g);
 			if (g->parent) {			
 				m = scale(m, vec3(g->scale / resolutionV2f, 1.0f));
 				gl(UniformMatrix4fv(PxformUniformLocation, 1, GL_FALSE, value_ptr(m)));
+				gl(Uniform1f(PzoomUniformLocation, cameraZoom));
 				gl(DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
 			}
 			else {
@@ -1278,7 +1328,7 @@ void GLCanvas::mainloop(bool render) {
 	glfwSwapBuffers(window);
 	updateDebugInfo();
 
-	if (windowTitleFlag) {
+	if (windowTitleFlag && Borderd) {
 		if (titleDetails)
 			glfwSetWindowTitle(window, (title + debugString).c_str());
 		else
@@ -1518,6 +1568,8 @@ void GLCanvas::setFont(GO * g) {
 		gl(Uniform2f(FontmPosUniformLocation, g->position.x / resolutionWidth * 2.0f, g->position.y / resolutionHeight * 2.0f));
 	}
 	gl(Uniform1f(FontmRotUniformLocation, g->angle - g->rSpeed * currTime));
+
+	gl(Uniform1f(FontzoomUniformLocation, cameraZoom));
 
 	delete lineLengths;
 	delete text;
@@ -1826,3 +1878,4 @@ bool GLCanvas::raycast(vec2 start, vec2 end)
 //		g->p->fColor = vec4(1);
 //	}
 }
+

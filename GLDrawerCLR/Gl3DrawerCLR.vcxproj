@@ -98,7 +98,7 @@
       <CompileAs>CompileAsCpp</CompileAs>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>..\Include\GLFW\glfw3.lib;GlU32.Lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>..\Include\GLFWwin32\glfw3.lib;GlU32.Lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -121,7 +121,7 @@
       <CompileAs>CompileAsCpp</CompileAs>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>..\Include\GLFW\glfw3.lib;GlU32.Lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>..\Include\GLFWwin32\glfw3.lib;GlU32.Lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

@@ -32,12 +32,13 @@ namespace GLDrawer
         private bool InvertedYAxis = false; //unimplimented for public use as of now
         /// <summary>multiplier for all shape coordinates</summary>
         public int Scale = 1;
-        public bool BottomLeftZero { get => GLWrapper.centerOffset; set => GLWrapper.centerOffset = value; }
+        public bool BottomLeftZero;
         /// <summary>wether to display debug info next to the title</summary>
         public bool ExtraInfo { set => GLWrapper.titleDetails = value; }
         /// <summary>center coordinate of the canvas</summary>
         public vec2 Centre { get => !BottomLeftZero ? vec2.Zero : new vec2(Width / 2, Height / 2); }
-        public vec2 Camera { get => new vec2(GLWrapper.camera.x, GLWrapper.camera.y); set => GLWrapper.camera = new unmanaged_vec2(value.x, value.y); }
+        public vec2 CameraPosition { get => new vec2(GLWrapper.camera.x, GLWrapper.camera.y); set => GLWrapper.camera = new unmanaged_vec2(value.x, value.y); }
+        public float CamerZoom { get => GLWrapper.zoom; set => GLWrapper.zoom = value; }
         public int GameObjectCount => GORefs.Count;
         /// <summary>number of shapes being drawn on the canvas</summary>
         public int ShapeCount { get => GLWrapper.shapeCount; }
@@ -301,7 +302,8 @@ namespace GLDrawer
 
             if (simpleBackBuffer)
                 GLWrapper.clearBB();
-
+           if (BottomLeftZero)
+                CameraPosition = new vec2(Width / 2, Height / 2);
             //needs to be very spesific due to threads
             if (!AutoRender)
             {
@@ -523,7 +525,7 @@ namespace GLDrawer
         /// <returns>Reference to the added sprite</returns>
         public Sprite AddCenteredSprite(string FilePath, float Xpos, float Ypos, float Width, float Height, float Angle = 0, float RotationSpeed = 0)
         {
-            Sprite s = new Sprite(FilePath, new vec2(Xpos, Ypos) * Scale, new vec2(Width, Height) * Scale, Angle, RotationSpeed)
+            Sprite s = new Sprite(FilePath, new vec2(Xpos, Ypos) * Scale, new vec2(Width, Height) * Scale, Angle, rotationSpeed: RotationSpeed)
             {
                 DrawIndex = shapeRefs.Count
             };
@@ -551,7 +553,7 @@ namespace GLDrawer
             YStart *= Scale;
             Width *= Scale;
             Height *= Scale;
-            Sprite s = new Sprite(FilePath, new vec2(XStart + Width / 2f, YStart + Height / 2f), new vec2(Width, Height), Angle, RotationSpeed)
+            Sprite s = new Sprite(FilePath, new vec2(XStart + Width / 2f, YStart + Height / 2f), new vec2(Width, Height), Angle,rotationSpeed:  RotationSpeed)
             {
                 DrawIndex = shapeRefs.Count
             };
@@ -717,6 +719,8 @@ namespace GLDrawer
         /// <summary>stops drawaing a shape on the canvas</summary
         public void Remove(Shape s)
         {
+            if (s == null)
+                throw new NullReferenceException("Shape was null");
             shapeRefs.Remove(s);
             GLWrapper.removeGO(s.internalGO);
         }
@@ -841,6 +845,8 @@ namespace GLDrawer
         /// <summary>draws a whole shape to the back buffer</summary>
         public Shape SetBBShape(Shape shape)
         {
+            if (shape == null)
+                throw new NullReferenceException("Shape was null");
             GLWrapper.setBBShape(shape.internalGO);
             return shape;
         }

@@ -9,6 +9,7 @@ uniform vec4 bordColor;
 uniform vec2 shapeScale;
 uniform int sideCount;
 uniform float bordWidth;
+uniform float zoom;
 uniform float iTime;
 out vec4 FragColor;
 
@@ -25,6 +26,14 @@ float polyRads[30] = float[] (0.289, 0.5, 0.423, 0.433, 0.465, 0.5, 0.476, 0.475
                          0.498, 0.5, 0.498, 0.498, 0.498, 0.5);
 
 
+mat2 rot(float a){
+    return mat2(
+        sin(a),cos(a),
+        cos(a),-sin(a)
+        );
+}
+
+
 void main()
 {
     float xblur = 1.5/shapeScale.x;
@@ -32,12 +41,28 @@ void main()
     
     vec4 FillColor = Color;
     vec4 BorderColor = bordColor;
-    if(Color.a == -1.0){
-        FillColor = vec4(0.5 + 0.5*cos(iTime * 1.4 +(frag_uv).xyx+vec3(0,2,4)), 1.0);
+    if(Color.a < 0.0)
+    {
+        if(Color.a == -1.0)
+            FillColor = vec4(0.5 + 0.5*cos(iTime * 1.4 +(frag_uv).xyx+vec3(0,2,4)), 1.0);
+        if(Color.a == -2.0){
+            vec2 uv = vec2(1.0) * ((frag_uv * zoom) * shapeScale.xy) * rot(-0.78539816339);
+            vec3 hc = mix(vec3(0.5), vec3(1), step(0.5, sin((uv.x + iTime * 0.006) *800.0)+0.5));
+            FillColor = vec4(hc, 1.0);
+        }
     }
-    if(bordColor.a == -1.0){
-        BorderColor = vec4(0.5 + 0.5*cos((iTime + 300.0) * 1.4 +(frag_uv).xyx+vec3(0,2,4)), 1.0);
+
+    if(bordColor.a < 0.0)
+    {
+        if(bordColor.a == -1.0)
+            BorderColor = vec4(0.5 + 0.5*cos((iTime + 300.0) * 1.4 +(frag_uv).xyx+vec3(0,2,4)), 1.0);
+        if(Color.a == -2.0){
+            vec2 uv = vec2(1.0) * (frag_uv * zoom) * rot(-0.78539816339);
+            vec3 hc = mix(vec3(0.5), vec3(1), step(0.5, sin((uv.x * + (iTime + 20.0) * 0.2) *40.0)+0.5));
+            BorderColor  = vec4(hc, 1.0);
+        }
     }
+
     
     if(sideCount == 4){
         vec2 uv =  abs(frag_uv- 0.5) * 2.0;

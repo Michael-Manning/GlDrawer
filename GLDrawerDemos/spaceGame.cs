@@ -65,7 +65,7 @@ namespace spaceGame
         public override void Update()
         {
             transform.Position = Canvas.MousePositionWorldSpace;
-            Canvas.Camera = transform.Position / 6f;
+            Canvas.CameraPosition = transform.Position / 6f;
 
             if (Canvas.GetMouse(0))
             {
@@ -209,7 +209,7 @@ namespace spaceGame
         }
         public override void Update()
         {
-            transform.Position = new vec2(0, 700) - Canvas.Camera * movement;
+            transform.Position = new vec2(0, 700) - Canvas.CameraPosition * movement;
         }
     }
 }

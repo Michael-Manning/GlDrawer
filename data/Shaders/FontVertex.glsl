@@ -7,6 +7,7 @@ uniform float aspect;
 uniform vec2 scaleOffset; //UVs
 uniform vec2 scale; //UVs
 uniform mat4 xform;
+uniform float zoom;
 uniform vec2 position;
 uniform float rotation;
 
@@ -66,13 +67,19 @@ mat4 rotation =
 
 void main()
 {
+
+mat4 camZoom = mat4( zoom,  0.0,  0.0, 0.0,
+                     0.0,   zoom,  0.0, 0.0,
+                     0.0, 0.0, 1.0, 0.0,
+                     0.0, 0.0, 0.0, 1.0);
+
     mat4 globalT;
     if(xform[0][0] == 0)
         globalT = globalTransform();
     else
         globalT = xform;
 
-   vec4 ndcPos = globalT * localTransform() * vec4(aPos.x, aPos.y, aPos.z, 1.0);
+   vec4 ndcPos = camZoom * globalT * localTransform() * vec4(aPos.x, aPos.y, aPos.z, 1.0);
         frag_uv = aPos.xy * uvOff.ba + uvOff.xy;
    gl_Position = ndcPos;
 }

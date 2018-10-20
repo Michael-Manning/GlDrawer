@@ -1,13 +1,11 @@
 #version 330 core
 layout (location = 0) in vec3 aPos;
 uniform float aspect;
-uniform vec2 scaleOffset;
 uniform mat4 xform;
 uniform vec2 scale;
 uniform vec2 position;
 uniform float rotation;
-
-uniform vec2 posOffset;
+uniform float zoom;
 out vec2 frag_uv;
 
 mat4 trans(){
@@ -48,10 +46,16 @@ mat4 rot = mat4( c,  -s,  0.0, 0.0,
 void main()
 {
     vec4 ndcPos;
+
+mat4 camZoom = mat4( zoom,  0.0,  0.0, 0.0,
+                     0.0,   zoom,  0.0, 0.0,
+                     0.0, 0.0, 1.0, 0.0,
+                     0.0, 0.0, 0.0, 1.0);
+
     if(xform[0][0] == 0)
-        ndcPos = trans() * vec4(aPos.x / aspect, aPos.y, aPos.z, 1.0);    
+        ndcPos = camZoom * trans() * vec4(aPos.x / aspect, aPos.y, aPos.z, 1.0);    
     else
-        ndcPos = (xform * vec4(aPos.x / aspect, aPos.y, aPos.z, 1.0));
+        ndcPos =  (camZoom * xform * vec4(aPos.x / aspect, aPos.y, aPos.z, 1.0));
 
     frag_uv = aPos.xy *0.5 + 0.5; 
    gl_Position = ndcPos;

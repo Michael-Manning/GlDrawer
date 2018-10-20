@@ -2,10 +2,14 @@
 in vec2 frag_uv;
 uniform sampler2D Text;
 uniform vec4 tint;
+uniform float opacity;
+uniform vec2 scaleOffset;
+uniform vec2 posOffset;
 out vec4 FragColor;
 void main()
 {
-    vec4 texCol = vec4(texture(Text, frag_uv));
+   vec4 texCol = vec4(texture(Text, frag_uv * scaleOffset + posOffset));
+   texCol.a *= opacity;
    FragColor = mix(texCol, vec4(tint.rgb, 1.0), texCol.a * tint.a);
 };
 

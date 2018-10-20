@@ -2,13 +2,12 @@
 Things left to work on for version 1.0:
 
 -increase font resolution
--fix border bleeding in shader
--add outer anti ailiasing with rectangles
 -add file type validation for sprites and fonts
-fix text again
+-better pattern system
+
 finish load asset
 fix reordering tools
-mouseposwordspace isnt worldspace
+
 
 things to test:
 
@@ -17,3 +16,10 @@ things to test:
 Extra stuff
 
 -per particle rotation
+
+bugs
+mouseposwordspace isnt worldspace
+fix text again
+-fix border bleeding in shader
+disable window title updates in borderless mode
+no flag for draw index changed

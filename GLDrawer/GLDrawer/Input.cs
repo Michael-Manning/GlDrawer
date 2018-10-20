@@ -18,27 +18,34 @@ namespace GLDrawer
         public delegate void GLKeyEvent(Keys Code, GLCanvas Canvas);
         public event GLMouseEvent MouseLeftClick = delegate { };
         public event GLMouseEvent MouseRightClick = delegate { };
+        public event GLMouseEvent MouseMiddleClick = delegate { };
         public event GLMouseEvent MouseLeftClickScaled = delegate { };
         public event GLMouseEvent MouseRightClickScaled = delegate { };
+        public event GLMouseEvent MouseMiddleClickScaled = delegate { };
         public event GLMouseEvent MouseLeftRelease = delegate { };
         public event GLMouseEvent MouseRightRelease = delegate { };
+        public event GLMouseEvent MouseMiddleRelease = delegate { };
         public event GLMouseEvent MouseLeftReleaseScaled = delegate { };
         public event GLMouseEvent MouseRightReleaseScaled = delegate { };
+        public event GLMouseEvent MouseMiddleReleaseScaled = delegate { };
         public event GLMouseEvent MouseMove = delegate { };
         public event GLMouseEvent MouseMoveScaled = delegate { };
         public event GLScrollEvent MouseScrolled = delegate { };
         public event GLKeyEvent KeyDown = delegate { };
         public event GLKeyEvent KeyUp = delegate { };
 
-        private KeysConverter kc = new KeysConverter();
-
-        private vec2 iMousePosition = vec2.Zero;
-        public vec2 MousePosition { get { return CheckInvert(iMousePosition); } }
-        public vec2 MousePositionScaled { get { return CheckInvert(iMousePosition) / Scale; } }
-        public vec2 MousePositionWorldSpace { get { return CheckInvert(iMousePosition) - this.Centre; } }
-        public bool MouseLeftState { get => !leftLifted; }
-        public bool MouseRightState { get => !rightLifted; }
+        public vec2 MousePosition => CheckInvert(iMousePosition); 
+        public vec2 MousePositionScaled => CheckInvert(iMousePosition) / Scale;
+        public vec2 MousePositionWorldSpace => CheckInvert(iMousePosition) - this.Centre;
+        public vec2 MouseDeltaPosition => iMouseDeltaPosition;
+        public bool MouseLeftState  => !leftLifted; 
+        public bool MouseRightState => !rightLifted;
+        public bool MouseMiddleState => !middleLifted;
         public int MouseScrollDirection { get; private set; }
+
+        private KeysConverter kc = new KeysConverter();
+        private bool leftLifted = true, rightLifted = true, middleLifted = true;
+        private vec2 iMousePosition = vec2.Zero, iMouseDeltaPosition = vec2.Zero;
 
         public void KeyCallback(int key, int action, int scancode)
         {
@@ -57,17 +64,18 @@ namespace GLDrawer
         }
 
         //this gets called by GLFW (unmanaged code)
-        bool leftLifted = true, rightLifted = true;
         private void MouseCallback(int btn, int action, int mods)
         {
             unmanaged_vec2 v = GLWrapper.getMousePos();
             iMousePosition = new vec2(v.x, v.y);
+            //scroll (3 was chosen by me, not glfw)
             if(btn == 3)
             {
                 MouseScrolled.Invoke(action, this);
                 MouseScrollDirection = action;
                 return;
             }
+            //left click
             if (btn == 0 && action == 1)
             {
                 if (leftLifted)
@@ -87,8 +95,7 @@ namespace GLDrawer
                 MouseLeftReleaseScaled.Invoke(MousePositionScaled, this);
                 return;
             }
-                
-
+            //right click
             if (btn == 1 && action == 1)
             {
                 if (rightLifted)
@@ -108,11 +115,32 @@ namespace GLDrawer
                 MouseRightReleaseScaled.Invoke(MousePositionScaled, this);
                 return;
             }
+            //middle click
+            if (btn == 2 && action == 1)
+            {
+                if (middleLifted)
+                {
+                    MouseMiddleClick.Invoke(MousePosition, this);
+                    MouseMiddleClickScaled.Invoke(MousePositionScaled, this);
+                }
+                middleLifted = false;
+                return;
+            }
+            if (btn == 2 && action == 0)
+            {
+                middleLifted = true;
+                MouseMiddleRelease.Invoke(MousePosition, this);
+                MouseMiddleReleaseScaled.Invoke(MousePositionScaled, this);
+                return;
+            }
         }
         private void MouseMoveCallback()
         {
             unmanaged_vec2 v = GLWrapper.getMousePos();
-            iMousePosition = new vec2(v.x, v.y);
+            vec2 pos = new vec2(v.x, v.y);
+            iMouseDeltaPosition = pos - iMousePosition;
+            iMouseDeltaPosition *= new vec2(1, -1);
+            iMousePosition = pos;
             MouseMove.Invoke(MousePosition, this);
             MouseMoveScaled.Invoke(MousePositionScaled, this);
         }
@@ -328,7 +356,7 @@ namespace GLDrawer
             Keys code = Keys.KeyCode;
             try {
                 //might get lucky here if the key was a letter
-                return (Keys)kc.ConvertFromString((char.ToUpper((char)key)).ToString());
+               // return (Keys)kc.ConvertFromString((char.ToUpper((char)key)).ToString());
             }
 
             //many of the keys supported in GLFW are NOT support in windows forms keys, so I've included what I could

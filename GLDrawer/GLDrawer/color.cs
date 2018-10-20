@@ -10,12 +10,13 @@ namespace GLDrawer
     public struct Color
     {
         private int ir, ig, ib, ia;
-        public int R { get { return ir; } set { ir = value.limit(0, 255); } }
-        public int G { get { return ig; } set { ig = value.limit(0, 255); } }
-        public int B { get { return ib; } set { ib = value.limit(0, 255); } }
-        public int A { get { return ia; } set { ia = value.limit(!RainbowMode ? -255 : 0, 255); } } //-1.0 for alpha triggers the rainbow in the backend
+        public int R { get => ir; set => ir = value.limit(0, 255); }
+        public int G { get => ig; set => ig = value.limit(0, 255); }
+        public int B { get => ib; set => ib = value.limit(0, 255); }
+        public int A { get => ia; set => ia = value.limit(0, 255); }
+     
         private static Random rnd = new Random();
-        private bool RainbowMode;
+        private bool RainbowMode, HazardMode;
 
         /// <summary>creates a new color from RGB and Alpha values </summary>
         public Color(int r, int g, int b, int a = 255) : this()
@@ -25,6 +26,7 @@ namespace GLDrawer
             B = b;
             A = a;
             RainbowMode = false;
+            HazardMode = false;
         }
         /// <summary> creates a monochrome color </summary>
         public Color(int rgb = 255, int a = 255) : this()
@@ -34,6 +36,7 @@ namespace GLDrawer
             B = rgb;
             A = a;
             RainbowMode = false;
+            HazardMode = false;
         }
 
         public static Color White { get { return new Color(255, 255, 255); } }
@@ -60,6 +63,15 @@ namespace GLDrawer
             {
                 Color c = new Color(255, 255, 255);
                 c.RainbowMode = true;
+                return c;
+            }
+        }
+        public static Color Hazard
+        {
+            get
+            {
+                Color c = new Color(255, 255, 255);
+                c.HazardMode = true;
                 return c;
             }
         }
@@ -98,7 +110,7 @@ namespace GLDrawer
         //implicit color to GLDrawerCLR unmanaged_color convertion which is implcitly converted to glm vec4 internally
         public static implicit operator GLDrawerCLR.unmanaged_color(Color c)
         {
-            return new GLDrawerCLR.unmanaged_color(c.R / 255f, c.G / 255f, c.B / 255f, c.RainbowMode ? -1f : c.A / 255f);
+            return new GLDrawerCLR.unmanaged_color(c.R / 255f, c.G / 255f, c.B / 255f, c.RainbowMode ? -1f : c.HazardMode ? -2f : c.A / 255f);
         }
         public static implicit operator Color(GLDrawerCLR.unmanaged_color c)
         {

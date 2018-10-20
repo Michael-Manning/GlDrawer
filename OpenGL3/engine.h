@@ -60,15 +60,25 @@ struct textData {
 	void dispose();
 };
 
+struct animationData {
+	int sheetSize = 0, cellSize, cells, cellsPerLine = 0; 
+	float frequency, iTime = 0;
+	animationData(int size, int cellsPerLine, float freq);
+};
+
 struct imgData {
 	const char * filepath;
-	int hashIndex = -1; //privately accessd
+	animationData* adata;
+	float opacity = 1;
+	vec2 UVscale;
+	vec2 UVpos;
 	vec4 tint;
 
 	//will include settings for stretch to fit, tilling .ect
-	imgData(const char* path, vec4 tint = vec4(0));
-	imgData() { tint = vec4(0); }
+	imgData(const char* path, vec4 tint = vec4(0), vec2 uvpos = vec2(0),  vec2 uvscale = vec2(1) );
+	imgData() { tint = vec4(0); UVpos = vec2(0);  UVscale = vec2(1); adata = NULL; }
 	int getHashIndex();
+	int hashIndex = -1; //privately accessd
 };
 
 struct polyData {
@@ -222,17 +232,6 @@ public:
 	void PreSolve(b2Contact* contact, const b2Manifold* oldManifold) {}
 	void PostSolve(b2Contact* contact, const b2ContactImpulse* impulse) {}
 };
-//class raycastCallback : public b2RayCastCallback {
-//public:
-//	b2Fixture* m_fixture;
-//	b2Vec2 m_point;
-//	b2Vec2 m_normal;
-//	float32 m_fraction;
-//
-//	rayCastCallback() : m_fixture(NULL) {}
-//
-//	float32 ReportFixture(b2Fixture* fixture, const b2Vec2& point, const b2Vec2& normal, float32 fraction);
-//};
 
 class RayCastCallback : public b2RayCastCallback
 {
@@ -329,6 +328,7 @@ public :
 	bool windowTitleFlag = true; //setting the title takes insanely long, so it should only be updated if there's a change
 	bool centerOffset = false;// 0,0 is bottom left of the string
 	vec2 camera;
+	float cameraZoom = 1;
 	int ParticleLimit = 10000; //max particles per system. Required for memory allocation
 	vec4 backCol;
 
@@ -340,11 +340,12 @@ public :
 	void loadImageAsset(const char * filepath); //like setTexture, but only loads the image to memory for later use
 	void drawParticleSystem(GO * g, float deltaTime, mat4 *global = NULL);
 	void clearSetPixelData();
-	void setGOTransform(GO * s, GLuint aspect, GLuint scale, GLuint pos, GLuint rot);
+	void setGOTransform(GO * s, GLuint aspect, GLuint scale, GLuint pos, GLuint rot, GLuint zoom);
 	void LocalTransformHelper(GO * child, mat4 * m);
 	mat4 makeLocalTransform(GO * child);
 	void drawGameobjectShape(GO * g); //automatically applies localized transformations
 	GLCanvas();
+	bool Borderd = false; //skips writing window title
 
 	//used by back/middle end
 	void setPos(int x, int y);
@@ -402,14 +403,16 @@ public :
 	GLuint PmPosUniformLocation;
 	GLuint PmScaleUniformLocation;
 	GLuint PmRotUniformLocation;
-	GLuint PUVscaleUniformLocation;
-	GLuint PUVposUniformLocation;
+	//GLuint PUVscaleUniformLocation;
+	//GLuint PUVposUniformLocation;
 	GLuint PaspectUniformLocation;
+	GLuint PzoomUniformLocation;
 
 	//texture shader uniforms
 	GLuint FtextureUniformLocation;
 	GLuint FColorUniformLocation; //tinting
 
+	GLuint FOpacityUniformLocation;
 	GLuint FxformUniformLocation;
 	GLuint FmPosUniformLocation;
 	GLuint FmScaleUniformLocation;
@@ -417,6 +420,7 @@ public :
 	GLuint FUVscaleUniformLocation;
 	GLuint FUVposUniformLocation;
 	GLuint FaspectUniformLocation;
+	GLuint FzoomUniformLocation;
 
 	//font shader uniforms
 	GLuint FonttextureUniformLocation;
@@ -430,6 +434,7 @@ public :
 	GLuint FontUVposUniformLocation;
 	GLuint FontaspectUniformLocation;
 	GLuint FontxformUniformLocation;
+	GLuint FontzoomUniformLocation;
 
 	//particle shader uniforms
 	GLuint ParticlePosUniformLocation;

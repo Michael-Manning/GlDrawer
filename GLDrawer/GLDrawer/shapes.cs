@@ -267,8 +267,11 @@ namespace GLDrawer
     {
         internal unmanaged_imgData internalImage;
         public string FilePath { get; private set; }
+        public float Opacity { get => internalImage.opacity; set => internalImage.opacity = value; }
         public Color Tint { get => internalImage.tint; set => internalImage.tint = value; }
-        public Sprite(string filePath, vec2 position, vec2 scale, float angle = 0, float rotationSpeed = 0, Color? tint = null)
+        public vec2 UVOffset { get => new vec2(internalImage.uvPos.x, internalImage.uvPos.y); set => internalImage.uvPos = new unmanaged_vec2(value.x, value.y); }
+        public vec2 UVScale { get => new vec2(internalImage.uvScale.x, internalImage.uvPos.y); set => internalImage.uvScale = new unmanaged_vec2(value.x, value.y); }
+        public Sprite(string filePath, vec2 position, vec2 scale, float angle = 0, Color? tint = null, vec2? uvScale = null, vec2? uvOffset = null, float rotationSpeed = 0)
         {
             if (!System.IO.File.Exists(filePath))
                 throw new ArgumentException("image file was not found", "filepath");
@@ -278,6 +281,10 @@ namespace GLDrawer
             if (tint != null)
                 internalImage.tint = tint;
             internalGO = new unmanaged_GO(internalImage, position.x, position.y, scale.x, scale.y, angle, rotationSpeed);
+            if (uvScale != null)
+                UVScale = (vec2)uvScale;
+            if (uvOffset != null)
+                UVOffset = (vec2)uvOffset;
         }
         public override void Dispose()
         {
