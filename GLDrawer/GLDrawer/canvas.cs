@@ -282,13 +282,6 @@ namespace GLDrawer
                 iDeltaTime = iTime - lastTime;
                 lastTime = iTime;
 
-                unmanaged_GO bufferGO;
-                while (shapeAddBuffer.TryDequeue(out bufferGO))
-                    GLWrapper.addGO(bufferGO);
-
-                while (shapeRemoveBuffer.TryDequeue(out bufferGO))
-                    GLWrapper.removeGO(bufferGO);
-
                 EarlyUpdate.Invoke();
                 Update.Invoke();
                 LateUpdate.Invoke();
@@ -307,12 +300,18 @@ namespace GLDrawer
                 delayedCalls.RemoveAll(o => o.timeLeft <= 0 || o.func == null);
             }
 
+            unmanaged_GO bufferGO;
+            while (shapeAddBuffer.TryDequeue(out bufferGO))
+                GLWrapper.addGO(bufferGO);
+
+            while (shapeRemoveBuffer.TryDequeue(out bufferGO))
+                GLWrapper.removeGO(bufferGO);
+
             MouseScrollDirection = 0;
 
             if (simpleBackBuffer)
                 GLWrapper.clearBB();
-           if (BottomLeftZero)
-                CameraPosition = new vec2(Width / 2, Height / 2);
+
             //needs to be very spesific due to threads
             if (!AutoRender)
             {

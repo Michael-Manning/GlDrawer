@@ -148,7 +148,7 @@ namespace GLDrawer
         }
         private vec2 CheckInvert(vec2 v)
         {
-            if(!InvertedYAxis && !BottomLeftZero)
+            if(!InvertedYAxis)
                 return new vec2(v.x - Width/2, -v.y + Height /2);
             if (!InvertedYAxis)
                 return new vec2(v.x, -v.y + Height);
