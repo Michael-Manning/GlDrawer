@@ -18,8 +18,4 @@ Extra stuff
 -per particle rotation
 
 bugs
-mouseposwordspace isnt worldspace
-fix text again
 -fix border bleeding in shader
-disable window title updates in borderless mode
-no flag for draw index changed

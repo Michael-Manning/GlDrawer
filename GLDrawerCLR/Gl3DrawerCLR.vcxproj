@@ -145,8 +145,8 @@
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\Include\gl3w\gl3w.c" />
     <ClCompile Include="AssemblyInfo.cpp" />
+    <ClCompile Include="gl3w.c" />
     <ClCompile Include="GLDrawerCLR.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

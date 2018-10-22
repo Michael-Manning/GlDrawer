@@ -19,12 +19,12 @@ namespace GLDrawerDemos
             Polygon circ = can.AddCenteredEllipse(150, 0, 150, 150, Color.White);
             can.Update += delegate
             {
-                if (rect.Intersect(can.MousePositionWorldSpace))
+                if (rect.Intersect(can.MousePositionScreenSpace))
                     rect.FillColor = Color.Red;
                 else
                     rect.FillColor = Color.White;
 
-                if (circ.Intersect(can.MousePositionWorldSpace))
+                if (circ.Intersect(can.MousePositionScreenSpace))
                     circ.FillColor = Color.Red;
                 else
                     circ.FillColor = Color.White;
@@ -46,29 +46,29 @@ namespace GLDrawerDemos
 
             can.Update += delegate
             {
-                traj.End = can.MousePositionWorldSpace;
+                traj.End = can.MousePositionScreenSpace;
                 if (can.GetMouseDown(0))
                 {
-                    A = can.MousePositionWorldSpace;
+                    A = can.MousePositionScreenSpace;
                     traj.Start = A;
                     traj.Hidden = false;
                 }          
                 else if (can.GetMouseUp(0))
                 {
                     traj.Hidden = true;
-                    B = can.MousePositionWorldSpace;
+                    B = can.MousePositionScreenSpace;
                     can.Instantiate(new box(A - B, 4), A);             
                 }
                 else if (can.GetMouseDown(1))
                 {
-                    A = can.MousePositionWorldSpace;
+                    A = can.MousePositionScreenSpace;
                     traj.Start = A;
                     traj.Hidden = false;
                 }
                 else if (can.GetMouseUp(1))
                 {
                     traj.Hidden = true;
-                    B = can.MousePositionWorldSpace;
+                    B = can.MousePositionScreenSpace;
                     can.Instantiate(new box(A - B, 1), A);
                 }
             };

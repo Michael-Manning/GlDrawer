@@ -33,11 +33,10 @@ namespace GLDrawer
         private bool InvertedYAxis = false; //unimplimented for public use as of now
         /// <summary>multiplier for all shape coordinates</summary>
         public int Scale = 1;
-        public bool BottomLeftZero;
         /// <summary>wether to display debug info next to the title</summary>
         public bool ExtraInfo { set => GLWrapper.titleDetails = value; }
         /// <summary>center coordinate of the canvas</summary>
-        public vec2 Centre { get => !BottomLeftZero ? vec2.Zero : new vec2(Width / 2, Height / 2); }
+        public vec2 Centre { get => new vec2(Width / 2, Height / 2); }
         public vec2 CameraPosition { get => new vec2(GLWrapper.camera.x, GLWrapper.camera.y); set => GLWrapper.camera = new unmanaged_vec2(value.x, value.y); }
         public float CamerZoom { get => GLWrapper.zoom; set => GLWrapper.zoom = value; }
         public int GameObjectCount => GORefs.Count;

@@ -32,10 +32,10 @@
     <ClCompile Include="stdafx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Include\gl3w\gl3w.c">
-      <Filter>Resource Files</Filter>
-    </ClCompile>
     <ClCompile Include="GLDrawerCLR.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="gl3w.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

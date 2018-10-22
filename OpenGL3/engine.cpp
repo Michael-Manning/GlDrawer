@@ -1446,6 +1446,8 @@ void GLCanvas::setFont(GO * g) {
 
 	if (boundMode) {
 		maxLines = g->scale.y / g->t->height;
+		if (lineCount > maxLines)
+			lineCount = maxLines;
 		//g->pos = g->pos + vec2(-g->scale.x / (float)2,
 			//g->scale.y / (float)2 - selected->tallestLetter / (float)2);
 		Xreference = g->scale.x / scaleRatio;
@@ -1494,8 +1496,10 @@ void GLCanvas::setFont(GO * g) {
 			if (!boundMode) {
 				xTranslate -= record / 2;
 				yTranslate += selected->alignmentOffset;
-				yTranslate += (selected->tallestLetter * lineCount) / 2;
+				//yTranslate += (selected->tallestLetter * lineCount) / 2;
 			}
+			yTranslate += (selected->tallestLetter * lineCount) / 2;
+
 			letterPosX = (xTranslate * scaleRatio) / resolutionWidth * 2.0f;
 			letterPosY = (yTranslate * scaleRatio) / resolutionHeight * 2.0f;
 		}

@@ -64,7 +64,7 @@ namespace spaceGame
         }
         public override void Update()
         {
-            transform.Position = Canvas.MousePositionWorldSpace;
+            transform.Position = Canvas.MousePositionScreenSpace;
             Canvas.CameraPosition = transform.Position / 6f;
 
             if (Canvas.GetMouse(0))
