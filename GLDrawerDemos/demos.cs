@@ -110,7 +110,6 @@ namespace GLDrawerDemos
         public static void GroupAdd()
         {
             can = new GLCanvas(1200, 600, TitleDetails: true, VSync: true);
-            can.simpleBackBuffer = true;
 
             for (int i = 0; i < 1200; i++)
                 for (int j = 0; j < 6; j++)
@@ -123,7 +122,6 @@ namespace GLDrawerDemos
         public static void FastRemoval()
         {
             can = new GLCanvas(800, 600, TitleDetails: true, VSync: false); //good to test with vsync both off and on
-            can.simpleBackBuffer = true;
 
             Shape t = can.AddCenteredText("Epilepsy warning!", 70f);
             Thread.Sleep(2000);
@@ -144,7 +142,6 @@ namespace GLDrawerDemos
         public static void ImageLoadingAbuse(string filepath)
         {
             can = new GLCanvas(800, 800, TitleDetails: true, VSync: false);
-            can.simpleBackBuffer = true;
 
             int delay = 1000;
 

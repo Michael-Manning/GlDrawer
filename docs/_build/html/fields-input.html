@@ -1,0 +1,893 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Members &mdash; GLDrawer  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Using vec2" href="vec2.html" />
+    <link rel="prev" title="Creating Input Events" href="events-input.html" /> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> GLDrawer
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="canvas.html">The Canvas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="shapes.html">Shapes</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="input.html">Input</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="events-input.html">Creating Input Events</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Members</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="vec2.html">Using vec2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="color.html">Color</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gameobject.html">GameObjects</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">GLDrawer</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="input.html">Input</a> &raquo;</li>
+        
+      <li>Members</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/fields-input.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="members">
+<h1>Members<a class="headerlink" href="#members" title="Permalink to this headline">¶</a></h1>
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p><strong>Delegates</strong></p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="36%" />
+<col width="64%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Name</th>
+<th class="head">Parameters</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>GLMouseEvent</td>
+<td>(vec2 Position, GLCanvas Canvas)</td>
+</tr>
+<tr class="row-odd"><td>GLScrollEvent</td>
+<td>(int Delta, GLCanvas canvas)</td>
+</tr>
+<tr class="row-even"><td>GLKeyEvent</td>
+<td>(Keys Code, GLCanvas Canvas)</td>
+</tr>
+</tbody>
+</table>
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p><strong>Events</strong></p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="17%" />
+<col width="9%" />
+<col width="74%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Name</th>
+<th class="head">Type</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>MouseLeftClick</td>
+<td>GLMouseEvent</td>
+<td>Left click somewhere on the Canvas</td>
+</tr>
+<tr class="row-odd"><td>MouseRightClick</td>
+<td>GLMouseEvent</td>
+<td>Right click somewhere on the Canvas</td>
+</tr>
+<tr class="row-even"><td>MouseMiddleClick</td>
+<td>GLMouseEvent</td>
+<td>Middle click somewhere on the Canvas</td>
+</tr>
+<tr class="row-odd"><td>MouseLeftClickScaled</td>
+<td>GLMouseEvent</td>
+<td>Left click somewhere on the Canvas multiplied by the canvas scale factor</td>
+</tr>
+<tr class="row-even"><td>MouseRightClickScaled</td>
+<td>GLMouseEvent</td>
+<td>Right click somewhere on the Canvas multiplied by the canvas scale factor</td>
+</tr>
+<tr class="row-odd"><td>MouseMiddleClickScaled</td>
+<td>GLMouseEvent</td>
+<td>Middle click somewhere on the Canvas multiplied by the canvas scale factor</td>
+</tr>
+<tr class="row-even"><td>MouseLeftRelease</td>
+<td>GLMouseEvent</td>
+<td>Left mouse button released somewhere on the canvas</td>
+</tr>
+<tr class="row-odd"><td>MouseRightRelease</td>
+<td>GLMouseEvent</td>
+<td>Right mouse button released somewhere on the canvas</td>
+</tr>
+<tr class="row-even"><td>MouseMiddleRelease</td>
+<td>GLMouseEvent</td>
+<td>Middle mouse button released somewhere on the canvas</td>
+</tr>
+<tr class="row-odd"><td>MouseLeftReleaseScaled</td>
+<td>GLMouseEvent</td>
+<td>Left mouse button released somewhere on the canvas multiplied by the canvas scale factor</td>
+</tr>
+<tr class="row-even"><td>MouseRightReleaseScaled</td>
+<td>GLMouseEvent</td>
+<td>Right mouse button released somewhere on the canvas multiplied by the canvas scale factor</td>
+</tr>
+<tr class="row-odd"><td>MouseMiddleReleaseScaled</td>
+<td>GLMouseEvent</td>
+<td>Middle mouse button released somewhere on the canvas multiplied by the canvas scale factor</td>
+</tr>
+<tr class="row-even"><td>MouseMove</td>
+<td>GLMouseEvent</td>
+<td>The mouse position is changed while over the canvas</td>
+</tr>
+<tr class="row-odd"><td>MouseMoveScaled</td>
+<td>GLMouseEvent</td>
+<td>The mouse position is changed while over the canvas. Delegate vec2 is multiplied by the canvas scale factor</td>
+</tr>
+<tr class="row-even"><td>KeyDown</td>
+<td>GLKeyEvent</td>
+<td>A key was pressed down with the canvas window in focus</td>
+</tr>
+<tr class="row-odd"><td>KeyUp</td>
+<td>GLKeyEvent</td>
+<td>A key was released with the canvas window in focus</td>
+</tr>
+<tr class="row-even"><td>MouseScrolled</td>
+<td>GLScrollEvent</td>
+<td>The mouse scroll wheel was turned</td>
+</tr>
+</tbody>
+</table>
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p><strong>Properties</strong></p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="20%" />
+<col width="4%" />
+<col width="76%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Name</th>
+<th class="head">Type</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>MousePosition</td>
+<td>vec2</td>
+<td>Location of the mouse in pixels relative to the canvas</td>
+</tr>
+<tr class="row-odd"><td>MousePositionScaled</td>
+<td>vec2</td>
+<td>Location of the mouse in pixels relative to the canvas, multiplied by the canvas scale factor</td>
+</tr>
+<tr class="row-even"><td>MousePositionScreenSpace</td>
+<td>vec2</td>
+<td>Location of the mouse minus the screen center</td>
+</tr>
+<tr class="row-odd"><td>MouseDeltaPosition</td>
+<td>vec2</td>
+<td>The difference in mouse position since the previous frame</td>
+</tr>
+<tr class="row-even"><td>LastLeftClick</td>
+<td>vec2</td>
+<td>The Location of the Last left click in pixels relative to the canvas</td>
+</tr>
+<tr class="row-odd"><td>LastRightClick</td>
+<td>vec2</td>
+<td>The Location of the Last Right click in pixels relative to the canvas</td>
+</tr>
+<tr class="row-even"><td>LastNumberKey</td>
+<td>int</td>
+<td>The Last number key pressed with the canvas window in focus</td>
+</tr>
+<tr class="row-odd"><td>MouseLeftState</td>
+<td>bool</td>
+<td>Wether the left mouse button is currently held down</td>
+</tr>
+<tr class="row-even"><td>MouseRightState</td>
+<td>bool</td>
+<td>Wether the Right mouse button is currently held down</td>
+</tr>
+<tr class="row-odd"><td>MouseMiddleState</td>
+<td>bool</td>
+<td>Whether the scroll wheel button (mouse button 3) is currently held down</td>
+</tr>
+<tr class="row-even"><td>MouseScrollDirection</td>
+<td>int</td>
+<td>Returns the scroll direction of the current frame (usually -1 or +1)</td>
+</tr>
+</tbody>
+</table>
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p><strong>Functions</strong></p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="15%" />
+<col width="3%" />
+<col width="6%" />
+<col width="76%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Name</th>
+<th class="head">Type</th>
+<th class="head">Parameters</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>GetKey</td>
+<td>bool</td>
+<td>char</td>
+<td>Returns true if a given ASCII key is being held down</td>
+</tr>
+<tr class="row-odd"><td>GetKeyDown</td>
+<td>bool</td>
+<td>char</td>
+<td>Returns true if a given ASCII key was pressed on the current frame</td>
+</tr>
+<tr class="row-even"><td>GetKeyUp</td>
+<td>bool</td>
+<td>char</td>
+<td>Returns true if a given ASCII key was released on the current frame</td>
+</tr>
+<tr class="row-odd"><td>GetSpecialKey</td>
+<td>bool</td>
+<td>keycode</td>
+<td>Returns true if a given Keycode is being held down</td>
+</tr>
+<tr class="row-even"><td>GetSpecialKeyDown</td>
+<td>bool</td>
+<td>char</td>
+<td>Returns true if a given Keycode key was pressed on the current frame</td>
+</tr>
+<tr class="row-odd"><td>GetSpecialKeyUp</td>
+<td>bool</td>
+<td>char</td>
+<td>Returns true if a given Keycode key was released on the current frame</td>
+</tr>
+<tr class="row-even"><td>GetMouse</td>
+<td>bool</td>
+<td>int</td>
+<td>Returns true if the given Mouse button is being held down. (0 for left click, 1 for right click)</td>
+</tr>
+<tr class="row-odd"><td>GetMouseDown</td>
+<td>bool</td>
+<td>int</td>
+<td>Returns true if the given Mouse button was pressed on the current frame. (0 for left click, 1 for right click)</td>
+</tr>
+<tr class="row-even"><td>GetMouseUp</td>
+<td>bool</td>
+<td>int</td>
+<td>Returns true if the given Mouse button was released on the current frame. (0 for left click, 1 for right click)</td>
+</tr>
+<tr class="row-odd"><td>GetLastMouseLeftClick</td>
+<td>bool</td>
+<td>out vec2</td>
+<td>(Legacy) Returns true if there was a left click since the last time the function was called</td>
+</tr>
+<tr class="row-even"><td>GetLastMouseRightClick</td>
+<td>bool</td>
+<td>out vec2</td>
+<td>(Legacy) Returns true if there was a Right click since the last time the function was called</td>
+</tr>
+<tr class="row-odd"><td>GetLastMouseLeftClickScaled</td>
+<td>bool</td>
+<td>out vec2</td>
+<td>(Legacy) Returns true if there was a left click since the last time the function was called. out vec2 is multiplied by the canvas scale factor</td>
+</tr>
+<tr class="row-even"><td>GetLastMouseRightClickScaled</td>
+<td>bool</td>
+<td>out vec2</td>
+<td>(Legacy) Returns true if there was a Right click since the last time the function was called. out vec2 is multiplied by the canvas scale factor</td>
+</tr>
+<tr class="row-odd"><td>GetLastMousePosition</td>
+<td>bool</td>
+<td>out vec2</td>
+<td>(legacy) Returns true if the mouse has moved (within the canvas) since the last time the function was called (same as MousePosition)</td>
+</tr>
+<tr class="row-even"><td>GetLastMousePositionScaled</td>
+<td>bool</td>
+<td>out vec2</td>
+<td>(legacy) Returns true if the mouse has moved (within the canvas) since the last time the function was called. out vec2 is multiplied by scale</td>
+</tr>
+</tbody>
+</table>
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p><strong>SpecialKey values</strong></p>
+<p>Also found on the GLFW docs: <a class="reference external" href="http://www.glfw.org/docs/latest/group__keys.html">http://www.glfw.org/docs/latest/group__keys.html</a></p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="42%" />
+<col width="40%" />
+<col width="19%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Name</th>
+<th class="head">Enum/ASCII value</th>
+<th class="head">Note</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>UNKNOWN</td>
+<td>-1</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>SPACE</td>
+<td>32</td>
+<td>Spacebar</td>
+</tr>
+<tr class="row-even"><td>APOSTROPHE</td>
+<td>39</td>
+<td>‘</td>
+</tr>
+<tr class="row-odd"><td>COMMA</td>
+<td>44</td>
+<td>,</td>
+</tr>
+<tr class="row-even"><td>MINUS</td>
+<td>45</td>
+<td>-</td>
+</tr>
+<tr class="row-odd"><td>PERIOD</td>
+<td>46</td>
+<td>.</td>
+</tr>
+<tr class="row-even"><td>FORWARDSLASH</td>
+<td>47</td>
+<td>/</td>
+</tr>
+<tr class="row-odd"><td>D0</td>
+<td>48</td>
+<td>0</td>
+</tr>
+<tr class="row-even"><td>D1</td>
+<td>49</td>
+<td>1</td>
+</tr>
+<tr class="row-odd"><td>D2</td>
+<td>50</td>
+<td>2</td>
+</tr>
+<tr class="row-even"><td>D3</td>
+<td>51</td>
+<td>3</td>
+</tr>
+<tr class="row-odd"><td>D4</td>
+<td>52</td>
+<td>4</td>
+</tr>
+<tr class="row-even"><td>D5</td>
+<td>53</td>
+<td>5</td>
+</tr>
+<tr class="row-odd"><td>D6</td>
+<td>54</td>
+<td>6</td>
+</tr>
+<tr class="row-even"><td>D7</td>
+<td>55</td>
+<td>7</td>
+</tr>
+<tr class="row-odd"><td>D8</td>
+<td>56</td>
+<td>8</td>
+</tr>
+<tr class="row-even"><td>D9</td>
+<td>57</td>
+<td>9</td>
+</tr>
+<tr class="row-odd"><td>SEMICOLON</td>
+<td>58</td>
+<td>;</td>
+</tr>
+<tr class="row-even"><td>EQUALS</td>
+<td>61</td>
+<td>=</td>
+</tr>
+<tr class="row-odd"><td>LEFTBRACKET</td>
+<td>91</td>
+<td>[</td>
+</tr>
+<tr class="row-even"><td>BACKSLASH</td>
+<td>92</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td>RIGHTBRACKED</td>
+<td>93</td>
+<td>]</td>
+</tr>
+<tr class="row-even"><td>GRAVEACCENT</td>
+<td>96</td>
+<td><a href="#id1"><span class="problematic" id="id2">`</span></a></td>
+</tr>
+<tr class="row-odd"><td>ESCAPE</td>
+<td>256</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>ENTER</td>
+<td>257</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>TAB</td>
+<td>258</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>BACKSPACE</td>
+<td>259</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>INSERT</td>
+<td>260</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>DELETE</td>
+<td>261</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>RIGHT</td>
+<td>262</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>LEFT</td>
+<td>263</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>DOWN</td>
+<td>264</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>UP</td>
+<td>265</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>PAGEUP</td>
+<td>266</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>PAGEDOWN</td>
+<td>267</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>HOME</td>
+<td>268</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>END</td>
+<td>269</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>CAPSLOCK</td>
+<td>280</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>SCROLLLOCK</td>
+<td>281</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>NUMLOCK</td>
+<td>282</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>PRINTSCREEN</td>
+<td>283</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>PAUSE</td>
+<td>84</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>F1</td>
+<td>290</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>F2</td>
+<td>291</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>F3</td>
+<td>292</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>F4</td>
+<td>293</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>F5</td>
+<td>294</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>F6</td>
+<td>295</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>F7</td>
+<td>296</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>F8</td>
+<td>297</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>F9</td>
+<td>298</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>F10</td>
+<td>299</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>F11</td>
+<td>300</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>F12</td>
+<td>301</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>F13</td>
+<td>302</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>F14</td>
+<td>303</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>F15</td>
+<td>304</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>F16</td>
+<td>305</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>F17</td>
+<td>306</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>F18</td>
+<td>307</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>F19</td>
+<td>308</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>F20</td>
+<td>309</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>F21</td>
+<td>310</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>F22</td>
+<td>311</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>F23</td>
+<td>312</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>F24</td>
+<td>313</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>F25</td>
+<td>314</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>NP0</td>
+<td>320</td>
+<td>Numpad 0</td>
+</tr>
+<tr class="row-even"><td>NP1</td>
+<td>321</td>
+<td>Numpad 1</td>
+</tr>
+<tr class="row-odd"><td>NP2</td>
+<td>322</td>
+<td>Numpad 2</td>
+</tr>
+<tr class="row-even"><td>NP3</td>
+<td>323</td>
+<td>Numpad 3</td>
+</tr>
+<tr class="row-odd"><td>NP4</td>
+<td>324</td>
+<td>Numpad 4</td>
+</tr>
+<tr class="row-even"><td>NP5</td>
+<td>325</td>
+<td>Numpad 5</td>
+</tr>
+<tr class="row-odd"><td>NP6</td>
+<td>326</td>
+<td>Numpad 6</td>
+</tr>
+<tr class="row-even"><td>NP7</td>
+<td>327</td>
+<td>Numpad 7</td>
+</tr>
+<tr class="row-odd"><td>NP8</td>
+<td>328</td>
+<td>Numpad 8</td>
+</tr>
+<tr class="row-even"><td>NP9</td>
+<td>329</td>
+<td>Numpad 9</td>
+</tr>
+<tr class="row-odd"><td>NPDECIMAL</td>
+<td>330</td>
+<td>Numpad .</td>
+</tr>
+<tr class="row-even"><td>NPDIVIDE</td>
+<td>331</td>
+<td>Numpad /</td>
+</tr>
+<tr class="row-odd"><td>NPMULTIPLY</td>
+<td>332</td>
+<td>Numpad *</td>
+</tr>
+<tr class="row-even"><td>NPSUBTRACT</td>
+<td>333</td>
+<td>Numpad -</td>
+</tr>
+<tr class="row-odd"><td>NPADD</td>
+<td>334</td>
+<td>Numpad +</td>
+</tr>
+<tr class="row-even"><td>KPENTER</td>
+<td>335</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>KPEQUAL</td>
+<td>336</td>
+<td>Numpad =</td>
+</tr>
+<tr class="row-even"><td>LEFTSHIFT</td>
+<td>340</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>LEFTCONTROL</td>
+<td>341</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>LEFTALT</td>
+<td>342</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>LEFTSUPER</td>
+<td>343</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>RIGHTSHIFT</td>
+<td>344</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>RIGHTCONTROL</td>
+<td>345</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>RIGHTALT</td>
+<td>346</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>RIGHTSUPER</td>
+<td>347</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>MENUE</td>
+<td>348</td>
+<td>&#160;</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="vec2.html" class="btn btn-neutral float-right" title="Using vec2" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="events-input.html" class="btn btn-neutral" title="Creating Input Events" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Michael Manning.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  <script type="text/javascript" src="_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,287 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>2-Parent and Child &mdash; GLDrawer  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="3-Invoke Repeating and Timers" href="example3-gameobject.html" />
+    <link rel="prev" title="1-Circle on mouse" href="example1-gameobject.html" /> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> GLDrawer
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="canvas.html">The Canvas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="shapes.html">Shapes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="input.html">Input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vec2.html">Using vec2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="color.html">Color</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="gameobject.html">GameObjects</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="Examples-gameobject.html">Examples</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="example1-gameobject.html">1-Circle on mouse</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">2-Parent and Child</a></li>
+<li class="toctree-l3"><a class="reference internal" href="example3-gameobject.html">3-Invoke Repeating and Timers</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">GLDrawer</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="gameobject.html">GameObjects</a> &raquo;</li>
+        
+          <li><a href="Examples-gameobject.html">Examples</a> &raquo;</li>
+        
+      <li>2-Parent and Child</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/example2-gameobject.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="parent-and-child">
+<h1>2-Parent and Child<a class="headerlink" href="#parent-and-child" title="Permalink to this headline">¶</a></h1>
+<p>In the last example we created a ball GameObject. We got a circle to appear
+at the location of the GameObject using AddChildShape. Adding a child Shape
+sets the location of that shape as a child of the GameObject. In the same way
+we can set a GameObject to be a child of another GameObject.</p>
+<p>Let’s create a simple GameObject which has a Rectangle for a Shape. Every frame,
+we take the Transform of the GameObject and increment the rotation by 0.03 radians
+so it spins.</p>
+<div class="highlight-C# notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Box</span> <span class="p">:</span> <span class="n">GameObject</span>
+<span class="p">{</span>
+    <span class="k">public</span> <span class="k">override</span> <span class="k">void</span> <span class="nf">Start</span><span class="p">()</span>
+    <span class="p">{</span>
+        <span class="n">AddChildShape</span><span class="p">(</span><span class="k">new</span> <span class="n">Polygon</span><span class="p">(</span><span class="n">vec2</span><span class="p">.</span><span class="n">Zero</span><span class="p">,</span> <span class="k">new</span> <span class="n">vec2</span><span class="p">(</span><span class="m">100</span><span class="p">),</span> <span class="m">0</span><span class="p">,</span> <span class="m">4</span><span class="p">,</span> <span class="n">Color</span><span class="p">.</span><span class="n">White</span><span class="p">,</span> <span class="m">10</span><span class="p">,</span> <span class="n">Color</span><span class="p">.</span><span class="n">Red</span><span class="p">));</span>
+    <span class="p">}</span>
+    <span class="k">public</span> <span class="k">override</span> <span class="k">void</span> <span class="nf">Update</span><span class="p">()</span>
+    <span class="p">{</span>
+        <span class="n">transform</span><span class="p">.</span><span class="n">Rotation</span> <span class="p">+=</span> <span class="m">0.03f</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><strong>Canvas Instantiate</strong></p>
+<p>GlCanvas.Instantiate is similar to Add in that it will add a GameObject to the canvas.
+If you would like easy was to set the initial position of a GameObject use Instantiate.
+Instantiate also creates a deep copy clone of your original which makes it useful for
+GameObjects with many instances such as projectiles.</p>
+<div class="highlight-C# notranslate"><div class="highlight"><pre><span></span><span class="n">Box</span> <span class="n">A</span> <span class="p">=</span> <span class="n">can</span><span class="p">.</span><span class="n">Add</span><span class="p">(</span><span class="k">new</span> <span class="n">Box</span><span class="p">())</span> <span class="k">as</span> <span class="n">Box</span><span class="p">;</span>
+<span class="n">Box</span> <span class="n">B</span> <span class="p">=</span> <span class="n">can</span><span class="p">.</span><span class="n">Instantiate</span><span class="p">(</span><span class="k">new</span> <span class="n">Box</span><span class="p">(),</span> <span class="k">new</span> <span class="n">vec2</span><span class="p">(</span><span class="m">150</span><span class="p">))</span> <span class="k">as</span> <span class="n">Box</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>We put the first box in the center of the screen and the second offset from the center.
+This creates our orbiting effect. If we give both boxes the same global location they will
+be in the same spot, just spinning at different speeds.</p>
+<div class="highlight-C# notranslate"><div class="highlight"><pre><span></span><span class="n">A</span><span class="p">.</span><span class="n">AddChildGameObject</span><span class="p">(</span><span class="n">B</span><span class="p">);</span>
+</pre></div>
+</div>
+<a class="reference internal image-reference" href="_images/childdemo.gif"><img alt="parent transform demo" class="align-left" src="_images/childdemo.gif" style="width: 400.0px; height: 300.0px;" /></a>
+<div class="line-block">
+<div class="line"><br /></div>
+<div class="line"><br /></div>
+<div class="line"><br /></div>
+</div>
+<p>And just like that, we have an orbiting effect. The Transform of Box B will
+first apply the Transform of the Box A before it’s own.</p>
+<div class="line-block">
+<div class="line"><br /></div>
+<div class="line"><br /></div>
+<div class="line"><br /></div>
+<div class="line"><br /></div>
+</div>
+<p>Using parent child relationships is a great way to accomplish many simple tasks as well.
+If you have something in your game with multiple elements, you can use parent child relationships
+to keep them together.</p>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="example3-gameobject.html" class="btn btn-neutral float-right" title="3-Invoke Repeating and Timers" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="example1-gameobject.html" class="btn btn-neutral" title="1-Circle on mouse" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Michael Manning.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  <script type="text/javascript" src="_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -46,8 +46,7 @@ namespace GLDrawer
         public bool DebugMode { get; private set; }
         public bool Borderless { get; private set; }
         public bool AutoRender { get; private set; }
-        /// <summary>ignors back buffer tools and keeps it a solid color</summary>
-        public bool simpleBackBuffer = false;
+
         private Color iBackColor; //the back color is never changed internally and needs to be saved before initialization
         public Color BackColor
         {
@@ -309,8 +308,6 @@ namespace GLDrawer
 
             MouseScrollDirection = 0;
 
-            if (simpleBackBuffer)
-                GLWrapper.clearBB();
 
             //needs to be very spesific due to threads
             if (!AutoRender)
@@ -835,7 +832,7 @@ namespace GLDrawer
                 delayedCalls.Add(new DelayedCall(function, time, true));
         }
 
-        class DelayedCall
+        private class DelayedCall
         {
             public Action func;
             public float timeLeft;

@@ -1,0 +1,288 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Shape Type Trivia &mdash; GLDrawer  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Members" href="fields-shapes.html" />
+    <link rel="prev" title="Shapes" href="shapes.html" /> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> GLDrawer
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="canvas.html">The Canvas</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="shapes.html">Shapes</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Shape Type Trivia</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fields-shapes.html">Members</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="input.html">Input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vec2.html">Using vec2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="color.html">Color</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gameobject.html">GameObjects</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">GLDrawer</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="shapes.html">Shapes</a> &raquo;</li>
+        
+      <li>Shape Type Trivia</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/shapetypes-shapes.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="shape-type-trivia">
+<h1>Shape Type Trivia<a class="headerlink" href="#shape-type-trivia" title="Permalink to this headline">¶</a></h1>
+<p>There are four different types of shapes that can be created with GLDrawer with six different construction options.</p>
+<p><strong>Rectangle</strong></p>
+<a class="reference internal image-reference" href="_images/rectangleExample.png"><img alt="rectangle image" class="align-left" src="_images/rectangleExample.png" style="width: 220.0px; height: 220.0px;" /></a>
+<p>A “Rectangle” is just a Polygon with 4 sides. It has no special shape properties, but you can never go wrong with the fundamentals.</p>
+<div class="line-block">
+<div class="line"><br /></div>
+<div class="line"><br /></div>
+<div class="line"><br /></div>
+<div class="line"><br /></div>
+<div class="line"><br /></div>
+<div class="line"><br /></div>
+<div class="line"><br /></div>
+</div>
+<p><strong>Ellipse</strong></p>
+<a class="reference internal image-reference" href="_images/ellipseExample.png"><img alt="ellipse image" class="align-left" src="_images/ellipseExample.png" style="width: 220.0px; height: 220.0px;" /></a>
+<p>An Ellipse is also just a Polygon, this time with 1 Side. The difference in rendering is handled by the backend.</p>
+<p>The only reason you see a circle instead of something else is because the shader running on your graphics processor knows when to draw
+round corners.</p>
+<div class="line-block">
+<div class="line"><br /></div>
+<div class="line"><br /></div>
+<div class="line"><br /></div>
+</div>
+<p><strong>Polygon</strong></p>
+<a class="reference internal image-reference" href="_images/polygonExample.png"><img alt="polygon image" class="align-left" src="_images/polygonExample.png" style="width: 220.0px; height: 220.0px;" /></a>
+<p>The two shape types above are polygons, but the <em>Polygon</em> type itself can be drawn with any number of sides.
+It is far less precise than the other shapes with more than 4 sides because the width and height of the polygon is dependant on the number of sides
+it has as well as its angle.</p>
+<p>Any &gt;4 sided Polygons will almost always be drawn slightly smaller than its width and height values.</p>
+<div class="line-block">
+<div class="line"><br /></div>
+<div class="line"><br /></div>
+</div>
+<p><strong>Line</strong></p>
+<a class="reference internal image-reference" href="_images/lineExample.png"><img alt="line image" class="align-left" src="_images/lineExample.png" style="width: 220.0px; height: 220.0px;" /></a>
+<p>A Line is actually is not polygon, but it keeps one privately. The reason lines are usefull is because you can modify
+the start and end locations individually and the resulting position, scale, and angle of the resulting Rectangle
+are automatically calculated.</p>
+<div class="line-block">
+<div class="line"><br /></div>
+<div class="line"><br /></div>
+<div class="line"><br /></div>
+<div class="line"><br /></div>
+<div class="line"><br /></div>
+<div class="line"><br /></div>
+</div>
+<p><strong>Sprite</strong></p>
+<a class="reference internal image-reference" href="_images/spriteExample.png"><img alt="sprite image" class="align-left" src="_images/spriteExample.png" style="width: 220.0px; height: 220.0px;" /></a>
+<p>Unlike in GDIDrawer which requires you to set the back buffer pixel by pixel to create an image, a GlDrawer Sprite
+acts like a Rectangle you can show an image or animation with.</p>
+<p>Sprites render just as quickly as the other shape types, and you can use them to make repeating textures in small games.</p>
+<p>Sprites work with most image file types and transparency <em>is</em> supported.</p>
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p><strong>Text</strong></p>
+<a class="reference internal image-reference" href="_images/textExample.png"><img alt="text image" class="align-left" src="_images/textExample.png" style="width: 220.0px; height: 220.0px;" /></a>
+<p>GLDrawer has the ability rasterize TrueTypeFont files. This means that with nothing but the font filepath, and a string of text,
+you can generate an image for every letter of the alphabet and have the letters appear in the same order as your string.</p>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="fields-shapes.html" class="btn btn-neutral float-right" title="Members" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="shapes.html" class="btn btn-neutral" title="Shapes" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Michael Manning.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  <script type="text/javascript" src="_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

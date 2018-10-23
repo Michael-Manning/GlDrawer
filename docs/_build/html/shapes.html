@@ -1,0 +1,288 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Shapes &mdash; GLDrawer  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Shape Type Trivia" href="shapetypes-shapes.html" />
+    <link rel="prev" title="Members" href="fields-canvas.html" /> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> GLDrawer
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="canvas.html">The Canvas</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Shapes</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="shapetypes-shapes.html">Shape Type Trivia</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fields-shapes.html">Members</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="input.html">Input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vec2.html">Using vec2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="color.html">Color</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gameobject.html">GameObjects</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">GLDrawer</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Shapes</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/shapes.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="shapes">
+<h1>Shapes<a class="headerlink" href="#shapes" title="Permalink to this headline">¶</a></h1>
+<p>In these docs, a shape is used to describe anything that can be drawn on a canvas.
+In GLDrawer, a Shape is an object inheritance tree which has a similar definition.
+While objects and inheritance are out of the scope of this guide, it will be described here briefly
+as having general understanding will make your life <em>much</em> easier.</p>
+<p><strong>Drawing Shapes without a reference</strong></p>
+<p>When adding a rectangle to a canvas, you could do so like this:</p>
+<div class="highlight-C# notranslate"><div class="highlight"><pre><span></span><span class="c1">//adds a rectangle at position 100,100 with a width and height of 200</span>
+<span class="n">canvas</span><span class="p">.</span><span class="n">AddCenteredRectangle</span><span class="p">(</span><span class="m">100</span><span class="p">,</span> <span class="m">100</span><span class="p">,</span> <span class="m">200</span><span class="p">,</span> <span class="m">200</span><span class="p">,</span> <span class="n">Color</span><span class="p">.</span><span class="n">White</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>If you decided that after waiting for an input, you would now like that rectangle to move 100 pixels to right,
+you are forced to do so like this:</p>
+<div class="highlight-C# notranslate"><div class="highlight"><pre><span></span><span class="n">canvas</span><span class="p">.</span><span class="n">AddCenteredRectangle</span><span class="p">(</span><span class="m">100</span><span class="p">,</span> <span class="m">100</span><span class="p">,</span> <span class="m">200</span><span class="p">,</span> <span class="m">200</span><span class="p">,</span> <span class="n">Color</span><span class="p">.</span><span class="n">White</span><span class="p">);</span>
+<span class="n">Console</span><span class="p">.</span><span class="n">ReadKey</span><span class="p">();</span>
+<span class="n">canvas</span><span class="p">.</span><span class="n">Clear</span><span class="p">();</span>
+<span class="n">canvas</span><span class="p">.</span><span class="n">AddCenteredRectangle</span><span class="p">(</span><span class="m">200</span><span class="p">,</span> <span class="m">100</span><span class="p">,</span> <span class="m">200</span><span class="p">,</span> <span class="m">200</span><span class="p">,</span> <span class="n">Color</span><span class="p">.</span><span class="n">White</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>What the above code is doing, is creating a rectangle, then after an input, removing that rectangle and creating
+a new one 100 pixels further to the right. This works, but in GLDrawer, there are better ways to accomplish this.</p>
+<p><strong>Drawing Shapes with an object reference</strong></p>
+<p>A GLDrawer canvas itself is actually an object. This is because we can create an instance of a canvas on on line of code,
+and then do something else with it on a different one. In the exact same way, we can create an instance of a Polygon,
+then add it to a canvas later. Adding a rectangle to a canvas while keeping a reference can be done in two ways.
+The following examples do the same thing as the previous example, but with references.</p>
+<div class="highlight-C# notranslate"><div class="highlight"><pre><span></span><span class="n">Polygon</span> <span class="n">shrecktangle</span> <span class="p">=</span> <span class="k">new</span> <span class="n">Polygon</span><span class="p">(</span><span class="k">new</span> <span class="n">vec2</span><span class="p">(</span><span class="m">100</span><span class="p">,</span><span class="m">100</span><span class="p">),</span> <span class="k">new</span> <span class="n">vec2</span><span class="p">(</span><span class="m">200</span><span class="p">,</span><span class="m">200</span><span class="p">),</span> <span class="m">0</span><span class="p">,</span> <span class="m">4</span><span class="p">,</span> <span class="n">Color</span><span class="p">.</span><span class="n">White</span><span class="p">);</span>
+<span class="n">canvas</span><span class="p">.</span><span class="n">Add</span><span class="p">(</span><span class="n">shrecktangle</span><span class="p">);</span>
+<span class="n">Console</span><span class="p">.</span><span class="n">ReadKey</span><span class="p">();</span>
+<span class="n">shrecktangle</span><span class="p">.</span><span class="n">Position</span> <span class="p">=</span> <span class="k">new</span> <span class="n">vec2</span><span class="p">(</span><span class="m">200</span><span class="p">,</span> <span class="m">100</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>As you can see above, we create a Polygon <em>object</em> with 4 sides, then add it to the canvas on the next line of code.
+Unlike before, we actually get to keep a <em>reference</em> of that rectangle called shrecktangle. If we would like to
+move the shrecktangle, we don’t have to recreate it; we only need to change its <em>Position</em> property.
+This can also be done with the following shortcut:</p>
+<div class="highlight-C# notranslate"><div class="highlight"><pre><span></span><span class="n">Polygon</span> <span class="n">shrecktangle</span> <span class="p">=</span> <span class="n">canvas</span><span class="p">.</span><span class="n">AddCenteredRectangle</span><span class="p">(</span><span class="m">100</span><span class="p">,</span> <span class="m">100</span><span class="p">,</span> <span class="m">200</span><span class="p">,</span> <span class="m">200</span><span class="p">,</span> <span class="n">Color</span><span class="p">.</span><span class="n">White</span><span class="p">);</span>
+<span class="n">Console</span><span class="p">.</span><span class="n">ReadKey</span><span class="p">();</span>
+<span class="n">shrecktangle</span><span class="p">.</span><span class="n">Position</span> <span class="p">+=</span> <span class="k">new</span> <span class="n">vec2</span><span class="p">(</span><span class="m">100</span><span class="p">,</span> <span class="m">0</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>The GLDrawer <em>AddCenteredRectangle</em> function not only adds a Polygon to a canvas, it actually returns a reference!
+With this function, the Polygon reference is always created behind the scenes, and you can choose wether or not to  keep it.
+Another “shortcut” is instead of creating a new vec2 for position, we can alternatively increment it by a vec2 with an x value.</p>
+<p><strong>How can there be Polygons AND Shapes? (advanced)</strong></p>
+<p>If the idea of creating a Polygon you can use makes sense to you, it likely stands to reason you could also create
+a Line, Sprite, Text .ect the same way. Seemingly unneeded, in addition to these object types, there is also a <em>Shape</em> type.</p>
+<p>Your understanding of this isn’t required to use GLDrawer, but in short: all Lines are Shapes, but not all Shapes are Lines.</p>
+<p>You cannot create a standalone Shape in the same way as a Polygon or a Line, but because they are both members of the
+shape <em>hierarchy</em>, we are allowed to make some assumptions. We can use the <em>canvas.Add()</em> function to add any shape, regardless of what kind.
+You can also create a list of shapes eg. List&lt;Shape&gt; shapes, and store both Polygons <em>and</em> Lines in it.</p>
+<p>Creating a list like this would be considered a more advanced use of the shape hierarchy. That being said, there are benefits thanks to the Shape type.
+Regardless of what spesific <em>type</em> of shape a Shape actually is, we can assume it will have all the members seen in the top level member list.
+This means that even though you cannot <em>create</em> a generic Shape without knowing what kind it is, if you already have one,
+like in a list, you can still change it. If you have an generic Shape, you can’t change its filepath, but you can still change it’s position.
+This is because not all shapes, have filepaths, but all shapes <em>do</em> have a location.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="shapetypes-shapes.html">Shape Type Trivia</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fields-shapes.html">Members</a></li>
+</ul>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="shapetypes-shapes.html" class="btn btn-neutral float-right" title="Shape Type Trivia" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="fields-canvas.html" class="btn btn-neutral" title="Members" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Michael Manning.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  <script type="text/javascript" src="_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,292 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Using vec2 &mdash; GLDrawer  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Members" href="fields-vec2.html" />
+    <link rel="prev" title="Members" href="fields-input.html" /> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> GLDrawer
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="canvas.html">The Canvas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="shapes.html">Shapes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="input.html">Input</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Using vec2</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="fields-vec2.html">Members</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="color.html">Color</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gameobject.html">GameObjects</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">GLDrawer</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Using vec2</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/vec2.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="using-vec2">
+<h1>Using vec2<a class="headerlink" href="#using-vec2" title="Permalink to this headline">¶</a></h1>
+<p>A vec2 is a simple struct containing nothing but an X and Y float. It is similar to a Pointf in that regard, but is packed
+with mathematical features and shortcuts.</p>
+<p>You can create a vec2 with its standard constructor:</p>
+<div class="highlight-C# notranslate"><div class="highlight"><pre><span></span><span class="c1">//creates a vec2 with an X value of 100.0, and a Y value of 200.0</span>
+<span class="n">vec2</span> <span class="n">location</span> <span class="p">=</span> <span class="k">new</span> <span class="n">vec2</span><span class="p">(</span><span class="m">100f</span><span class="p">,</span> <span class="m">200f</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Giving a vec2 one parameter will assign the value to both X and Y.</p>
+<div class="highlight-C# notranslate"><div class="highlight"><pre><span></span><span class="c1">//creates a vec2 with an X and Y value of 100.0</span>
+<span class="n">vec2</span> <span class="n">location</span> <span class="p">=</span> <span class="k">new</span> <span class="n">vec2</span><span class="p">(</span><span class="m">100f</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>You can add, subtract, multiply, and divide vec2s together. The following two code blocks perform the same operations.</p>
+<div class="highlight-C# notranslate"><div class="highlight"><pre><span></span><span class="n">vec2</span> <span class="n">A</span> <span class="p">=</span> <span class="k">new</span> <span class="n">vec2</span><span class="p">(</span><span class="m">10f</span><span class="p">,</span> <span class="m">20f</span><span class="p">);</span>
+<span class="n">vec2</span> <span class="n">B</span> <span class="p">=</span> <span class="k">new</span> <span class="n">vec2</span><span class="p">(</span><span class="m">5f</span><span class="p">,</span> <span class="m">2f</span><span class="p">);</span>
+
+<span class="c1">//creates a vec2 with an X value of 15.0, and a Y of 22.0</span>
+<span class="n">vec2</span> <span class="n">C</span> <span class="p">=</span> <span class="k">new</span> <span class="n">vec2</span><span class="p">(</span><span class="n">A</span><span class="p">.</span><span class="n">x</span> <span class="p">+</span> <span class="n">B</span><span class="p">.</span><span class="n">x</span><span class="p">,</span> <span class="n">A</span><span class="p">.</span><span class="n">y</span> <span class="p">+</span> <span class="n">B</span><span class="p">.</span><span class="n">y</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Is the same as..</p>
+<div class="highlight-C# notranslate"><div class="highlight"><pre><span></span><span class="n">vec2</span> <span class="n">A</span> <span class="p">=</span> <span class="k">new</span> <span class="n">vec2</span><span class="p">(</span><span class="m">10f</span><span class="p">,</span> <span class="m">20f</span><span class="p">);</span>
+<span class="n">vec2</span> <span class="n">B</span> <span class="p">=</span> <span class="k">new</span> <span class="n">vec2</span><span class="p">(</span><span class="m">5f</span><span class="p">,</span> <span class="m">2f</span><span class="p">);</span>
+
+<span class="n">vec2</span> <span class="n">C</span> <span class="p">=</span> <span class="n">A</span> <span class="p">+</span> <span class="n">B</span>
+</pre></div>
+</div>
+<p>vec2 math operators can also be performed with floats to affect both X and Y</p>
+<div class="highlight-C# notranslate"><div class="highlight"><pre><span></span><span class="n">vec2</span> <span class="n">A</span> <span class="p">=</span> <span class="k">new</span> <span class="n">vec2</span><span class="p">(</span><span class="m">5f</span><span class="p">,</span> <span class="m">10f</span><span class="p">);</span>
+
+<span class="c1">//A now has an X value of 30.0, and a Y of 60.0</span>
+<span class="n">vec2</span> <span class="n">A</span> <span class="p">*=</span> <span class="m">6f</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Calling <em>vec2.Length</em> will return the distance between vec2s in pixels</p>
+<div class="highlight-C# notranslate"><div class="highlight"><pre><span></span><span class="n">vec2</span> <span class="n">A</span> <span class="p">=</span> <span class="k">new</span> <span class="n">vec2</span><span class="p">();</span> <span class="c1">//same as vec2.Zero</span>
+<span class="n">vec2</span> <span class="n">B</span> <span class="p">=</span> <span class="k">new</span> <span class="n">vec2</span><span class="p">(</span><span class="m">5f</span><span class="p">,</span> <span class="m">10f</span><span class="p">);</span>
+
+<span class="c1">//equivalent to 11.18 or Math.sqrt((A.x-B.x)*(A.x-B.x)+(A.y-B.y)*(A.y-B.y))</span>
+<span class="kt">float</span> <span class="n">distance</span> <span class="p">=</span> <span class="n">A</span><span class="p">.</span><span class="n">Length</span><span class="p">(</span><span class="n">B</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Calling <em>vec2.Normalize</em> will return a direction vector from (0,0) with a radius of 1.0</p>
+<div class="highlight-C# notranslate"><div class="highlight"><pre><span></span><span class="n">vec2</span> <span class="n">position</span> <span class="p">=</span> <span class="k">new</span> <span class="n">vec2</span><span class="p">(</span><span class="m">100f</span><span class="p">,</span> <span class="m">150f</span><span class="p">);</span>
+<span class="n">vec2</span> <span class="n">destination</span> <span class="p">=</span> <span class="k">new</span> <span class="n">vec2</span><span class="p">(</span><span class="m">50f</span><span class="p">,</span> <span class="m">30f</span><span class="p">);</span>
+<span class="kt">float</span> <span class="n">moveDistance</span> <span class="p">=</span> <span class="m">3f</span><span class="p">;</span>
+
+<span class="n">vec2</span> <span class="n">moveDirection</span> <span class="p">=</span> <span class="p">(</span><span class="n">position</span> <span class="p">-</span> <span class="n">destination</span><span class="p">).</span><span class="n">Normalize</span><span class="p">();</span>
+
+<span class="c1">//position will be exactly 3 pixels closer to destination</span>
+<span class="n">position</span> <span class="p">+=</span> <span class="n">moveDirection</span> <span class="p">*</span> <span class="n">moveDistance</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>vec2 can be implicitly converted between Pointf as well as rounded down to a standard Point.</p>
+<div class="highlight-C# notranslate"><div class="highlight"><pre><span></span><span class="n">Pointf</span> <span class="n">A</span> <span class="p">=</span> <span class="k">new</span> <span class="n">Pointf</span><span class="p">(</span><span class="m">100f</span><span class="p">,</span> <span class="m">200f</span><span class="p">);</span>
+<span class="n">vec2</span> <span class="n">B</span> <span class="p">=</span> <span class="n">A</span><span class="p">;</span> <span class="c1">//X and Y from A get assigned to B</span>
+
+<span class="c1">//If you need to use Pointf and are feeling lazy, casting as a vec2 allows use of all math operators</span>
+<span class="n">Pointf</span> <span class="n">C</span> <span class="p">=</span> <span class="p">(</span><span class="n">vec2</span><span class="p">)</span><span class="n">A</span> <span class="p">+</span> <span class="n">B</span><span class="p">;</span>
+</pre></div>
+</div>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="fields-vec2.html">Members</a></li>
+</ul>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="fields-vec2.html" class="btn btn-neutral float-right" title="Members" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="fields-input.html" class="btn btn-neutral" title="Members" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Michael Manning.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  <script type="text/javascript" src="_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

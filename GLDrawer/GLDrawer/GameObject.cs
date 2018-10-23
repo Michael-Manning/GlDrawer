@@ -46,12 +46,13 @@ namespace GLDrawer
             clone.transform = new Transform(transform.Position, transform.Rotation);
             clone.ClearParent();
             clone.ClearChildren();
+            clone.shapeChildren = new List<Shape>();
             clone.internalGO = new unmanaged_GO(); //prevent garbage collector from collecting twice
             clone.IsClone = true;
             return clone;
         }
         internal GLCanvas can;
-        public GLCanvas Canvas
+        protected GLCanvas Canvas
         {
             get
             {
@@ -118,7 +119,7 @@ namespace GLDrawer
         }
 
         internal List<Shape> shapeChildren = new List<Shape>(); //used by rigidbodies
-        protected Shape AddChildShape(Shape s)
+        public Shape AddChildShape(Shape s)
         {
             CheckCan();
             can.Add(s);
@@ -129,7 +130,7 @@ namespace GLDrawer
             return s;
         }
         private List<GameObject> GOchildren = new List<GameObject>();
-        protected GameObject AddChildGameObject(GameObject g)
+        public GameObject AddChildGameObject(GameObject g)
         {
             CheckCan();
             can.Add(g);

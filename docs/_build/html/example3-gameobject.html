@@ -1,0 +1,342 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>3-Invoke Repeating and Timers &mdash; GLDrawer  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="2-Parent and Child" href="example2-gameobject.html" /> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> GLDrawer
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="canvas.html">The Canvas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="shapes.html">Shapes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="input.html">Input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vec2.html">Using vec2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="color.html">Color</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="gameobject.html">GameObjects</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="Examples-gameobject.html">Examples</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="example1-gameobject.html">1-Circle on mouse</a></li>
+<li class="toctree-l3"><a class="reference internal" href="example2-gameobject.html">2-Parent and Child</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">3-Invoke Repeating and Timers</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">GLDrawer</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="gameobject.html">GameObjects</a> &raquo;</li>
+        
+          <li><a href="Examples-gameobject.html">Examples</a> &raquo;</li>
+        
+      <li>3-Invoke Repeating and Timers</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/example3-gameobject.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="invoke-repeating-and-timers">
+<h1>3-Invoke Repeating and Timers<a class="headerlink" href="#invoke-repeating-and-timers" title="Permalink to this headline">¶</a></h1>
+<p>When programming a game, you will regularly find yourself
+needing time dependant functionality. Games need many cycle based
+and delayed functions, but you can’t just sleep the thread without
+stopping the entire programming. We will cover some timing techniques
+as well as built in tools in GLDrawer.</p>
+<p><strong>Delta Time</strong></p>
+<p>At any time, you can read from DeltaTime which is every GameObject as well as the canvas they are on.
+DeltaTime is the amount of time in seconds since the last frame. This is useful in
+variety of situations. One being movement due to the fact that the framerate of your game changes.
+If you add one to the x coordinate of an object every frame, it might look smooth at 60 frames per second,
+but when it dips below that, the object will actually move slower with the framerate. If you multiply that
+movement by DeltaTime, it will compensate for dropped frames and end up in the same place regardless of FPS.</p>
+<p>DeltaTime can also be used to create a simple timer by incrementing a variable:</p>
+<div class="highlight-C# notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">ThingWithTimer</span> <span class="p">:</span> <span class="n">GameObject</span>
+<span class="p">{</span>
+    <span class="kt">float</span> <span class="n">timer</span> <span class="p">=</span> <span class="m">0</span><span class="p">;</span>
+    <span class="k">public</span> <span class="k">override</span> <span class="k">void</span> <span class="nf">Update</span><span class="p">()</span>
+    <span class="p">{</span>
+        <span class="n">timer</span> <span class="p">+=</span> <span class="n">DeltaTime</span><span class="p">;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">timer</span> <span class="p">&gt;</span> <span class="m">2f</span><span class="p">)</span>
+        <span class="p">{</span>
+            <span class="c1">//this gets run once every two seconds</span>
+
+            <span class="n">timer</span> <span class="p">=</span> <span class="m">0</span><span class="p">;</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>By accumulating DeltaTime, we are effectively creating keeping track of time locally.
+Unlike GLCanvas.Time which never stops increasing, our local timer gets whenever it
+accumulates enough time.</p>
+<p><strong>Canvas Invoke</strong></p>
+<p>An easy way to create a delayed call is to use the Invoke function of the canvas. It takes
+an Action which means you can pass in a method or an anonymous function.</p>
+<div class="highlight-C# notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">ThingWithTimer</span> <span class="p">:</span> <span class="n">GameObject</span>
+<span class="p">{</span>
+    <span class="k">public</span> <span class="k">override</span> <span class="k">void</span> <span class="nf">Start</span><span class="p">()</span>
+    <span class="p">{</span>
+        <span class="n">Canvas</span><span class="p">.</span><span class="n">Invoke</span><span class="p">(</span><span class="n">delayed</span><span class="p">,</span> <span class="m">2f</span><span class="p">);</span>
+        <span class="n">Canvas</span><span class="p">.</span><span class="n">Invoke</span><span class="p">(</span><span class="k">delegate</span> <span class="p">{</span> <span class="n">Console</span><span class="p">.</span><span class="n">WriteLine</span><span class="p">(</span><span class="s">&quot;It&#39;s been 4 seconds&quot;</span><span class="p">);</span> <span class="p">},</span> <span class="m">4f</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="k">public</span> <span class="k">void</span> <span class="nf">delayed</span><span class="p">()</span>
+    <span class="p">{</span>
+        <span class="c1">//this gets called once after two seconds</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Similar to GLCanvas.Invoke is InvokeRepeating. This function is the same as invoke, but will call
+your function over and over until it’s destroyed or the program ends. The following code will
+accomplish the same result as the first timer example using DeltaTime.</p>
+<blockquote>
+<div><p>class ThingWithTimer : GameObject
+{</p>
+<blockquote>
+<div><p>public override void Start()
+{</p>
+<blockquote>
+<div>Canvas.InvokeRepeating(RepeatedFunction, 2f);</div></blockquote>
+<p>}</p>
+<p>public void RepeatedFunction()
+{</p>
+<blockquote>
+<div>//this gets called every 2 seconds</div></blockquote>
+<p>}</p>
+</div></blockquote>
+<p>}</p>
+</div></blockquote>
+<p>This approach has it’s downsides if you need something more complex. The timing of InvokeRepeating
+is fixed. If you want a timer that can be easily turned on and off or have delays that can change
+on the fly, you should stick to the DeltaTime Method.</p>
+<p><strong>GameObject.Destroy</strong></p>
+<p>Now to leave you with an example. Destroy will destroy the GameObject and clean up it’s memory.
+Sticking to the timing theme, it also accepts a delay parameter for how long to wait before destruction.
+This is useful for temporary objects such as an explosion effect since you can Instantiate a GameObject
+with a ParticleSystem child and immediately call destroy with a delay. This Lets you do what ever you want
+with whatever called Instantiate and ensures the explosion animation can carry out before Destroying itself.</p>
+<div class="highlight-C# notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Projectile</span> <span class="p">:</span> <span class="n">GameObject</span>
+<span class="p">{</span>
+    <span class="k">public</span> <span class="k">override</span> <span class="k">void</span> <span class="nf">Start</span><span class="p">()</span>
+    <span class="p">{</span>
+        <span class="c1">//set drawing element and destroy after 3.5 seconds</span>
+        <span class="n">AddChildShape</span><span class="p">(</span><span class="k">new</span> <span class="n">Polygon</span><span class="p">(</span><span class="n">vec2</span><span class="p">.</span><span class="n">Zero</span><span class="p">,</span> <span class="k">new</span> <span class="n">vec2</span><span class="p">(</span><span class="m">20</span><span class="p">),</span> <span class="m">0</span><span class="p">,</span> <span class="m">1</span><span class="p">,</span> <span class="n">Color</span><span class="p">.</span><span class="n">Red</span><span class="p">));</span>
+        <span class="n">Destroy</span><span class="p">(</span><span class="m">3.5f</span><span class="p">);</span>
+    <span class="p">}</span>
+    <span class="k">public</span> <span class="k">override</span> <span class="k">void</span> <span class="nf">Update</span><span class="p">()</span>
+    <span class="p">{</span>
+        <span class="c1">//move to the right of the screen</span>
+        <span class="n">transform</span><span class="p">.</span><span class="n">Position</span> <span class="p">+=</span> <span class="k">new</span> <span class="n">vec2</span><span class="p">(</span><span class="m">3</span><span class="p">,</span> <span class="m">0</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="k">class</span> <span class="nc">Spawner</span> <span class="p">:</span> <span class="n">GameObject</span>
+<span class="p">{</span>
+    <span class="n">Projectile</span> <span class="n">bullet</span> <span class="p">=</span> <span class="k">new</span> <span class="n">Projectile</span><span class="p">();</span>
+    <span class="k">public</span> <span class="k">override</span> <span class="k">void</span> <span class="nf">Start</span><span class="p">()</span>
+    <span class="p">{</span>
+        <span class="c1">//clone the bullet every 0.15 seconds at the current position</span>
+        <span class="n">Canvas</span><span class="p">.</span><span class="n">InvokeRepeating</span><span class="p">(</span><span class="k">delegate</span> <span class="p">{</span> <span class="n">Instantiate</span><span class="p">(</span><span class="n">bullet</span><span class="p">,</span> <span class="n">transform</span><span class="p">.</span><span class="n">Position</span><span class="p">);},</span> <span class="m">0.15f</span><span class="p">);</span>
+    <span class="p">}</span>
+    <span class="k">public</span> <span class="k">override</span> <span class="k">void</span> <span class="nf">Update</span><span class="p">()</span>
+    <span class="p">{</span>
+        <span class="c1">//change spawn location over time</span>
+        <span class="n">transform</span><span class="p">.</span><span class="n">Position</span> <span class="p">=</span> <span class="k">new</span> <span class="n">vec2</span><span class="p">(-</span><span class="m">350</span><span class="p">,</span> <span class="m">200</span> <span class="p">*</span> <span class="p">(</span><span class="kt">float</span><span class="p">)</span><span class="n">Math</span><span class="p">.</span><span class="n">Sin</span><span class="p">(</span><span class="n">Time</span><span class="p">));</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<a class="reference internal image-reference" href="_images/timerdemo.gif"><img alt="parent transform demo" class="align-left" src="_images/timerdemo.gif" style="width: 400.0px; height: 300.0px;" /></a>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="example2-gameobject.html" class="btn btn-neutral" title="2-Parent and Child" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Michael Manning.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  <script type="text/javascript" src="_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
