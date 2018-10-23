@@ -17,8 +17,8 @@ GLDrawer comes equipped with game engine tools which enable you to create simple
 
 
 .. image:: images/indexDemo.gif
-   :width: 1300px
-   :height: 900px
+   :width: 582px
+   :height: 800px
    :scale: 40 %
    :alt: backBuffer demo
    :align: left
