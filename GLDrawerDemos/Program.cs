@@ -22,7 +22,9 @@ namespace GLDrawerDemos
         {
             //demos.fastRemoval();//demos.backBufferShapes();
           //  spaceGame.spaceGame.run();
-            platformGame.platformer.run();
+            //platformGame.SimplePlatformer.run();
+            //platformGame.AdvancedPlatformer.run();
+            GLDrawerDemos.levelEditorProgram.run();
 
             //demos.IntersectTest();
             //demos.PhysicsTest();                 
@@ -46,8 +48,8 @@ namespace GLDrawerDemos
 
             //Console.ReadKey();
 
-           //can = new GLCanvas();
-            
+            //can = new GLCanvas();
+
 
             //can.AddCenteredEllipse(0, 0, 200, 200, Color.White, 10, Color.Red);
             //can.AddCenteredText("test", 40, Color.Black);

@@ -52,6 +52,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AdvancedPlatformer.cs" />
     <Compile Include="colorwheel.cs">
       <SubType>Form</SubType>
     </Compile>

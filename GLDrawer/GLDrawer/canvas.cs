@@ -668,14 +668,14 @@ namespace GLDrawer
 
         public Shape Add(Shape shape)
         {
-            if (shape == null)
+            if (shape == null && !shapeRefs.Contains(shape))
                 throw new NullReferenceException("Shape was NULL");
             AddToBuffer(shape);
             return shape;
         }
         public GameObject Add(GameObject gameObject)
         {
-            if (gameObject == null)
+            if (gameObject == null && !GORefs.Contains(gameObject))
                 throw new NullReferenceException("GameObject was NULL");
             GLWrapper.addGO(gameObject.internalGO);
             GORefs.Add(gameObject);
@@ -900,9 +900,11 @@ namespace GLDrawer
         public void ClearBackBuffer() => GLWrapper.clearBB();
         /// <summary>removes all shapes from the canvas</summary>
         public void Clear()
-        {
-            shapeRefs.Clear();
+        {         
             GLWrapper.clearShapes();
+            GORefs.ForEach(g => g.Destroy());
+            GORefs.Clear();
+            shapeRefs.Clear();
         }
         public void Dispose()
         {

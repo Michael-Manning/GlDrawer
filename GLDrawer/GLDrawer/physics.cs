@@ -61,6 +61,11 @@ namespace GLDrawer
             internalBody = new unmanaged_rigBody(gameObject.can.GLWrapper, gameObject.internalGO, gameObject.colliderType, friction, kinematic);
         }
 
+        internal void disable()
+        {
+            internalBody.disable();
+        }
+
         private bool disposed;
         public void Dispose()
         {

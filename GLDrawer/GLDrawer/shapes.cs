@@ -296,6 +296,17 @@ namespace GLDrawer
             internalImage.dispose();
             GC.SuppressFinalize(this);
         }
+        private vec2 size;
+        void SetAnimation(int TilesPerLine, float Duration)
+        {
+            if (!System.IO.File.Exists(FilePath))
+                throw new ArgumentException("image file was not found", "texturePath");
+            System.Drawing.Image img = System.Drawing.Image.FromFile(FilePath);
+            if (img.Width != img.Height)
+                throw new ArgumentException("Image not square");
+            internalImage.setAnimation(img.Height, TilesPerLine, Duration);
+            img.Dispose();
+        }
 
         ~Sprite()
         {

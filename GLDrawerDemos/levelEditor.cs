@@ -22,19 +22,17 @@ namespace GLDrawerDemos
         const int scale = 50;
 
         public const string workFile = "../../../data/other/mylevel.xml";
-        public const string regFile = "../../../data/other/level.txt";
-        public const string sprFile = "../../../data/other/sprites.txt";
-        public const string opFile = "../../../data/other/oplevel.txt";
-        public const string imgsPath = "C:/Users/Micha/Desktop/tileset/separate";
+        public const string imgsPath = "../../../data/images/tile set";//"C:/Users/Micha/Desktop/tileset/separate";
 
         Polygon[,] cgrid;
-        Sprite[,] sgrid;
+        Sprite[][,] sgrid;
 
         List<Line> lines = new List<Line>();
         List<string> usedPaths = new List<string>();
         int selectedImage = 0;
 
         TileMap tilemap;
+        int layer = 0, layers = 2;
 
         Stack<history> undo = new Stack<history>();
         Stack<history> redo = new Stack<history>();
@@ -68,6 +66,7 @@ namespace GLDrawerDemos
             BringToFront();
             can.MouseMove += Can_MouseMove;
             radioButton1.CheckedChanged += delegate { checkChanged(); };
+            radioButton4.CheckedChanged += delegate { layer = radioButton3.Checked ? 1 : 0; };
 
             impaths = Directory.GetFiles(imgsPath);
             System.Drawing.Image[] imgs = new System.Drawing.Image[impaths.Length];
@@ -85,24 +84,33 @@ namespace GLDrawerDemos
                 item.ImageIndex = j;
                 listView1.Items.Add(item);
             }
-            listView1.SelectedIndexChanged += delegate
-            {
-                int selectedCount = 0;
-                listView1.Invoke((Action)delegate { selectedCount = listView1.SelectedIndices.Count; });
-                if (selectedCount < 1)
-                    return;
-                listView1.Invoke((Action)delegate { selectedImage = listView1.SelectedIndices[0]; });
-            };
+            listView1.SelectedIndexChanged += ListView1_SelectedIndexChanged;
 
             can.MouseScrolled += Can_MouseScrolled;
             can.MouseMove += Can_MouseMove1;
             enableBtns(false);
         }
 
+        private void ListView1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            int selectedCount = 0;
+            listView1.Invoke((Action)delegate { selectedCount = listView1.SelectedIndices.Count; });
+            if (selectedCount < 1)
+                return;
+            listView1.Invoke((Action)delegate { selectedImage = listView1.SelectedIndices[0] + 1; });
+
+            if (radioButton1.Checked)
+            {
+                radioButton1.Checked = false;
+                radioButton2.Checked = true;
+                checkChanged();
+            }
+        }
+
         void Undo()
         {
             history h = undo.Pop();
-            if(radioButton1.Checked != h.mode)
+            if (radioButton1.Checked != h.mode)
             {
                 radioButton1.Checked = h.mode;
                 radioButton2.Checked = !h.mode;
@@ -138,14 +146,13 @@ namespace GLDrawerDemos
                 selectedImage = h.index;
                 addTile(h.x, h.y);
             }
- 
+
             if (redo.Count == 0)
                 btnredo.Enabled = false;
         }
 
         private void Can_MouseScrolled(int Delta, GLCanvas Canvas)
         {
-
             can.CamerZoom += Delta * 0.01f;
             if (can.CamerZoom < 0.1f)
                 can.CamerZoom = 0.1f;
@@ -206,20 +213,22 @@ namespace GLDrawerDemos
             {
                 tilemap.CollisionGrid[x, y] = 1;
                 undo.Push(new history(x, y, true, true));
-                btnundo.Invoke((Action)delegate { btnundo.Enabled = true;  });
+                btnundo.Invoke((Action)delegate { btnundo.Enabled = true; });
                 optimize();
             }
-            else if(radioButton2.Checked && tilemap.SpriteGrid[x,y] == 0)
+            else if (radioButton2.Checked && tilemap.SpriteGrid[layer][x, y] == 0)
             {
-                tilemap.SpriteGrid[x, y] = selectedImage;
-                if (sgrid[x, y] == null)
+                tilemap.SpriteGrid[layer][x, y] = selectedImage;
+                if (sgrid[layer][x, y] == null)
                 {
-                    if (!usedPaths.Contains(impaths[selectedImage]))
+                    if (!usedPaths.Contains(impaths[selectedImage - 1]))
                     {
-                        usedPaths.Add(impaths[selectedImage]);
-                        tilemap.SpritePaths.Add(selectedImage, impaths[selectedImage]);
+                        usedPaths.Add(impaths[selectedImage - 1]);
+                        tilemap.SpritePaths.Add(selectedImage, impaths[selectedImage - 1]);
                     }
-                    sgrid[x, y] = can.Add(new Sprite(impaths[selectedImage], new vec2(x, y) * scale + new vec2(scale / 2, -scale / 2 + scale * 1), new vec2(scale))) as Sprite;
+                    Sprite s = new Sprite(impaths[selectedImage - 1], new vec2(x, y) * scale + new vec2(scale / 2, -scale / 2 + scale * 1), new vec2(scale));
+                    s.DrawIndex = layer;
+                    sgrid[layer][x, y] = can.Add(s) as Sprite;
                     undo.Push(new history(x, y, true, false, selectedImage));
                     btnundo.Invoke((Action)delegate { btnundo.Enabled = true; });
                 }
@@ -234,12 +243,12 @@ namespace GLDrawerDemos
                 btnundo.Invoke((Action)delegate { btnundo.Enabled = true; });
                 optimize();
             }
-            else if (radioButton2.Checked && tilemap.SpriteGrid[x, y] != 0 && sgrid[x, y] != null)
+            else if (radioButton2.Checked && tilemap.SpriteGrid[layer][x, y] != 0 && sgrid[layer][x, y] != null)
             {
-                undo.Push(new history(x, y, false, false, tilemap.SpriteGrid[x, y]));
-                can.Remove(sgrid[x, y]);
-                sgrid[x, y] = null;
-                tilemap.SpriteGrid[x, y] = 0;             
+                undo.Push(new history(x, y, false, false, tilemap.SpriteGrid[layer][x, y]));
+                can.Remove(sgrid[layer][x, y]);
+                sgrid[layer][x, y] = null;
+                tilemap.SpriteGrid[layer][x, y] = 0;
                 btnundo.Invoke((Action)delegate { btnundo.Enabled = true; });
             }
         }
@@ -255,7 +264,7 @@ namespace GLDrawerDemos
 
         void clear()
         {
-            tilemap = new TileMap(tilemap.Xtiles, tilemap.Ytiles);
+            tilemap = new TileMap(tilemap.Xtiles, tilemap.Ytiles, 2);
             for (int j = 0; j < tilemap.Ytiles; j++)
             {
                 for (int i = 0; i < tilemap.Xtiles; i++)
@@ -266,10 +275,10 @@ namespace GLDrawerDemos
                         cgrid[i, j] = null;
                     }
 
-                    if (sgrid[i, j] != null)
+                    if (sgrid[layer][i, j] != null)
                     {
-                        can.Remove(sgrid[i, j]);
-                        sgrid[i, j] = null;
+                        can.Remove(sgrid[layer][i, j]);
+                        sgrid[layer][i, j] = null;
                     }
                 }
             }
@@ -385,36 +394,32 @@ namespace GLDrawerDemos
                 }
             }
 
-            tilemap.OpCollision = opgrid;
-
+            tilemap.OpCollision.Clear();
             for (int j = 0; j < tilemap.Ytiles; j++)
-            {
                 for (int i = 0; i < tilemap.Xtiles; i++)
-                {
-                    float sx = tilemap.OpCollision[i, j].x;
-                    float sy = tilemap.OpCollision[i, j].y;
-                    if (tilemap.OpCollision[i, j] != vec2.Zero)
-                        cgrid[i, j] = can.Add((new Polygon(new vec2(i + sx / 2f, -j - (sy / 2f) + tilemap.Ytiles) * scale, new vec2(scale * sx, scale * sy), 0, 4, Color.Hazard, 8, Color.Black))) as Polygon;
-                }
-            }
+                    if (opgrid[i, j].x > 0 && opgrid[i, j].y > 0)
+                        tilemap.OpCollision.Add(new TileMap.Tile() { x = i, y = j, w = (int)opgrid[i, j].x, h = (int)opgrid[i, j].y });
+
+            foreach (TileMap.Tile t in tilemap.OpCollision)
+                cgrid[t.x, t.y] = can.Add((new Polygon(new vec2(t.x + t.w / 2f, -t.y - (t.h / 2f) + tilemap.Ytiles) * scale, new vec2(scale * t.w, scale * t.h), 0, 4, Color.Hazard, 8, Color.Black))) as Polygon;
         }
 
         private void loadMap(object sender, EventArgs e)
         {
             XmlReader reader = XmlReader.Create(workFile);
             tilemap = new TileMap(reader);
-            sgrid = new Sprite[tilemap.Xtiles, tilemap.Ytiles];
+            sgrid = new Sprite[2][,];
+            sgrid[0] = new Sprite[tilemap.Xtiles, tilemap.Ytiles];
+            sgrid[1] = new Sprite[tilemap.Xtiles, tilemap.Ytiles];
             cgrid = new Polygon[tilemap.Xtiles, tilemap.Ytiles];
             drawLines();
 
-            for (int j = 0; j < tilemap.Ytiles; j++)
-            {
-                for (int i = 0; i < tilemap.Xtiles; i++)
-                {
-                    if (tilemap.SpriteGrid[i, j] > 0)
-                        sgrid[i, j] = can.Add(new Sprite(tilemap.SpritePaths[tilemap.SpriteGrid[i, j]], new vec2(i, j + 1) * scale + new vec2(scale / 2, -scale / 2), new vec2(scale))) as Sprite;
-                }
-            }
+            for (int l = 0; l < tilemap.layers; l++)
+                for (int j = 0; j < tilemap.Ytiles; j++)
+                    for (int i = 0; i < tilemap.Xtiles; i++)
+                        if (tilemap.SpriteGrid[l][i, j] > 0)
+                            sgrid[l][i, j] = can.Add(new Sprite(tilemap.SpritePaths[tilemap.SpriteGrid[l][i, j]], new vec2(i, j + 1) * scale + new vec2(scale / 2, -scale / 2), new vec2(scale))) as Sprite;
+
             optimize();
             enableBtns(true);
             checkChanged(); //update opacity
@@ -432,6 +437,9 @@ namespace GLDrawerDemos
 
             XmlWriter writer = XmlWriter.Create(workFile, s);
             tilemap.WriteXml(writer);
+
+            if (gameStarted)
+                platformGame.AdvancedPlatformer.loadLevel();
         }
 
         private void button4_Click(object sender, EventArgs e)
@@ -440,8 +448,10 @@ namespace GLDrawerDemos
             ld.ShowDialog();
             if (ld.DialogResult == DialogResult.OK)
             {
-                tilemap = new TileMap(ld.gridWidth, ld.gridHeight);
-                sgrid = new Sprite[tilemap.Xtiles, tilemap.Ytiles];
+                tilemap = new TileMap(ld.gridWidth, ld.gridHeight, 2);
+                sgrid = new Sprite[2][,];
+                sgrid[0] = new Sprite[tilemap.Xtiles, tilemap.Ytiles];
+                sgrid[1] = new Sprite[tilemap.Xtiles, tilemap.Ytiles];
                 cgrid = new Polygon[tilemap.Xtiles, tilemap.Ytiles];
                 drawLines();
                 can.CameraPosition += new vec2(can.Width / 2, can.Height / 2);
@@ -473,10 +483,13 @@ namespace GLDrawerDemos
                             Color c = cgrid[i, j].FillColor;
                             cgrid[i, j].FillColor = new Color(c.R, c.G, c.B, 100);
                         }
-                        if (sgrid[i, j] != null)
+                        for (int l = 0; l < layers; l++)
                         {
-                            sgrid[i, j].DrawIndex = 0;
-                            sgrid[i, j].Opacity = 1;
+                            if (sgrid[l][i, j] != null)
+                            {
+                                sgrid[l][i, j].DrawIndex = l;
+                                sgrid[l][i, j].Opacity = 1;
+                            }
                         }
                     }
                 }
@@ -493,14 +506,29 @@ namespace GLDrawerDemos
                             Color c = cgrid[i, j].FillColor;
                             cgrid[i, j].FillColor = Color.Hazard;
                         }
-                        if (sgrid[i, j] != null)
+                        for (int l = 0; l < layers; l++)
                         {
-                            sgrid[i, j].DrawIndex = 2;
-                            sgrid[i, j].Opacity = 0.3f;
+                            if (sgrid[l][i, j] != null)
+                            {
+                                sgrid[l][i, j].DrawIndex = l + 1;
+                                sgrid[l][i, j].Opacity = 0.3f;
+                            }
                         }
                     }
                 }
             }
+        }
+
+        bool gameStarted = false;
+        private void btnplay_Click(object sender, EventArgs e)
+        {
+            if (!gameStarted)
+            {
+                platformGame.AdvancedPlatformer.run();
+                gameStarted = true;
+            }
+            else
+                platformGame.AdvancedPlatformer.loadLevel();
         }
     }
     public static class levelEditorProgram
@@ -518,20 +546,25 @@ namespace GLDrawerDemos
     {
         public int Xtiles, Ytiles;
         public int[,] CollisionGrid;
-        public vec2[,] OpCollision;
-        public int[,] SpriteGrid;
+        public List<Tile> OpCollision;
+        public int layers { get; private set; }
+        public int[][,] SpriteGrid;
         public vec2[,] OpSprite;
         public Dictionary<int, string> SpritePaths = new Dictionary<int, string>();
 
-        public TileMap(int width, int height)
+        public TileMap(int width, int height, int spriteLayers)
         {
             Xtiles = width;
             Ytiles = height;
+            layers = spriteLayers;
             CollisionGrid = new int[Xtiles, Ytiles];
-            OpCollision = new vec2[Xtiles, Ytiles];
-            SpriteGrid = new int[Xtiles, Ytiles];
+            OpCollision = new List<Tile>();
+            SpriteGrid = new int[layers][,];
             OpSprite = new vec2[Xtiles, Ytiles];
+            for (int i = 0; i < layers; i++)
+                SpriteGrid[i] = new int[Xtiles, Ytiles];
         }
+        public struct Tile { public int x, y, w, h; };
 
         public TileMap(XmlReader r) => ReadXml(r);
 
@@ -553,10 +586,13 @@ namespace GLDrawerDemos
                     {
                         Xtiles = int.Parse(reader.GetAttribute("Xtiles"));
                         Ytiles = int.Parse(reader.GetAttribute("Ytiles"));
+                        layers = int.Parse(reader.GetAttribute("layers"));
                         CollisionGrid = new int[Xtiles, Ytiles];
-                        OpCollision = new vec2[Xtiles, Ytiles];
-                        SpriteGrid = new int[Xtiles, Ytiles];
+                        OpCollision = new List<Tile>();
+                        SpriteGrid = new int[layers][,];
                         OpSprite = new vec2[Xtiles, Ytiles];
+                        for (int i = 0; i < layers; i++)
+                            SpriteGrid[i] = new int[Xtiles, Ytiles];
                     }
                     if (reader.Name == "collisionMap")
                     {
@@ -570,7 +606,7 @@ namespace GLDrawerDemos
                         reader.ReadToFollowing("opgrid");
                         reader.Read();
                         gridString = reader.Value;
-                        parseOpGrid(ref OpCollision, gridString);
+                        parseOpGrid(OpCollision, gridString);
 
                     }
                     if (reader.Name == "sprite")
@@ -582,16 +618,27 @@ namespace GLDrawerDemos
                     if (reader.Name == "spriteMap")
                     {
                         //sprite grid
-                        reader.ReadToDescendant("grid");
-                        reader.Read();
-                        string gridString = reader.Value;
-                        parseGrid(ref SpriteGrid, gridString);
+                        if (reader.ReadToDescendant("grid"))
+                        {
+                            int layer = int.Parse(reader.GetAttribute("layer"));
+                            reader.Read();
+                            string gridString = reader.Value;
+                            parseGrid(ref SpriteGrid[layer], gridString);
+
+                            while (reader.ReadToFollowing("grid"))
+                            {
+                                layer = int.Parse(reader.GetAttribute("layer"));
+                                reader.Read();
+                                gridString = reader.Value;
+                                parseGrid(ref SpriteGrid[layer], gridString);
+                            }
+                        }
 
                         //optimized sprite grid
                         reader.ReadToFollowing("opgrid");
                         reader.Read();
-                        gridString = reader.Value;
-                        parseOpGrid(ref OpSprite, gridString);
+                        //gridString = reader.Value;
+                        // parseOpGrid(ref OpSprite, gridString);
                     }
                 }
             }
@@ -599,7 +646,7 @@ namespace GLDrawerDemos
         }
         public void WriteXml(XmlWriter writer)
         {
-            string colgrid, opcolgrid, sprgrid, opsprgrid;
+            string colgrid, opcolgrid, opsprgrid;
 
             //collision grid
             StringBuilder builder = new StringBuilder();
@@ -617,31 +664,37 @@ namespace GLDrawerDemos
 
             //optimized collision grid
             builder.Append(System.Environment.NewLine);
-            for (int j = 0; j < Ytiles; j++)
+            OpCollision.Sort((a, b) => a.y.CompareTo(b.y));
+            var lines = OpCollision.GroupBy(g => g.y); //grouped to make XML more readable
+            foreach (var group in lines)
             {
                 builder.Append("      ");
-                for (int i = 0; i < Xtiles; i++)
-                {
-                    builder.Append((int)OpCollision[i, j].x + "," + (int)OpCollision[i, j].y + " ");
-                }
+                foreach (Tile t in group)
+                    builder.Append(t.x + "," + t.y + "," + t.w + "," + t.h + " ");
                 builder.Append(System.Environment.NewLine);
             }
+
             builder.Append("    ");
             opcolgrid = builder.ToString();
             builder.Clear();
 
             //sprite grid
-            builder.Append(System.Environment.NewLine);
-            for (int j = 0; j < Ytiles; j++)
+            List<string> spriteGrids = new List<string>();
+            for (int l = 0; l < layers; l++)
             {
-                builder.Append("      ");
-                for (int i = 0; i < Xtiles; i++)
-                    builder.Append(SpriteGrid[i, j] + " ");
                 builder.Append(System.Environment.NewLine);
+                for (int j = 0; j < Ytiles; j++)
+                {
+                    builder.Append("      ");
+                    for (int i = 0; i < Xtiles; i++)
+                        builder.Append(SpriteGrid[l][i, j] + " ");
+                    builder.Append(System.Environment.NewLine);
+                }
+                builder.Append("    ");
+                spriteGrids.Add(builder.ToString());
+                builder.Clear();
             }
-            builder.Append("    ");
-            sprgrid = builder.ToString();
-            builder.Clear();
+
 
             //optimized sprite grid
             builder.Append(System.Environment.NewLine);
@@ -649,9 +702,7 @@ namespace GLDrawerDemos
             {
                 builder.Append("      ");
                 for (int i = 0; i < Xtiles; i++)
-                {
                     builder.Append((int)OpSprite[i, j].x + "," + (int)OpSprite[i, j].y + " ");
-                }
                 builder.Append(System.Environment.NewLine);
             }
             builder.Append("    ");
@@ -660,6 +711,7 @@ namespace GLDrawerDemos
             writer.WriteStartElement("tileMap");
             writer.WriteAttributeString("Xtiles", Xtiles.ToString());
             writer.WriteAttributeString("Ytiles", Ytiles.ToString());
+            writer.WriteAttributeString("layers", layers.ToString());
 
             writer.WriteStartElement("collisionMap");
 
@@ -683,13 +735,19 @@ namespace GLDrawerDemos
 
             writer.WriteStartElement("spriteMap");
 
-            writer.WriteStartElement("grid");
-            writer.WriteString(sprgrid);
-            writer.WriteEndElement();
+            for (int i = 0; i < layers; i++)
+            {
+                writer.WriteStartElement("grid");
+                writer.WriteAttributeString("layer", i.ToString());
+                writer.WriteString(spriteGrids[i]);
+                writer.WriteEndElement();
 
-            writer.WriteStartElement("opgrid");
-            writer.WriteString(opsprgrid);
-            writer.WriteEndElement();
+                writer.WriteStartElement("opgrid");
+                writer.WriteAttributeString("layer", i.ToString());
+                //  writer.WriteString(opsprgrid);
+                writer.WriteEndElement();
+            }
+
 
             writer.WriteEndElement(); //</spriteMap>
             writer.WriteEndElement(); //</tileMap>
@@ -703,22 +761,18 @@ namespace GLDrawerDemos
                 string[] blocks = lines[j].Split(' ').Where(s => s.Any(c => char.IsDigit(c))).ToArray();
 
                 for (int i = 0; i < Xtiles; i++)
-                {
                     grid[i, j] = int.Parse(blocks[i]);
-                }
             }
         }
-        private void parseOpGrid(ref vec2[,] grid, string gridString)
+        private void parseOpGrid(List<Tile> grid, string gridString)
         {
-            string[] lines = gridString.Split('\n').Where(s => s.Any(c => char.IsDigit(c))).ToArray();
-            for (int j = 0; j < lines.Length; j++)
+            gridString.Replace('\n', ' ');
+
+            string[] blocks = gridString.Split(' ').Where(s => s.Any(c => char.IsDigit(c))).ToArray();
+            for (int i = 0; i < blocks.Length; i++)
             {
-                string[] blocks = lines[j].Split(' ').Where(s => s.Any(c => char.IsDigit(c))).ToArray();
-                for (int i = 0; i < blocks.Length; i++)
-                {
-                    string[] v = blocks[i].Split(',');
-                    grid[i, j] = new vec2(int.Parse(v[0]), int.Parse(v[1]));
-                }
+                int[] v = Array.ConvertAll(blocks[i].Split(','), int.Parse);
+                grid.Add(new Tile() { x = v[0], y = v[1], w = v[2], h = v[3] });
             }
         }
     }

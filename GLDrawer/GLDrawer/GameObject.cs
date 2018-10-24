@@ -96,17 +96,24 @@ namespace GLDrawer
         //    }
         //}
 
+        private void setScale(vec2 scale)
+        {
+            if (scale.x <= 0 || scale.y <= 0)
+                throw new ArgumentException("cannot create a colider with scale <= 0");
+            internalGO.scale = new unmanaged_vec2(scale.x, scale.y);
+        }
+
         internal int colliderType = -1;
         public bool TriggerCollider { get; private set; } = false;
         public void SetBoxCollider(vec2 scale, bool triggermode = false)
         {
-            internalGO.scale = new unmanaged_vec2(scale.x, scale.y);
+            setScale(scale);
             colliderType = 1;
             TriggerCollider = triggermode;
         }
         public void SetCircleCollider(float radius, bool triggermode = false)
         {
-            internalGO.scale = new unmanaged_vec2(radius, radius);
+            setScale(new vec2(radius));
             colliderType = 0;
             TriggerCollider = triggermode;
         }
@@ -186,11 +193,13 @@ namespace GLDrawer
                 else
                     ClearChildren();
 
+                if (rigidbody != null)
+                    rigidbody.disable();
+
                 Canvas.EarlyUpdate -= InternalEarlyUpdate;
                 Canvas.Update -= InternalUpdate;
                 Canvas.LateUpdate -= InternalLateUpdate;
 
-                ClearChildren();
                 Canvas.Remove(this);
             }, time);
         }
@@ -203,10 +212,11 @@ namespace GLDrawer
                 startFlag = true;
                 transform.link = this;
                 Start();
+                updateInternals();
             }
             //rigidbodies affect the position between frames
             if(rigidbody != null)
-            {
+            {             
                 transform.iposition = new vec2(internalGO.position.x, internalGO.position.y);
                 transform.irotation = internalGO.angle;
             }

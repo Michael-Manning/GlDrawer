@@ -36,12 +36,17 @@
             this.listView1 = new System.Windows.Forms.ListView();
             this.imageList1 = new System.Windows.Forms.ImageList(this.components);
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.btnplay = new System.Windows.Forms.Button();
+            this.btnredo = new System.Windows.Forms.Button();
+            this.btnundo = new System.Windows.Forms.Button();
             this.radioButton2 = new System.Windows.Forms.RadioButton();
             this.radioButton1 = new System.Windows.Forms.RadioButton();
             this.button4 = new System.Windows.Forms.Button();
-            this.btnundo = new System.Windows.Forms.Button();
-            this.btnredo = new System.Windows.Forms.Button();
+            this.groupBox2 = new System.Windows.Forms.GroupBox();
+            this.radioButton3 = new System.Windows.Forms.RadioButton();
+            this.radioButton4 = new System.Windows.Forms.RadioButton();
             this.groupBox1.SuspendLayout();
+            this.groupBox2.SuspendLayout();
             this.SuspendLayout();
             // 
             // panel1
@@ -98,6 +103,7 @@
             // 
             // groupBox1
             // 
+            this.groupBox1.Controls.Add(this.btnplay);
             this.groupBox1.Controls.Add(this.btnredo);
             this.groupBox1.Controls.Add(this.btnundo);
             this.groupBox1.Controls.Add(this.radioButton2);
@@ -112,6 +118,34 @@
             this.groupBox1.Size = new System.Drawing.Size(808, 91);
             this.groupBox1.TabIndex = 9;
             this.groupBox1.TabStop = false;
+            // 
+            // btnplay
+            // 
+            this.btnplay.Location = new System.Drawing.Point(250, 17);
+            this.btnplay.Name = "btnplay";
+            this.btnplay.Size = new System.Drawing.Size(75, 58);
+            this.btnplay.TabIndex = 10;
+            this.btnplay.Text = "Play";
+            this.btnplay.UseVisualStyleBackColor = true;
+            this.btnplay.Click += new System.EventHandler(this.btnplay_Click);
+            // 
+            // btnredo
+            // 
+            this.btnredo.Location = new System.Drawing.Point(452, 17);
+            this.btnredo.Name = "btnredo";
+            this.btnredo.Size = new System.Drawing.Size(75, 58);
+            this.btnredo.TabIndex = 9;
+            this.btnredo.Text = "Redo";
+            this.btnredo.UseVisualStyleBackColor = true;
+            // 
+            // btnundo
+            // 
+            this.btnundo.Location = new System.Drawing.Point(371, 17);
+            this.btnundo.Name = "btnundo";
+            this.btnundo.Size = new System.Drawing.Size(75, 58);
+            this.btnundo.TabIndex = 8;
+            this.btnundo.Text = "Undo";
+            this.btnundo.UseVisualStyleBackColor = true;
             // 
             // radioButton2
             // 
@@ -147,29 +181,45 @@
             this.button4.UseVisualStyleBackColor = true;
             this.button4.Click += new System.EventHandler(this.button4_Click);
             // 
-            // btnundo
+            // groupBox2
             // 
-            this.btnundo.Location = new System.Drawing.Point(291, 17);
-            this.btnundo.Name = "btnundo";
-            this.btnundo.Size = new System.Drawing.Size(75, 58);
-            this.btnundo.TabIndex = 8;
-            this.btnundo.Text = "Undo";
-            this.btnundo.UseVisualStyleBackColor = true;
+            this.groupBox2.Controls.Add(this.radioButton4);
+            this.groupBox2.Controls.Add(this.radioButton3);
+            this.groupBox2.Location = new System.Drawing.Point(1545, 4);
+            this.groupBox2.Name = "groupBox2";
+            this.groupBox2.Size = new System.Drawing.Size(148, 91);
+            this.groupBox2.TabIndex = 11;
+            this.groupBox2.TabStop = false;
+            this.groupBox2.Text = "Layer";
             // 
-            // btnredo
+            // radioButton3
             // 
-            this.btnredo.Location = new System.Drawing.Point(372, 17);
-            this.btnredo.Name = "btnredo";
-            this.btnredo.Size = new System.Drawing.Size(75, 58);
-            this.btnredo.TabIndex = 9;
-            this.btnredo.Text = "Redo";
-            this.btnredo.UseVisualStyleBackColor = true;
+            this.radioButton3.AutoSize = true;
+            this.radioButton3.Location = new System.Drawing.Point(6, 34);
+            this.radioButton3.Name = "radioButton3";
+            this.radioButton3.Size = new System.Drawing.Size(120, 24);
+            this.radioButton3.TabIndex = 0;
+            this.radioButton3.Text = "Background";
+            this.radioButton3.UseVisualStyleBackColor = true;
+            // 
+            // radioButton4
+            // 
+            this.radioButton4.AutoSize = true;
+            this.radioButton4.Checked = true;
+            this.radioButton4.Location = new System.Drawing.Point(6, 61);
+            this.radioButton4.Name = "radioButton4";
+            this.radioButton4.Size = new System.Drawing.Size(117, 24);
+            this.radioButton4.TabIndex = 1;
+            this.radioButton4.TabStop = true;
+            this.radioButton4.Text = "Foreground";
+            this.radioButton4.UseVisualStyleBackColor = true;
             // 
             // levelEditor
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(2042, 1346);
+            this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.button4);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.panel1);
@@ -178,6 +228,8 @@
             this.Text = "levelEditor";
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
+            this.groupBox2.ResumeLayout(false);
+            this.groupBox2.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -196,5 +248,9 @@
         private System.Windows.Forms.Button button4;
         private System.Windows.Forms.Button btnundo;
         private System.Windows.Forms.Button btnredo;
+        private System.Windows.Forms.Button btnplay;
+        private System.Windows.Forms.GroupBox groupBox2;
+        private System.Windows.Forms.RadioButton radioButton4;
+        private System.Windows.Forms.RadioButton radioButton3;
     }
 }
