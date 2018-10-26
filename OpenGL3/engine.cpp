@@ -1748,11 +1748,12 @@ bool testRect(vec2 rectPos, vec2 scale, float angle, vec2 test)
 	return true;
 }
 
-rigBody::rigBody(b2World * World, GO * Link, int type, float friction, bool Kinimatik)
+rigBody::rigBody(b2World * World, GO * Link, int type, float friction, bool Kinimatik, char * Tag)
 {
 	link = Link;
 	world = World;
 	kinematic = Kinimatik;
+	tag = Tag;
 
 #ifdef _DEBUG
 	if(link->scale.x < 1 || link->scale.y < 1){
@@ -1844,6 +1845,8 @@ void MyContactListener::BeginContact(b2Contact * contact)
 	actorB->body->collisionEnter = true;
 	actorA->body->collisionExit = false;
 	actorB->body->collisionExit = false;
+	actorA->body->collisionTag = actorB->body->tag;
+	actorB->body->collisionTag = actorA->body->tag;
 }
 
 void MyContactListener::EndContact(b2Contact * contact)
@@ -1866,8 +1869,6 @@ bool GLCanvas::raycast(vec2 start, vec2 end)
 	RayCastCallback rc;
 	world.RayCast(&rc, toB2(start), toB2(end));
 	if (rc.m_fixture) {
-		//GO* g = (GO*)(rc.m_fixture->GetBody()->GetUserData());
-		//g->hidden = true;
 		return true;
 	}
 	return false;

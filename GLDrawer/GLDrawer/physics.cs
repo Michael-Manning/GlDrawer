@@ -16,6 +16,7 @@ namespace GLDrawer
         public void AddTorque(float torque) => internalBody.addTorque(torque);
         public bool Kinematic { get; private set; }
         public void SetFixedRotation(bool Fixed) => internalBody.lockRotation(Fixed);
+        public string Tag { get; private set; }
 
         public vec2 Velocity
         {
@@ -32,7 +33,7 @@ namespace GLDrawer
 
         public float AngularVelocity { get => internalBody.angularVelocity; set => internalBody.angularVelocity = value; }
 
-        public Rigidbody(GameObject gameObject, float friction = 0.8f, bool kinematic = false)
+        public Rigidbody(GameObject gameObject, float friction = 0.8f, bool kinematic = false, string tag = "")
         {
             //need a gameobject to operate
             if (gameObject == null)
@@ -57,8 +58,12 @@ namespace GLDrawer
                 if(!succsess)
                     throw new NullReferenceException("collider was null and no child shapes were found");
             }
-            Kinematic = kinematic;             
-            internalBody = new unmanaged_rigBody(gameObject.can.GLWrapper, gameObject.internalGO, gameObject.colliderType, friction, kinematic);
+            Kinematic = kinematic;
+            Tag = tag;
+            if(tag == "")
+                internalBody = new unmanaged_rigBody(gameObject.can.GLWrapper, gameObject.internalGO, gameObject.colliderType, friction, kinematic);
+            else
+                internalBody = new unmanaged_rigBody(gameObject.can.GLWrapper, gameObject.internalGO, gameObject.colliderType, friction, kinematic, tag);
         }
 
         internal void disable()
@@ -83,7 +88,11 @@ namespace GLDrawer
         }
     }
 
-
+    public struct Collision
+    {
+        public string Tag;
+    }
+    
     //public abstract class Collider
     //{
     //    protected GameObject go;

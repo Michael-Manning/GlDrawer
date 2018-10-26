@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<entities>
+  <entity tag="sawblade" id="2">
+	<img scale="2,2" rotationSpeed="-8">../../../data/images/tile set/objects/Saw.png</img>
+  </entity>
+</entities>
+

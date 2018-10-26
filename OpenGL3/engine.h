@@ -184,12 +184,14 @@ public:
 	bool setPositionFlag = false; //for C# transform setting
 	bool collisionEnter = false;
 	bool collisionExit = false;
+	char * tag;
+	char * collisionTag = NULL; //tag of what was touched
 
 	void addForce(vec2 force);
 	void addTorque(float torque);
 	void setVelocity(vec2 velocity);
 	vec2 GetVelocity();
-	rigBody(b2World * World, GO * Link, int type, float friction = 0.8f, bool Kinimatic = false);
+	rigBody(b2World * World, GO * Link, int type, float friction = 0.8f, bool Kinimatic = false, char * tag = NULL);
 };
 
 //GameObject

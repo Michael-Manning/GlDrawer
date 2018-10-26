@@ -15,6 +15,7 @@ namespace platformGame
         public static float tileScale = 130;
         static List<Wall> Walls = new List<Wall>();
         static List<Texture> Textures = new List<Texture>();
+        static List<GameObject> Entities = new List<GameObject>();
 
         public static void run()
         {
@@ -36,18 +37,34 @@ namespace platformGame
         {
             Walls.ForEach(w => w.Destroy());
             Textures.ForEach(t => t.Destroy());
+            Entities.ForEach(e => e.Destroy());
 
             vec2 offset = new vec2(-5, -5);
             GLDrawerDemos.TileMap tilemap = new GLDrawerDemos.TileMap(GLDrawerDemos.levelEditor.workFile);
 
+            //load collision
             foreach (GLDrawerDemos.TileMap.Tile t in tilemap.OpCollision)
                 Walls.Add(can.Instantiate(new Wall(new vec2(tileScale * t.w, tileScale * t.h)), new vec2(t.x + offset.x + t.w / 2f, -t.y + offset.y - t.h / 2f + tilemap.Ytiles) * tileScale) as Wall);
 
+            //load textures
             for (int l = 0; l < tilemap.layers; l++)
                 for (int j = 0; j < tilemap.Ytiles; j++)
                     for (int i = 0; i < tilemap.Xtiles; i++)
                         if (tilemap.SpriteGrid[l][i, j] != 0)
                             Textures.Add(can.Instantiate(new Texture(tilemap.SpritePaths[tilemap.SpriteGrid[l][i, j]], l), new vec2((i + (int)offset.x) + 1f / 2f, ((j + (int)offset.y) + 1f / 2f)) * tileScale) as Texture);
+
+            //load entites
+            tilemap.LoadEntities(GLDrawerDemos.levelEditor.entityFile);
+            for (int j = 0; j < tilemap.Ytiles; j++)
+            {
+                for (int i = 0; i < tilemap.Xtiles; i++)
+                {
+                    if (tilemap.EntityGrid[i,j] == 2)
+                    {
+                        Entities.Add(can.Instantiate(new SawBlade(), new vec2((i + (int)offset.x) + 1f / 2f, ((j + (int)offset.y) + 1f / 2f)) * tileScale));
+                    }
+                }
+            }
         }
     }
     public class AdvancedPlayer : GameObject
@@ -71,10 +88,10 @@ namespace platformGame
         public override void Update()
         {
             //left and right movement
-            if (Canvas.GetSpecialKey(SpecialKeys.LEFT) && rigidbody.Velocity.x > onGround ? -maxGroundSpeed : -maxAirSpeed)
+            if (Canvas.GetSpecialKey(SpecialKeys.LEFT) && rigidbody.Velocity.x > (onGround ? -maxGroundSpeed : -maxAirSpeed))
                 rigidbody.AddForce(new vec2(onGround ? -moveSpeed : -airsPeed, 0));
 
-            else if (Canvas.GetSpecialKey(SpecialKeys.RIGHT) && rigidbody.Velocity.x < onGround ? maxGroundSpeed : maxAirSpeed)
+            else if (Canvas.GetSpecialKey(SpecialKeys.RIGHT) && rigidbody.Velocity.x < (onGround ? maxGroundSpeed : maxAirSpeed))
                 rigidbody.AddForce(new vec2(onGround ? moveSpeed : airsPeed, 0));
 
             //exerise finer control over deacceleration on the ground
@@ -119,12 +136,32 @@ namespace platformGame
 
             //reset position
             if (Canvas.GetKeyDown('r') || transform.Position.y < -800)
-                transform.Position = new vec2(0, 100);
+                reset();
 
             //camera movement
             Canvas.CameraPosition = vec2.Lerp(Canvas.CameraPosition, transform.Position + new vec2(0, 100), 0.8f);
         }
+
+        void reset() => transform.Position = new vec2(-100, 90);
+
+        public override void OnCollisionEnter(Collision col)
+        {
+            if (col.Tag == "saw")
+                reset();
+        }
     }
+
+    public class SawBlade : GameObject
+    {
+        vec2 Scale = new vec2(AdvancedPlatformer.tileScale * 2);
+        public override void Start()
+        {
+            AddChildShape(new Sprite("../../../data/images/tile set/objects/Saw.png", vec2.Zero, Scale, rotationSpeed: -8.0f));
+            SetCircleCollider(Scale.x);
+            rigidbody = new Rigidbody(this, 0, true, "saw");
+        }
+    }
+
     public class Wall : GameObject
     {
         public vec2 scale;
@@ -133,7 +170,7 @@ namespace platformGame
         {
             //AddChildShape(new Sprite("../../../data/images/wood.png", vec2.Zero, scale, 0, Color.Invisible, scale / platformer.tileScale));
             SetBoxCollider(scale);
-            rigidbody = new Rigidbody(this, 0.5f, kinematic: true);
+            rigidbody = new Rigidbody(this, 0.5f, true);
         }
     }
     public class Texture : GameObject

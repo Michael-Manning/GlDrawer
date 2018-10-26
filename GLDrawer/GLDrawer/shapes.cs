@@ -296,7 +296,7 @@ namespace GLDrawer
             internalImage.dispose();
             GC.SuppressFinalize(this);
         }
-        private vec2 size;
+      //  private vec2 size;
         void SetAnimation(int TilesPerLine, float Duration)
         {
             if (!System.IO.File.Exists(FilePath))

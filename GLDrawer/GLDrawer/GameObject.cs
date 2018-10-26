@@ -194,7 +194,7 @@ namespace GLDrawer
                     ClearChildren();
 
                 if (rigidbody != null)
-                    rigidbody.disable();
+                    rigidbody.disable();     
 
                 Canvas.EarlyUpdate -= InternalEarlyUpdate;
                 Canvas.Update -= InternalUpdate;
@@ -227,7 +227,7 @@ namespace GLDrawer
             if(rigidbody != null && rigidbody.internalBody.collisionEnter)
             {
                 rigidbody.internalBody.collisionEnter = false;
-                OnCollisionEnter();
+                OnCollisionEnter(new Collision() { Tag = rigidbody.internalBody.getCollisionTag() });
             }
             else if (rigidbody != null && rigidbody.internalBody.collisionExit)
             {
@@ -260,7 +260,7 @@ namespace GLDrawer
         public virtual void EarlyUpdate() { }
         public virtual void Update() { }
         public virtual void LateUpdate() { }
-        public virtual void OnCollisionEnter() { }
+        public virtual void OnCollisionEnter(Collision col) { }
         public virtual void OnCollisionExit() { }
 
         internal unmanaged_GO internalGO = new unmanaged_GO();

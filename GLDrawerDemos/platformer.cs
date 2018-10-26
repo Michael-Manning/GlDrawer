@@ -75,7 +75,7 @@ namespace platformGame
             //smooth camera movement
             Canvas.CameraPosition = vec2.Lerp(Canvas.CameraPosition, transform.Position + new vec2(0, 100), 0.8f);
         }
-        public override void OnCollisionEnter()
+        public override void OnCollisionEnter(Collision col)
         {
             //when the player touches something it can jump again
             onGround = true;
