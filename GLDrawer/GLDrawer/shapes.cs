@@ -297,7 +297,7 @@ namespace GLDrawer
             GC.SuppressFinalize(this);
         }
       //  private vec2 size;
-        void SetAnimation(int TilesPerLine, float Duration)
+        public void SetAnimation(int TilesPerLine, float Duration)
         {
             if (!System.IO.File.Exists(FilePath))
                 throw new ArgumentException("image file was not found", "texturePath");

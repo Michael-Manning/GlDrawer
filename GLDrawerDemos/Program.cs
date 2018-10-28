@@ -24,7 +24,7 @@ namespace GLDrawerDemos
           //  spaceGame.spaceGame.run();
             //platformGame.SimplePlatformer.run();
             //platformGame.AdvancedPlatformer.run();
-            GLDrawerDemos.levelEditorProgram.run();
+           GLDrawerDemos.levelEditorProgram.run();
 
             //demos.IntersectTest();
             //demos.PhysicsTest();                 

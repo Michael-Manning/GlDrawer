@@ -1,0 +1,7 @@
+<forLater>
+  <entity tag="spawnLocation" id="1"/>
+  <entity tag="coin" id="3">
+	<img scale="0.5, 0.5">../../../data/images/coin.png</img>
+	<animationDetails tilesPerRow="2" durationo="0.5"/>
+  </entity>
+</forLater>

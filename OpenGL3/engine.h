@@ -191,7 +191,7 @@ public:
 	void addTorque(float torque);
 	void setVelocity(vec2 velocity);
 	vec2 GetVelocity();
-	rigBody(b2World * World, GO * Link, int type, float friction = 0.8f, bool Kinimatic = false, char * tag = NULL);
+	rigBody(b2World * World, GO * Link, int type, float friction = 0.8f, bool Kinimatic = false, bool trigger = false, char * tag = NULL);
 };
 
 //GameObject

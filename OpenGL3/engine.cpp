@@ -1748,7 +1748,7 @@ bool testRect(vec2 rectPos, vec2 scale, float angle, vec2 test)
 	return true;
 }
 
-rigBody::rigBody(b2World * World, GO * Link, int type, float friction, bool Kinimatik, char * Tag)
+rigBody::rigBody(b2World * World, GO * Link, int type, float friction, bool Kinimatik, bool trigger, char * Tag)
 {
 	link = Link;
 	world = World;
@@ -1761,6 +1761,8 @@ rigBody::rigBody(b2World * World, GO * Link, int type, float friction, bool Kini
 		return;
 	}
 #endif
+
+	fixtureDef.isSensor = trigger;
 
 	//as rect
 	if( type == 1) {
@@ -1780,7 +1782,7 @@ rigBody::rigBody(b2World * World, GO * Link, int type, float friction, bool Kini
 		fixtureDef.density = 1.0f;
 		// Override the default friction.
 		fixtureDef.friction = friction;
-
+		
 		// Add the shape to the body.
 		body->CreateFixture(&fixtureDef);
 	}
@@ -1804,7 +1806,6 @@ rigBody::rigBody(b2World * World, GO * Link, int type, float friction, bool Kini
 		body->SetType(b2_kinematicBody);
 	else
 		body->SetType(b2_dynamicBody);
-
 
 	body->SetUserData(Link);
 

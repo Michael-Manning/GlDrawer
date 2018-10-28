@@ -59,10 +59,15 @@ namespace platformGame
             {
                 for (int i = 0; i < tilemap.Xtiles; i++)
                 {
+                    //sawblade
                     if (tilemap.EntityGrid[i,j] == 2)
-                    {
                         Entities.Add(can.Instantiate(new SawBlade(), new vec2((i + (int)offset.x) + 1f / 2f, ((j + (int)offset.y) + 1f / 2f)) * tileScale));
-                    }
+                    //coin
+                    if (tilemap.EntityGrid[i, j] == 3)
+                        Entities.Add(can.Instantiate(new Coin(), new vec2((i + (int)offset.x) + 1f / 2f, ((j + (int)offset.y) + 1f / 2f)) * tileScale));
+                    //spawnLocation
+                    if (tilemap.EntityGrid[i, j] == 1)
+                        AdvancedPlayer.spawnPos = new vec2((i + (int)offset.x) + 1f / 2f, ((j + (int)offset.y) + 1f / 2f)) * tileScale;
                 }
             }
         }
@@ -76,14 +81,16 @@ namespace platformGame
         int onWall = 0;
         float maxGroundSpeed = 14;
         float maxAirSpeed = 9;
+        public static vec2 spawnPos; 
         Sprite guy;
 
         public override void Start()
         {
             DrawIndex = -1;
             guy = AddChildShape(new Sprite("../../../data/images/guy.png", vec2.Zero, new vec2(90, 90))) as Sprite;
-            rigidbody = new Rigidbody(this, 0.3f);
+            rigidbody = new Rigidbody(this, 0.3f, tag: "player");
             rigidbody.SetFixedRotation(true);
+            reset();
         }
         public override void Update()
         {
@@ -142,12 +149,14 @@ namespace platformGame
             Canvas.CameraPosition = vec2.Lerp(Canvas.CameraPosition, transform.Position + new vec2(0, 100), 0.8f);
         }
 
-        void reset() => transform.Position = new vec2(-100, 90);
+        void reset() => transform.Position = spawnPos;
 
         public override void OnCollisionEnter(Collision col)
         {
             if (col.Tag == "saw")
                 reset();
+            
+
         }
     }
 
@@ -158,7 +167,25 @@ namespace platformGame
         {
             AddChildShape(new Sprite("../../../data/images/tile set/objects/Saw.png", vec2.Zero, Scale, rotationSpeed: -8.0f));
             SetCircleCollider(Scale.x);
-            rigidbody = new Rigidbody(this, 0, true, "saw");
+            rigidbody = new Rigidbody(this, 0, true, false, "saw");
+        }
+    }
+
+    public class Coin : GameObject
+    {
+        vec2 Scale = new vec2(AdvancedPlatformer.tileScale * 0.5f);
+        public override void Start()
+        {
+            Sprite s = (new Sprite("../../../data/images/coin.png", vec2.Zero, Scale));
+            s.SetAnimation(2, 0.5f);
+            AddChildShape(s);
+            SetCircleCollider(Scale.x);
+            rigidbody = new Rigidbody(this, 0, true, true, "coin");
+        }
+        public override void OnCollisionEnter(Collision col)
+        {
+            if (col.Tag == "player")
+                Destroy();
         }
     }
 

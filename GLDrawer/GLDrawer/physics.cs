@@ -33,7 +33,7 @@ namespace GLDrawer
 
         public float AngularVelocity { get => internalBody.angularVelocity; set => internalBody.angularVelocity = value; }
 
-        public Rigidbody(GameObject gameObject, float friction = 0.8f, bool kinematic = false, string tag = "")
+        public Rigidbody(GameObject gameObject, float friction = 0.8f, bool kinematic = false, bool isSensor = false, string tag = "")
         {
             //need a gameobject to operate
             if (gameObject == null)
@@ -61,9 +61,9 @@ namespace GLDrawer
             Kinematic = kinematic;
             Tag = tag;
             if(tag == "")
-                internalBody = new unmanaged_rigBody(gameObject.can.GLWrapper, gameObject.internalGO, gameObject.colliderType, friction, kinematic);
+                internalBody = new unmanaged_rigBody(gameObject.can.GLWrapper, gameObject.internalGO, gameObject.colliderType, friction, kinematic, isSensor);
             else
-                internalBody = new unmanaged_rigBody(gameObject.can.GLWrapper, gameObject.internalGO, gameObject.colliderType, friction, kinematic, tag);
+                internalBody = new unmanaged_rigBody(gameObject.can.GLWrapper, gameObject.internalGO, gameObject.colliderType, friction, kinematic, isSensor, tag);
         }
 
         internal void disable()
