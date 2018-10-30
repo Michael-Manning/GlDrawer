@@ -321,7 +321,7 @@ void GLCanvas::dispose() {
 	if (disposed)
 		return;
 	//delete set pixel buffer
-	delete setPixelData;
+//	delete setPixelData;
 	//delete font asset heap data
 	for (int i = 0; i < fonts.size(); i++)
 		fonts[i].dipose();
@@ -329,7 +329,7 @@ void GLCanvas::dispose() {
 	for (int i = 0; i < GameObjects.size(); i++)
 		if (GameObjects[i]->t)
 			GameObjects[i]->t->dispose();
-	glfwTerminate();
+	//glfwTerminate();
 	disposed = true;
 }
 void GLCanvas::setWindowSize(int w, int h) {
@@ -980,21 +980,15 @@ GLCanvas::GLCanvas()
 }
 
 void GLCanvas::mainloop(bool render) {
-	
+	if (disposed)
+		return;
+
 	glfwMakeContextCurrent(window);
 	clearStates();
 	glfwPollEvents();
-	if (glfwWindowShouldClose(window) || closeFlag) {
-		closeFlag = true;
+	if (glfwWindowShouldClose(window)) {
 		dispose();
-		return;
-	}
-
-	//glfwMakeContextCurrent(window);
-	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-		glfwSetWindowShouldClose(window, true);
-		dispose();
-		closeFlag = true;
+		glfwDestroyWindow(window);
 		return;
 	}
 

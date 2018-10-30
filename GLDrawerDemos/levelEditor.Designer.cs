@@ -55,6 +55,7 @@
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.label2 = new System.Windows.Forms.Label();
             this.panel2 = new System.Windows.Forms.Panel();
+            this.checkuv = new System.Windows.Forms.CheckBox();
             this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).BeginInit();
             this.groupBox2.SuspendLayout();
@@ -219,9 +220,9 @@
             // 
             this.groupBox2.Controls.Add(this.radioButton4);
             this.groupBox2.Controls.Add(this.radioButton3);
-            this.groupBox2.Location = new System.Drawing.Point(31, 6);
+            this.groupBox2.Location = new System.Drawing.Point(7, 6);
             this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(364, 58);
+            this.groupBox2.Size = new System.Drawing.Size(257, 58);
             this.groupBox2.TabIndex = 11;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Layer";
@@ -230,7 +231,7 @@
             // 
             this.radioButton4.AutoSize = true;
             this.radioButton4.Checked = true;
-            this.radioButton4.Location = new System.Drawing.Point(193, 25);
+            this.radioButton4.Location = new System.Drawing.Point(132, 28);
             this.radioButton4.Name = "radioButton4";
             this.radioButton4.Size = new System.Drawing.Size(117, 24);
             this.radioButton4.TabIndex = 1;
@@ -241,7 +242,7 @@
             // radioButton3
             // 
             this.radioButton3.AutoSize = true;
-            this.radioButton3.Location = new System.Drawing.Point(67, 25);
+            this.radioButton3.Location = new System.Drawing.Point(6, 28);
             this.radioButton3.Name = "radioButton3";
             this.radioButton3.Size = new System.Drawing.Size(120, 24);
             this.radioButton3.TabIndex = 0;
@@ -298,6 +299,7 @@
             // 
             // tabPage2
             // 
+            this.tabPage2.Controls.Add(this.checkuv);
             this.tabPage2.Controls.Add(this.listView1);
             this.tabPage2.Controls.Add(this.groupBox2);
             this.tabPage2.Location = new System.Drawing.Point(4, 29);
@@ -337,6 +339,18 @@
             this.panel2.Size = new System.Drawing.Size(84, 84);
             this.panel2.TabIndex = 15;
             // 
+            // checkuv
+            // 
+            this.checkuv.AutoSize = true;
+            this.checkuv.Checked = true;
+            this.checkuv.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.checkuv.Location = new System.Drawing.Point(290, 34);
+            this.checkuv.Name = "checkuv";
+            this.checkuv.Size = new System.Drawing.Size(181, 24);
+            this.checkuv.TabIndex = 12;
+            this.checkuv.Text = "Show corrected UVs";
+            this.checkuv.UseVisualStyleBackColor = true;
+            // 
             // levelEditor
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
@@ -357,6 +371,7 @@
             this.tabControl1.ResumeLayout(false);
             this.tabPage1.ResumeLayout(false);
             this.tabPage2.ResumeLayout(false);
+            this.tabPage2.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             this.panel2.ResumeLayout(false);
             this.panel2.PerformLayout();
@@ -392,5 +407,6 @@
         private System.Windows.Forms.PictureBox pictureBox1;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Panel panel2;
+        private System.Windows.Forms.CheckBox checkuv;
     }
 }

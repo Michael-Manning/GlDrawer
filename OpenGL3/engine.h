@@ -319,7 +319,6 @@ public :
 	//used by back/middle end
 	const char * title = "Running from Native C++    ";
 	bool titleDetails = true; //toggle for fps, render time, and shape count
-	bool closeFlag = false; //for indicating that a clean up happened, and to indicate one should happen
 	bool disposed = false; //to prevent multiple cleanups
 	bool clearColorFlag = true; //resets the back buffer in the next from if true
 	bool debugMode = false;

@@ -38,7 +38,7 @@ namespace GLDrawerDemos
         TileMap.Entity selectedEntity;
 
         TileMap tilemap;
-        int layer = 0, layers = 2;
+        int currentLayer = 0, layers = 2;
         int actionMode = 1;
         bool noSelection = true;
 
@@ -74,8 +74,7 @@ namespace GLDrawerDemos
             BringToFront();
             can.MouseMove += Can_MouseMove;
             btncol.Click += (e, s) => UpdateMode(0);
-            // radioButton1.CheckedChanged += delegate { checkChanged(); };
-            radioButton4.CheckedChanged += delegate { layer = radioButton3.Checked ? 1 : 0; };
+            radioButton4.CheckedChanged += delegate { currentLayer = radioButton3.Checked ? 1 : 0; };
             numericUpDown1.ValueChanged += delegate { gridSubdivision = (int)numericUpDown1.Value; };
             colliderPlaceholder = System.Drawing.Image.FromFile("../../../data/images/tile set/objects/collider.png");
             impaths = Directory.GetFiles(imgsPath);
@@ -83,6 +82,7 @@ namespace GLDrawerDemos
             for (int i = 0; i < impaths.Length; i++)
                 imgs[i] = System.Drawing.Image.FromFile(impaths[i]);
             imageList1.Images.AddRange(imgs);
+            checkuv.CheckedChanged += delegate { optimizeAllTextures(); };
 
             listView1.View = View.LargeIcon;
             imageList1.ImageSize = new System.Drawing.Size(64, 64);
@@ -95,6 +95,7 @@ namespace GLDrawerDemos
                 listView1.Items.Add(item);
             }
             listView1.SelectedIndexChanged += ListView1_SelectedIndexChanged;
+            listView1.Click += ListView1_SelectedIndexChanged;
 
             can.MouseScrolled += Can_MouseScrolled;
             can.MouseMove += Can_MouseMove1;
@@ -272,25 +273,22 @@ namespace GLDrawerDemos
                 undo.Push(new history(x, y, true, 1, e.Id));
                 btnundo.Invoke((Action)delegate { btnundo.Enabled = true; });
             }
-            else if (actionMode == 2 && tilemap.SpriteGrid[layer][x, y] == 0)
+            else if (actionMode == 2 && tilemap.SpriteGrid[currentLayer][x, y] == 0)
             {
                 if (selectedImage == 0)
                     return;
-                tilemap.SpriteGrid[layer][x, y] = selectedImage;
-              //  if (sgrid[layer][x, y] == null)
-              //  {
-                    if (!usedPaths.Contains(impaths[selectedImage - 1]))
-                    {
-                        usedPaths.Add(impaths[selectedImage - 1]);
-                        tilemap.SpritePaths.Add(selectedImage, impaths[selectedImage - 1]);
-                    }
-               //     Sprite s = new Sprite(impaths[selectedImage - 1], new vec2(x, y) * gridScale + new vec2(gridScale / 2, -gridScale / 2 + gridScale * 1), new vec2(gridScale));
-               //     s.DrawIndex = layer;
-                //    sgrid[layer][x, y] = can.Add(s) as Sprite;
-                    undo.Push(new history(x, y, true, 2, selectedImage, layer));
-                    btnundo.Invoke((Action)delegate { btnundo.Enabled = true; });
-                optimizeTextures(selectedImage);
-               // }
+                tilemap.SpriteGrid[currentLayer][x, y] = selectedImage;
+
+                if (!usedPaths.Contains(impaths[selectedImage - 1]))
+                {
+                    usedPaths.Add(impaths[selectedImage - 1]);
+                    tilemap.SpritePaths.Add(selectedImage, impaths[selectedImage - 1]);
+                }
+
+                undo.Push(new history(x, y, true, 2, selectedImage, currentLayer));
+                btnundo.Invoke((Action)delegate { btnundo.Enabled = true; });
+                optimizeTextures(selectedImage, currentLayer);
+
             }
         }
         void removeTile(int x, int y)
@@ -310,14 +308,14 @@ namespace GLDrawerDemos
                 btnundo.Invoke((Action)delegate { btnundo.Enabled = true; });
                 tilemap.EntityGrid[x, y] = 0;
             }
-            else if (actionMode == 2 && tilemap.SpriteGrid[layer][x, y] != 0 /*&& sgrid[layer][x, y] != null*/)
+            else if (actionMode == 2 && tilemap.SpriteGrid[currentLayer][x, y] != 0 /*&& sgrid[layer][x, y] != null*/)
             {
-                undo.Push(new history(x, y, false, 2, tilemap.SpriteGrid[layer][x, y], layer));
+                undo.Push(new history(x, y, false, 2, tilemap.SpriteGrid[currentLayer][x, y], currentLayer));
                 //  can.Remove(sgrid[layer][x, y]);
                 //sgrid[layer][x, y] = null;
-                int id = tilemap.SpriteGrid[layer][x, y];
-                tilemap.SpriteGrid[layer][x, y] = 0;
-                optimizeTextures(id);
+                int id = tilemap.SpriteGrid[currentLayer][x, y];
+                tilemap.SpriteGrid[currentLayer][x, y] = 0;
+                optimizeTextures(id, currentLayer);
                 btnundo.Invoke((Action)delegate { btnundo.Enabled = true; });
             }
         }
@@ -366,15 +364,7 @@ namespace GLDrawerDemos
             }
             else
                 tilemap = new TileMap(tilemap.Xtiles, tilemap.Ytiles, 2);
-        }
-
-        T[,] invertMatrix<T>(T[,] a)
-        {
-            T[,] m = new T[tilemap.Xtiles, tilemap.Ytiles];
-            for (int j = 0; j < tilemap.Ytiles; j++)
-                for (int i = 0; i < tilemap.Xtiles; i++)
-                    m[i, -j + tilemap.Ytiles - 1] = a[i, j];
-            return m;
+            usedPaths.Clear();
         }
 
         vec2[,] optimizeCollision()
@@ -385,8 +375,8 @@ namespace GLDrawerDemos
                     if (cgrid[i, j] != null)
                         can.Remove(cgrid[i, j]);
 
-            int[,] grid = invertMatrix(tilemap.CollisionGrid);
-            vec2[,] opgrid = optimize(grid);
+            int[,] grid = tilemap.invertMatrix(tilemap.CollisionGrid);
+            vec2[,] opgrid = tilemap.Optimize(grid);
 
             tilemap.OpCollision.Clear();
             for (int j = 0; j < tilemap.Ytiles; j++)
@@ -399,14 +389,14 @@ namespace GLDrawerDemos
             return opgrid;
         }
 
-        vec2[,] optimizeTextures(int textureID)
+        vec2[,] optimizeTextures(int textureID, int layer)
         {
             for (int j = 0; j < tilemap.Ytiles; j++)
             {
                 for (int i = 0; i < tilemap.Xtiles; i++)
                 {
                     //removes textures of the id or where a texture was just removed from the grid
-                    if (sgrid[layer][i, j] != null && (tilemap.SpriteGrid[layer][i, -j + tilemap.Ytiles-1] == 0 || tilemap.SpriteGrid[layer][i, -j + tilemap.Ytiles-1] == textureID))
+                    if (sgrid[layer][i, j] != null && (tilemap.SpriteGrid[layer][i, -j + tilemap.Ytiles - 1] == 0 || tilemap.SpriteGrid[layer][i, -j + tilemap.Ytiles - 1] == textureID))
                     {
                         can.Remove(sgrid[layer][i, j]);
                         sgrid[layer][i, j] = null;
@@ -414,23 +404,14 @@ namespace GLDrawerDemos
                 }
             }
 
-            int[,] grid = invertMatrix(tilemap.SpriteGrid[layer]);
+            int[,] grid = tilemap.invertMatrix(tilemap.SpriteGrid[layer]);
 
             for (int j = 0; j < tilemap.Ytiles; j++)
-            {
                 for (int i = 0; i < tilemap.Xtiles; i++)
-                {
                     if (grid[i, j] != textureID && grid[i, j] != 0)
-                    {
-                        int fuckoff = grid[i, j];
                         grid[i, j] = 0;
-                    }
-                    else if (grid[i, j] != 0)
-                        grid[i, j] = 1;
-                }
-            }
 
-            vec2[,] opgrid = optimize(grid);
+            vec2[,] opgrid = tilemap.Optimize(grid);
 
             for (int j = 0; j < tilemap.Ytiles; j++)
             {
@@ -441,7 +422,7 @@ namespace GLDrawerDemos
                         TileMap.Tile t = new TileMap.Tile() { x = i, y = j, w = (int)opgrid[i, j].x, h = (int)opgrid[i, j].y };
                         vec2 p = new vec2(t.x + t.w / 2f, -t.y - (t.h / 2f) + tilemap.Ytiles) * gridScale;
                         vec2 s = new vec2(gridScale * t.w, gridScale * t.h);
-                        Sprite sp = new Sprite(impaths[textureID-1], p, s/*, uvScale: new vec2(t.w,t.h)*/);
+                        Sprite sp = new Sprite(impaths[textureID - 1], p, s, uvScale: checkuv.Checked ? new vec2(t.w,t.h) : new vec2(1));
                         sp.DrawIndex = layer;
                         sgrid[layer][i, j] = can.Add(sp) as Sprite;
                     }
@@ -449,120 +430,26 @@ namespace GLDrawerDemos
             }
             return opgrid;
         }
-
-        vec2[,] optimize(int[,] grid)
+        void optimizeAllTextures()
         {
-            //need to clear the grid
-            vec2[,] opgrid = new vec2[tilemap.Xtiles, tilemap.Ytiles];
-
-            for (int j = 0; j < tilemap.Ytiles; j++)
-            {
-                for (int i = 0; i < tilemap.Xtiles; i++)
-                {
-                    int x = 0, y = 0; //longest stretches
-                    if (grid[i, j] > 0)
-                    {
-
-                        //find longest horizontal stretch
-                        while (i + x < tilemap.Xtiles && grid[i + x, j] == 1 && opgrid[i + x, j].x == 0)
-                        {
-                            if (x > 0)
-                                opgrid[i + x, j] = new vec2(-1, opgrid[i + x, j].y);
-                            x++;
-                        }
-
-                        //if there was a horizontal stretch, check for a square area
-                        int sqr = 0;
-                        if (x > 1)
-                        {
-                            int l = 1, k = i;
-                            bool doubleBreak = false;
-                            while (l + j < tilemap.Ytiles)
-                            {
-                                while (k < i + x)
-                                {
-                                    if (grid[k, j + l] == 0)
-                                        doubleBreak = true;
-                                    k++;
-                                }
-                                k = i;
-                                if (doubleBreak)
-                                    break;
-                                sqr = l + 1;
-                                l++;
-                            }
-                        }
-                        if (sqr > 1 && sqr < 100)
-                        {
-                            opgrid[i, j] = new vec2(x, sqr);
-                            for (int l = j; l < j + sqr; l++)
-                                for (int k = i; k < i + x; k++)
-                                    if (l != j || k != i)
-                                        opgrid[k, l] = new vec2(-1, -1);
-                            continue;
-                        }
-                        if (x < 2 && opgrid[i, j].x != -1)
-                        {
-                            while (j + y < tilemap.Ytiles && grid[i, j + y] == 1 && opgrid[i, j + y].y == 0)
-                            {
-                                opgrid[i, j + y] = new vec2(opgrid[i, j + y].x, -1);
-                                y++;
-                            }
-                            if (y > 0)
-                                opgrid[i, j] = new vec2(1, y);
-                            continue;
-                        }
-                        if (x > 0)
-                            opgrid[i, j] = new vec2(x, 1);
-                    }
-                }
-            }
-            //pass 2
-            for (int j = 0; j < tilemap.Ytiles; j++)
-            {
-                for (int i = 0; i < tilemap.Xtiles; i++)
-                {
-                    if (opgrid[i, j].y == 1 && opgrid[i, j].x < 0)
-                        opgrid[i, j] = new vec2(opgrid[i, j].x, 0);
-                    if (opgrid[i, j].y != 0 && opgrid[i, j].x == 1)
-                        opgrid[i, j] = new vec2(0, opgrid[i, j].y);
-
-                    if (opgrid[i, j].y < 0)
-                        opgrid[i, j] = new vec2(opgrid[i, j].x, 0);
-                    if (opgrid[i, j].x < 0)
-                        opgrid[i, j] = new vec2(0, opgrid[i, j].y);
-                }
-            }
-            //pass 3
-            for (int j = 0; j < tilemap.Ytiles; j++)
-            {
-                for (int i = 0; i < tilemap.Xtiles; i++)
-                {
-                    if (opgrid[i, j].y == 0 && opgrid[i, j].x > 0)
-                        opgrid[i, j] = new vec2(opgrid[i, j].x, 1);
-                    if (opgrid[i, j].x == 0 && opgrid[i, j].y > 0)
-                        opgrid[i, j] = new vec2(1, opgrid[i, j].y);
-                }
-            }
-            return opgrid;
+            for (int l = 0; l < tilemap.layers; l++)
+                foreach (KeyValuePair<int, string> kp in tilemap.SpritePaths)
+                    optimizeTextures(kp.Key, l);
         }
+        
 
         private void loadMap(object sender, EventArgs p)
         {
-            XmlReader reader = XmlReader.Create(workFile);
-            tilemap = new TileMap(reader);
+            tilemap = new TileMap(workFile);
             sgrid = new Sprite[2][,];
             sgrid[0] = new Sprite[tilemap.Xtiles, tilemap.Ytiles];
             sgrid[1] = new Sprite[tilemap.Xtiles, tilemap.Ytiles];
             cgrid = new Polygon[tilemap.Xtiles, tilemap.Ytiles];
             drawLines();
 
-            for (int l = 0; l < tilemap.layers; l++)
-                for (int j = 0; j < tilemap.Ytiles; j++)
-                    for (int i = 0; i < tilemap.Xtiles; i++)
-                        if (tilemap.SpriteGrid[l][i, j] > 0)
-                            sgrid[l][i, j] = can.Add(new Sprite(tilemap.SpritePaths[tilemap.SpriteGrid[l][i, j]], new vec2(i, j + 1) * gridScale + new vec2(gridScale / 2, -gridScale / 2), new vec2(gridScale))) as Sprite;
             optimizeCollision();
+            optimizeAllTextures();
+            
             loadEntities();
             for (int j = 0; j < tilemap.Ytiles; j++)
             {
@@ -586,10 +473,9 @@ namespace GLDrawerDemos
             enableBtns(true);
             UpdateMode(actionMode); //update opacity
             can.CameraPosition += (new vec2(tilemap.Xtiles, tilemap.Ytiles) * gridScale) / 2f;
+            usedPaths.Clear();
             foreach (KeyValuePair<int, string> entry in tilemap.SpritePaths)
-            {
                 usedPaths.Add(entry.Value);
-            }
         }
         private void writeMap(object sender, EventArgs e)
         {
@@ -788,6 +674,7 @@ namespace GLDrawerDemos
                 listView2.Items.Add(item);
             }
             listView2.SelectedIndexChanged += ListView2_SelectedIndexChanged;
+            listView2.Click += ListView2_SelectedIndexChanged;
         }
 
         private void tabControl1_SelectedIndexChanged(object sender, EventArgs e)
@@ -802,10 +689,16 @@ namespace GLDrawerDemos
             if (!gameStarted)
             {
                 platformGame.AdvancedPlatformer.run();
+                platformGame.AdvancedPlatformer.can.OnClose += Can_OnClose;
                 gameStarted = true;
             }
             else
                 platformGame.AdvancedPlatformer.loadLevel();
+        }
+
+        private void Can_OnClose(GLCanvas Canvas)
+        {
+            gameStarted = false;
         }
     }
 
@@ -821,16 +714,15 @@ namespace GLDrawerDemos
         }
     }
 
-    public class TileMap : IXmlSerializable
+    public class TileMap 
     {
         public int Xtiles, Ytiles;
         public int[,] CollisionGrid;
         public int[,] EntityGrid;
         public List<Tile> OpCollision = new List<Tile>();
-        public List<Tile> OpSprites = new List<Tile>();
+        public List<Tile>[] OpSprites;
         public int layers { get; private set; }
         public int[][,] SpriteGrid;
-        public vec2[,] OpSprite;
         public Dictionary<int, string> SpritePaths = new Dictionary<int, string>();
         public Dictionary<int, Entity> Entities = new Dictionary<int, Entity>();
 
@@ -842,11 +734,21 @@ namespace GLDrawerDemos
             CollisionGrid = new int[Xtiles, Ytiles];
             EntityGrid = new int[Xtiles, Ytiles];
             SpriteGrid = new int[layers][,];
-            OpSprite = new vec2[Xtiles, Ytiles];
+            OpSprites = new List<Tile>[layers];
             for (int i = 0; i < layers; i++)
+            {
                 SpriteGrid[i] = new int[Xtiles, Ytiles];
+                OpSprites[i] = new List<Tile>();
+            }              
         }
-        public struct Tile { public int x, y, w, h; };
+        public struct Tile
+        {
+            public int x, y, w, h, id;
+            public override string ToString()
+            {
+                return x + "," + y + "," + w + "," + h + (id == 0 ? "" : "," + id);
+            }
+        };
         public struct Entity
         {
             public string Tag;
@@ -859,12 +761,9 @@ namespace GLDrawerDemos
             public Color color;
         }
 
-        public TileMap(XmlReader r) => ReadXml(r);
-
         public TileMap(string filepah)
         {
-            XmlReader reader = XmlReader.Create(filepah);
-            ReadXml(reader);
+            ReadXml(filepah);
         }
 
         public XmlSchema GetSchema() => null;
@@ -936,85 +835,185 @@ namespace GLDrawerDemos
 
         }
 
-        public void ReadXml(XmlReader reader)
+        public vec2[,] Optimize(int[,] grid)
         {
-            while (reader.Read())
+            //need to clear the grid
+            vec2[,] opgrid = new vec2[Xtiles, Ytiles];
+
+            for (int j = 0; j < Ytiles; j++)
+                for (int i = 0; i < Xtiles; i++)
+                    if (grid[i, j] > 0)
+                        grid[i, j] = 1;
+
+            for (int j = 0; j < Ytiles; j++)
             {
-                if (reader.NodeType == XmlNodeType.Element)
+                for (int i = 0; i < Xtiles; i++)
                 {
-                    if (reader.Name == "tileMap")
+                    int x = 0, y = 0; //longest stretches
+                    if (grid[i, j] > 0)
                     {
-                        Xtiles = int.Parse(reader.GetAttribute("Xtiles"));
-                        Ytiles = int.Parse(reader.GetAttribute("Ytiles"));
-                        layers = int.Parse(reader.GetAttribute("layers"));
-                        CollisionGrid = new int[Xtiles, Ytiles];
-                        EntityGrid = new int[Xtiles, Ytiles];
-                        SpriteGrid = new int[layers][,];
-                        OpSprite = new vec2[Xtiles, Ytiles];
-                        for (int i = 0; i < layers; i++)
-                            SpriteGrid[i] = new int[Xtiles, Ytiles];
-                    }
-                    if (reader.Name == "collisionMap")
-                    {
-                        //collision grid
-                        reader.ReadToDescendant("grid");
-                        reader.Read();
-                        string gridString = reader.Value;
-                        parseGrid(ref CollisionGrid, gridString);
-
-                        //optimized collision grid
-                        reader.ReadToFollowing("opgrid");
-                        reader.Read();
-                        gridString = reader.Value;
-                        parseOpGrid(OpCollision, gridString);
-
-                    }
-                    if (reader.Name == "sprite")
-                    {
-                        int id = int.Parse(reader.GetAttribute("id"));
-                        reader.Read();
-                        SpritePaths.Add(id, reader.Value);
-                    }
-                    if (reader.Name == "spriteMap")
-                    {
-                        //sprite grid
-                        if (reader.ReadToDescendant("grid"))
+                        //find longest horizontal stretch
+                        while (i + x < Xtiles && grid[i + x, j] == 1 && opgrid[i + x, j].x == 0)
                         {
-                            int layer = int.Parse(reader.GetAttribute("layer"));
-                            reader.Read();
-                            string gridString = reader.Value;
-                            parseGrid(ref SpriteGrid[layer], gridString);
-
-                            while (reader.ReadToFollowing("grid"))
-                            {
-                                layer = int.Parse(reader.GetAttribute("layer"));
-                                reader.Read();
-                                gridString = reader.Value;
-                                parseGrid(ref SpriteGrid[layer], gridString);
-                            }
+                            if (x > 0)
+                                opgrid[i + x, j] = new vec2(-1, opgrid[i + x, j].y);
+                            x++;
                         }
 
-                        //optimized sprite grid
-                        reader.ReadToFollowing("opgrid");
-                        reader.Read();
-                        //gridString = reader.Value;
-                        // parseOpGrid(ref OpSprite, gridString);
-                    }
-                    if (reader.Name == "entityMap")
-                    {
-                        //entity grid
-                        reader.ReadToDescendant("grid");
-                        reader.Read();
-                        string gridString = reader.Value;
-                        parseGrid(ref EntityGrid, gridString);
+                        //if there was a horizontal stretch, check for a square area
+                        int sqr = 0;
+                        if (x > 1)
+                        {
+                            int l = 1, k = i;
+                            bool doubleBreak = false;
+                            while (l + j < Ytiles)
+                            {
+                                while (k < i + x)
+                                {
+                                    if (grid[k, j + l] == 0)
+                                        doubleBreak = true;
+                                    k++;
+                                }
+                                k = i;
+                                if (doubleBreak)
+                                    break;
+                                sqr = l + 1;
+                                l++;
+                            }
+                        }
+                        if (sqr > 1 && sqr < 100)
+                        {
+                            opgrid[i, j] = new vec2(x, sqr);
+                            for (int l = j; l < j + sqr; l++)
+                                for (int k = i; k < i + x; k++)
+                                    if (l != j || k != i)
+                                        opgrid[k, l] = new vec2(-1, -1);
+                            continue;
+                        }
+                        if (x < 2 && opgrid[i, j].x != -1)
+                        {
+                            while (j + y < Ytiles && grid[i, j + y] == 1 && opgrid[i, j + y].y == 0)
+                            {
+                                opgrid[i, j + y] = new vec2(opgrid[i, j + y].x, -1);
+                                y++;
+                            }
+                            if (y > 0)
+                                opgrid[i, j] = new vec2(1, y);
+                            continue;
+                        }
+                        if (x > 0)
+                            opgrid[i, j] = new vec2(x, 1);
                     }
                 }
             }
-            reader.Close();
+            //pass 2
+            for (int j = 0; j < Ytiles; j++)
+            {
+                for (int i = 0; i < Xtiles; i++)
+                {
+                    if (opgrid[i, j].y == 1 && opgrid[i, j].x < 0)
+                        opgrid[i, j] = new vec2(opgrid[i, j].x, 0);
+                    if (opgrid[i, j].y != 0 && opgrid[i, j].x == 1)
+                        opgrid[i, j] = new vec2(0, opgrid[i, j].y);
+
+                    if (opgrid[i, j].y < 0)
+                        opgrid[i, j] = new vec2(opgrid[i, j].x, 0);
+                    if (opgrid[i, j].x < 0)
+                        opgrid[i, j] = new vec2(0, opgrid[i, j].y);
+                }
+            }
+            //pass 3
+            for (int j = 0; j < Ytiles; j++)
+            {
+                for (int i = 0; i < Xtiles; i++)
+                {
+                    if (opgrid[i, j].y == 0 && opgrid[i, j].x > 0)
+                        opgrid[i, j] = new vec2(opgrid[i, j].x, 1);
+                    if (opgrid[i, j].x == 0 && opgrid[i, j].y > 0)
+                        opgrid[i, j] = new vec2(1, opgrid[i, j].y);
+                }
+            }
+            return opgrid;
+        }
+
+        public void ReadXml(string filepath)
+        {
+            XmlDocument doc = new XmlDocument();
+            doc.Load(filepath);
+
+            foreach (XmlNode parentNode in doc.ChildNodes)
+            {
+                if (parentNode.Name == "tileMap")
+                {
+                    Xtiles = int.Parse(parentNode.Attributes.GetNamedItem("Xtiles").Value);
+                    Ytiles = int.Parse(parentNode.Attributes.GetNamedItem("Ytiles").Value);
+                    layers = int.Parse(parentNode.Attributes.GetNamedItem("layers").Value);
+                    CollisionGrid = new int[Xtiles, Ytiles];
+                    EntityGrid = new int[Xtiles, Ytiles];
+                    SpriteGrid = new int[layers][,];
+                    OpSprites = new List<Tile>[layers];
+                    for (int i = 0; i < layers; i++)
+                        SpriteGrid[i] = new int[Xtiles, Ytiles];
+                    for (int i = 0; i < layers; i++)
+                    {
+                        SpriteGrid[i] = new int[Xtiles, Ytiles];
+                        OpSprites[i] = new List<Tile>();
+                    }
+
+                    foreach (XmlNode node in parentNode)
+                    {
+                        if (node.Name == "sprite")
+                        {
+                            int id = int.Parse(node.Attributes.GetNamedItem("id").Value);
+                            string path = node.InnerText;
+                            SpritePaths.Add(id, path);
+                        }
+                        if (node.Name == "collisionMap")
+                        {
+                            foreach (XmlNode childNode in node)
+                            {
+                                //collision grid
+                                if (childNode.Name == "grid")
+                                    parseGrid(ref CollisionGrid, childNode.InnerText);
+                                //optimized collision grid
+                                else if (childNode.Name == "opgrid")
+                                    parseOpGrid(OpCollision, childNode.InnerText);
+                            }
+                        }
+                        if (node.Name == "spriteMap")
+                        {
+                            foreach (XmlNode childNode in node)
+                            {
+                                //sprite grid
+                                if (childNode.Name == "grid")
+                                {
+                                    int layer = int.Parse(childNode.Attributes.GetNamedItem("layer").Value);
+                                    parseGrid(ref SpriteGrid[layer], childNode.InnerText);
+                                }
+
+                                //optimized sprite grid
+                                else if (childNode.Name == "opgrid")
+                                {
+                                    int layer = int.Parse(childNode.Attributes.GetNamedItem("layer").Value);
+                                    parseOpGrid(OpSprites[layer], childNode.InnerText);
+                                }
+                            }
+                        }
+                        if (node.Name == "entityMap")
+                        {
+                            foreach (XmlNode childNode in node)
+                            {
+                                if(childNode.Name == "grid")
+                                    parseGrid(ref EntityGrid, childNode.InnerText);
+                            }
+                        }
+                    }
+                }
+            }
         }
         public void WriteXml(XmlWriter writer)
         {
-            string colgrid, opcolgrid, opsprgrid, entgrid;
+            string colgrid, opcolgrid, entgrid;
 
             //collision grid
             StringBuilder builder = new StringBuilder();
@@ -1038,7 +1037,7 @@ namespace GLDrawerDemos
             {
                 builder.Append("      ");
                 foreach (Tile t in group)
-                    builder.Append(t.x + "," + t.y + "," + t.w + "," + t.h + " ");
+                    builder.Append(t.ToString() + " ");
                 builder.Append(System.Environment.NewLine);
             }
 
@@ -1065,23 +1064,34 @@ namespace GLDrawerDemos
 
 
             //optimized sprite grid
-
-            foreach(KeyValuePair<int, string> kp in SpritePaths)
+            List<string> spriteOpGrids = new List<string>();
+            for (int l = 0; l < layers; l++)
             {
-                 
-            }
-
-            builder.Append(System.Environment.NewLine);
-            for (int j = 0; j < Ytiles; j++)
-            {
-                builder.Append("      ");
-                for (int i = 0; i < Xtiles; i++)
-                    builder.Append((int)OpSprite[i, j].x + "," + (int)OpSprite[i, j].y + " ");
                 builder.Append(System.Environment.NewLine);
+                foreach (KeyValuePair<int, string> kp in SpritePaths)
+                {
+                    int[,] grid = invertMatrix(SpriteGrid[l]);
+                    for (int j = 0; j < Ytiles; j++)
+                        for (int i = 0; i < Xtiles; i++)
+                            if (grid[i, j] != kp.Key && grid[i, j] != 0)
+                                grid[i, j] = 0;
+                    vec2[,] op = Optimize(grid);
+                    List<Tile> tiles = new List<Tile>();
+
+                    for (int j = 0; j < Ytiles; j++)
+                        for (int i = 0; i < Xtiles; i++)
+                            if (op[i, j] != vec2.Zero)
+                                tiles.Add(new Tile() { w = (int)op[i, j].x, h = (int)op[i, j].y, x = i, y = j, id = kp.Key });
+                    if (tiles.Count == 0)
+                        continue;
+                    builder.Append("      ");
+                    foreach (Tile t in tiles)
+                        builder.Append(t.ToString() + " ");  
+                    builder.Append(System.Environment.NewLine);
+                }
+                spriteOpGrids.Add(builder.ToString());
+                builder.Clear();
             }
-            builder.Append("    ");
-            opsprgrid = builder.ToString();
-            builder.Clear();
 
             //entity grid
             builder.Append(System.Environment.NewLine);
@@ -1094,7 +1104,7 @@ namespace GLDrawerDemos
             }
             builder.Append("    ");
             entgrid = builder.ToString();
-
+            builder.Clear();
 
             writer.WriteStartElement("tileMap");
             writer.WriteAttributeString("Xtiles", Xtiles.ToString());
@@ -1141,7 +1151,7 @@ namespace GLDrawerDemos
 
                 writer.WriteStartElement("opgrid");
                 writer.WriteAttributeString("layer", i.ToString());
-                //  writer.WriteString(opsprgrid);
+                writer.WriteString(spriteOpGrids[i]);
                 writer.WriteEndElement();
             }
 
@@ -1168,8 +1178,25 @@ namespace GLDrawerDemos
             for (int i = 0; i < blocks.Length; i++)
             {
                 int[] v = Array.ConvertAll(blocks[i].Split(','), int.Parse);
-                grid.Add(new Tile() { x = v[0], y = v[1], w = v[2], h = v[3] });
+                Tile t = new Tile()
+                {
+                    x = v[0],
+                    y = v[1],
+                    w = v[2],
+                    h = v[3]
+                };
+                if (v.Length == 5)
+                    t.id = v[4];
+                grid.Add(t);
             }
+        }
+        public T[,] invertMatrix<T>(T[,] a)
+        {
+            T[,] m = new T[Xtiles, Ytiles];
+            for (int j = 0; j < Ytiles; j++)
+                for (int i = 0; i < Xtiles; i++)
+                    m[i, -j + Ytiles - 1] = a[i, j];
+            return m;
         }
     }
     class DropOutStack<T>
@@ -1193,259 +1220,3 @@ namespace GLDrawerDemos
         }
     }
 }
-
-
-/*
- 
-        void optimizeCollision()
-        {
-            //need to clear the grid
-            vec2[,] opgrid = new vec2[tilemap.Xtiles, tilemap.Ytiles];
-            for (int j = 0; j < tilemap.Ytiles; j++)
-                for (int i = 0; i < tilemap.Xtiles; i++)
-                    if (cgrid[i, j] != null)
-                        can.Remove(cgrid[i, j]);
-
-            int[,] grid = invertMatrix(tilemap.CollisionGrid);
-
-            for (int j = 0; j < tilemap.Ytiles; j++)
-            {
-                for (int i = 0; i < tilemap.Xtiles; i++)
-                {
-                    int x = 0, y = 0; //longest stretches
-                    if (grid[i, j] == 1)
-                    {
-
-                        //find longest horizontal stretch
-                        while (i + x < tilemap.Xtiles && grid[i + x, j] == 1 && opgrid[i + x, j].x == 0)
-                        {
-                            if (x > 0)
-                                opgrid[i + x, j] = new vec2(-1, opgrid[i + x, j].y);
-                            x++;
-                        }
-
-                        //if there was a horizontal stretch, check for a square area
-                        int sqr = 0;
-                        if (x > 1)
-                        {
-                            int l = 1, k = i;
-                            bool doubleBreak = false;
-                            while (l + j < tilemap.Ytiles)
-                            {
-                                while (k < i + x)
-                                {
-                                    if (grid[k, j + l] == 0)
-                                        doubleBreak = true;
-                                    k++;
-                                }
-                                k = i;
-                                if (doubleBreak)
-                                    break;
-                                sqr = l + 1;
-                                l++;
-                            }
-                        }
-                        if (sqr > 1 && sqr < 100)
-                        {
-                            opgrid[i, j] = new vec2(x, sqr);
-                            for (int l = j; l < j + sqr; l++)
-                                for (int k = i; k < i + x; k++)
-                                    if (l != j || k != i)
-                                        opgrid[k, l] = new vec2(-1, -1);
-                            continue;
-                        }
-                        if (x < 2 && opgrid[i, j].x != -1)
-                        {
-                            while (j + y < tilemap.Ytiles && grid[i, j + y] == 1 && opgrid[i, j + y].y == 0)
-                            {
-                                opgrid[i, j + y] = new vec2(opgrid[i, j + y].x, -1);
-                                y++;
-                            }
-                            if (y > 0)
-                                opgrid[i, j] = new vec2(1, y);
-                            continue;
-                        }
-                        if (x > 0)
-                            opgrid[i, j] = new vec2(x, 1);
-                    }
-                }
-            }
-            //pass 2
-            for (int j = 0; j < tilemap.Ytiles; j++)
-            {
-                for (int i = 0; i < tilemap.Xtiles; i++)
-                {
-                    if (opgrid[i, j].y == 1 && opgrid[i, j].x < 0)
-                        opgrid[i, j] = new vec2(opgrid[i, j].x, 0);
-                    if (opgrid[i, j].y != 0 && opgrid[i, j].x == 1)
-                        opgrid[i, j] = new vec2(0, opgrid[i, j].y);
-
-                    if (opgrid[i, j].y < 0)
-                        opgrid[i, j] = new vec2(opgrid[i, j].x, 0);
-                    if (opgrid[i, j].x < 0)
-                        opgrid[i, j] = new vec2(0, opgrid[i, j].y);
-                }
-            }
-            //pass 3
-            for (int j = 0; j < tilemap.Ytiles; j++)
-            {
-                for (int i = 0; i < tilemap.Xtiles; i++)
-                {
-                    if (opgrid[i, j].y == 0 && opgrid[i, j].x > 0)
-                        opgrid[i, j] = new vec2(opgrid[i, j].x, 1);
-                    if (opgrid[i, j].x == 0 && opgrid[i, j].y > 0)
-                        opgrid[i, j] = new vec2(1, opgrid[i, j].y);
-                }
-            }
-
-            tilemap.OpCollision.Clear();
-            for (int j = 0; j < tilemap.Ytiles; j++)
-                for (int i = 0; i < tilemap.Xtiles; i++)
-                    if (opgrid[i, j].x > 0 && opgrid[i, j].y > 0)
-                        tilemap.OpCollision.Add(new TileMap.Tile() { x = i, y = j, w = (int)opgrid[i, j].x, h = (int)opgrid[i, j].y });
-
-            foreach (TileMap.Tile t in tilemap.OpCollision)
-                cgrid[t.x, t.y] = can.Add((new Polygon(new vec2(t.x + t.w / 2f, -t.y - (t.h / 2f) + tilemap.Ytiles) * gridScale, new vec2(gridScale * t.w, gridScale * t.h), 0, 4, Color.Hazard, 8, Color.Black))) as Polygon;
-        }
-
-        vec2[,] optimizeTextures(int textureID)
-        {
-                        //need to clear the grid
-            vec2[,] opgrid = new vec2[tilemap.Xtiles, tilemap.Ytiles];
-            for (int j = 0; j < tilemap.Ytiles; j++)
-            {
-                for (int i = 0; i < tilemap.Xtiles; i++)
-                {
-                    //removes textures of the id or where a texture was just removed from the grid
-                    if (sgrid[layer][i, j] != null && (tilemap.SpriteGrid[layer][i, -j + tilemap.Ytiles-1] == 0 || tilemap.SpriteGrid[layer][i, -j + tilemap.Ytiles-1] == textureID))
-                    {
-                        can.Remove(sgrid[layer][i, j]);
-                        sgrid[layer][i, j] = null;
-                    }
-                }
-            }
-
-            int[,] grid = invertMatrix(tilemap.SpriteGrid[layer]);
-
-            for (int j = 0; j < tilemap.Ytiles; j++)
-            {
-                for (int i = 0; i < tilemap.Xtiles; i++)
-                {
-                    if (grid[i,j] != textureID && grid[i, j] != 0)
-                    {
-                        int fuckoff = grid[i, j];
-                        grid[i, j] = 0;
-                    }
-                    else if(grid[i, j] != 0)
-                        grid[i, j] = 1;
-                }
-            }
-
-            for (int j = 0; j < tilemap.Ytiles; j++)
-            {
-                for (int i = 0; i < tilemap.Xtiles; i++)
-                {
-                    int x = 0, y = 0; //longest stretches
-                    if (grid[i, j] > 0)
-                    {
-
-                        //find longest horizontal stretch
-                        while (i + x < tilemap.Xtiles && grid[i + x, j] == 1 && opgrid[i + x, j].x == 0)
-                        {
-                            if (x > 0)
-                                opgrid[i + x, j] = new vec2(-1, opgrid[i + x, j].y);
-                            x++;
-                        }
-
-                        //if there was a horizontal stretch, check for a square area
-                        int sqr = 0;
-                        if (x > 1)
-                        {
-                            int l = 1, k = i;
-                            bool doubleBreak = false;
-                            while (l + j < tilemap.Ytiles)
-                            {
-                                while (k < i + x)
-                                {
-                                    if (grid[k, j + l] == 0)
-                                        doubleBreak = true;
-                                    k++;
-                                }
-                                k = i;
-                                if (doubleBreak)
-                                    break;
-                                sqr = l + 1;
-                                l++;
-                            }
-                        }
-                        if (sqr > 1 && sqr < 100)
-                        {
-                            opgrid[i, j] = new vec2(x, sqr);
-                            for (int l = j; l < j + sqr; l++)
-                                for (int k = i; k < i + x; k++)
-                                    if (l != j || k != i)
-                                        opgrid[k, l] = new vec2(-1, -1);
-                            continue;
-                        }
-                        if (x < 2 && opgrid[i, j].x != -1)
-                        {
-                            while (j + y < tilemap.Ytiles && grid[i, j + y] == 1 && opgrid[i, j + y].y == 0)
-                            {
-                                opgrid[i, j + y] = new vec2(opgrid[i, j + y].x, -1);
-                                y++;
-                            }
-                            if (y > 0)
-                                opgrid[i, j] = new vec2(1, y);
-                            continue;
-                        }
-                        if (x > 0)
-                            opgrid[i, j] = new vec2(x, 1);
-                    }
-                }
-            }
-            //pass 2
-            for (int j = 0; j < tilemap.Ytiles; j++)
-            {
-                for (int i = 0; i < tilemap.Xtiles; i++)
-                {
-                    if (opgrid[i, j].y == 1 && opgrid[i, j].x < 0)
-                        opgrid[i, j] = new vec2(opgrid[i, j].x, 0);
-                    if (opgrid[i, j].y != 0 && opgrid[i, j].x == 1)
-                        opgrid[i, j] = new vec2(0, opgrid[i, j].y);
-
-                    if (opgrid[i, j].y < 0)
-                        opgrid[i, j] = new vec2(opgrid[i, j].x, 0);
-                    if (opgrid[i, j].x < 0)
-                        opgrid[i, j] = new vec2(0, opgrid[i, j].y);
-                }
-            }
-            //pass 3
-            for (int j = 0; j < tilemap.Ytiles; j++)
-            {
-                for (int i = 0; i < tilemap.Xtiles; i++)
-                {
-                    if (opgrid[i, j].y == 0 && opgrid[i, j].x > 0)
-                        opgrid[i, j] = new vec2(opgrid[i, j].x, 1);
-                    if (opgrid[i, j].x == 0 && opgrid[i, j].y > 0)
-                        opgrid[i, j] = new vec2(1, opgrid[i, j].y);
-                }
-            }
-
-            for (int j = 0; j < tilemap.Ytiles; j++)
-            {
-                for (int i = 0; i < tilemap.Xtiles; i++)
-                {
-                    if (opgrid[i, j].x > 0 && opgrid[i, j].y > 0)
-                    {
-                        TileMap.Tile t = new TileMap.Tile() { x = i, y = j, w = (int)opgrid[i, j].x, h = (int)opgrid[i, j].y };
-                        vec2 p = new vec2(t.x + t.w / 2f, -t.y - (t.h / 2f) + tilemap.Ytiles) * gridScale;
-                        vec2 s = new vec2(gridScale * t.w, gridScale * t.h);
-                        Sprite sp = new Sprite(impaths[textureID-1], p, s/*, uvScale: new vec2(t.w,t.h));
-                        sp.DrawIndex = layer;
-                        sgrid[layer][i, j] = can.Add(sp) as Sprite;
-                    }
-                }
-            }
-            return opgrid;
-        }
-    */

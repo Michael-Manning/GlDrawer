@@ -10,7 +10,7 @@ namespace platformGame
 {
     public static class AdvancedPlatformer
     {
-        static GLCanvas can;
+        public static GLCanvas can;
         static Random rnd = new Random();
         public static float tileScale = 130;
         static List<Wall> Walls = new List<Wall>();
@@ -48,10 +48,15 @@ namespace platformGame
 
             //load textures
             for (int l = 0; l < tilemap.layers; l++)
-                for (int j = 0; j < tilemap.Ytiles; j++)
-                    for (int i = 0; i < tilemap.Xtiles; i++)
-                        if (tilemap.SpriteGrid[l][i, j] != 0)
-                            Textures.Add(can.Instantiate(new Texture(tilemap.SpritePaths[tilemap.SpriteGrid[l][i, j]], l), new vec2((i + (int)offset.x) + 1f / 2f, ((j + (int)offset.y) + 1f / 2f)) * tileScale) as Texture);
+                foreach (GLDrawerDemos.TileMap.Tile t in tilemap.OpSprites[l])
+                    Textures.Add(can.Instantiate(new Texture(tilemap.SpritePaths[t.id], l, 
+                                                 new vec2(tileScale * t.w, tileScale * t.h)), 
+                                                 new vec2(t.x + offset.x + t.w / 2f, -t.y + offset.y - t.h / 2f + tilemap.Ytiles) * tileScale) as Texture);
+            //for (int l = 0; l < tilemap.layers; l++)
+            //    for (int j = 0; j < tilemap.Ytiles; j++)
+            //        for (int i = 0; i < tilemap.Xtiles; i++)
+            //            if (tilemap.SpriteGrid[l][i, j] != 0)
+            //                Textures.Add(can.Instantiate(new Texture(tilemap.SpritePaths[tilemap.SpriteGrid[l][i, j]], l), new vec2((i + (int)offset.x) + 1f / 2f, ((j + (int)offset.y) + 1f / 2f)) * tileScale) as Texture);
 
             //load entites
             tilemap.LoadEntities(GLDrawerDemos.levelEditor.entityFile);
@@ -195,7 +200,6 @@ namespace platformGame
         public Wall(vec2 s) => scale = s;
         public override void Start()
         {
-            //AddChildShape(new Sprite("../../../data/images/wood.png", vec2.Zero, scale, 0, Color.Invisible, scale / platformer.tileScale));
             SetBoxCollider(scale);
             rigidbody = new Rigidbody(this, 0.5f, true);
         }
@@ -204,15 +208,17 @@ namespace platformGame
     {
         public string path;
         int index;
-        public Texture(string p, int Index)
+        public vec2 scale;
+        public Texture(string p, int Index, vec2 s)
         {
             path = p;
             index = Index;
+            scale = s;
         }
         public override void Start()
         {
             DrawIndex = index;
-            AddChildShape(new Sprite(path, vec2.Zero, new vec2(AdvancedPlatformer.tileScale)));
+            AddChildShape(new Sprite(path, vec2.Zero, scale, uvScale: scale / AdvancedPlatformer.tileScale));
         }
     }
 }

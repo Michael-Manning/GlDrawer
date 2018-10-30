@@ -111,6 +111,9 @@ namespace GLDrawer
         /// </summary>
         public event Action LateUpdate = delegate { };
 
+        public delegate void GLResizeEvent(int Width, int Height, GLCanvas Canvas);
+        public delegate void GLCloseEvent(GLCanvas Canvas);
+        public event GLCloseEvent OnClose = delegate { };
 
         internal unmanaged_Canvas GLWrapper;
         private Form iform;
@@ -150,6 +153,7 @@ namespace GLDrawer
                 Thread.Sleep(1);
             }
         }
+
         private static void ThreadLoop()
         {
             while (true)
@@ -157,7 +161,7 @@ namespace GLDrawer
                 //if the end of the main program is reached, all the canvas windows should close
                 if (!mainThread.IsAlive)
                     for (int i = 0; i < activeCanvases.Count; i++)
-                        activeCanvases[i].GLWrapper.shouldClose = true;
+                        activeCanvases[i].GLWrapper.close();
 
                 //when all canvasas are closed, the thread is aborted
                 if (activeCanvases.Count == 0)
@@ -180,20 +184,46 @@ namespace GLDrawer
                         else
                             can.GLWrapper.createCanvas(can.iWidth, can.iHeight, can.Borderless, can.BackColor, can.VSync, can.DebugMode);
                         can.Initialize();
-                    }
-                    if (can.GLWrapper.shouldClose)
-                    {              
-                        if (activeCanvases[i].GLWrapper.disposed)
-                        {
-                            activeCanvases.RemoveAt(i);
-                            continue;
-                        }
-                        activeCanvases[i].Dispose();
-                    }
+                    }         
+                    if (activeCanvases[i].GLWrapper.disposed)
+                    {
+                        activeCanvases[i].OnClose.Invoke(activeCanvases[i]);
+                        activeCanvases.RemoveAt(i);
+                        continue;
+                    }                  
                     can.MainLoop();
                 }
             }
         }
+
+        //handle for when a console app is closed with the exit button
+        static ConsoleEventDelegate handler;
+        private delegate bool ConsoleEventDelegate(int eventType);
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool SetConsoleCtrlHandler(ConsoleEventDelegate callback, bool add);
+        static GLCanvas()
+        {
+            handler = new ConsoleEventDelegate(ConsoleEventCallback);
+            SetConsoleCtrlHandler(handler, true);
+            //    AppDomain.CurrentDomain.ProcessExit += CurrentDomain_ProcessExit;
+        }
+        static bool ConsoleEventCallback(int eventType)
+        {
+            if (eventType == 2)
+            {
+                Debug.WriteLine("Manual console close detected. Starting emergency cleanup...");
+                for (int i = 0; i < activeCanvases.Count; i++)
+                {
+                    activeCanvases[i].GLWrapper.close();
+                    activeCanvases[i].MainLoop();
+                }       
+            }   
+            return false;
+        }
+
+        //private static void CurrentDomain_ProcessExit(object sender, EventArgs e)
+        //{
+        //}
 
         /// <summary>
         /// Creates a new window with a GLCanvas
@@ -894,7 +924,7 @@ namespace GLDrawer
         /// <summary>closes the canvas</summary>
         public void Close()
         {
-            GLWrapper.shouldClose = true;
+            GLWrapper.close();
         }
         /// <summary>sets every pixel on the back buffer to the back buffer color</summary>
         public void ClearBackBuffer() => GLWrapper.clearBB();
@@ -916,7 +946,7 @@ namespace GLDrawer
             if (!disposed)
             {
                 disposed = true;
-                GLWrapper.dispose();
+                GLWrapper.close();
                 if (disposing)
                 {
                     //if any managed resources need to be disposed, it should be done here
