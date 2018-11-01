@@ -257,9 +257,9 @@ public:
 };
 
 //for input rollover and events
-struct description {
+struct inputDescription {
 	int btn, action, read;
-	bool operator==(const description& b) {
+	bool operator==(const inputDescription& b) {
 		return (action == b.action && btn == b.btn);
 	}
 };
@@ -272,8 +272,8 @@ public :
 	void onKeyboard(int key, int scancode, int action, int mods);
 	void onMouse(int button, int action, int mods);
 	void onCursor();
-	description keyBuffer[10];
-	description mouseBuffer[10];
+	inputDescription keyBuffer[10];
+	inputDescription mouseBuffer[10];
 
 	bool mouseMoveFlag = false;
 

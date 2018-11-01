@@ -36,7 +36,7 @@ namespace GLDrawerDemos
         public TestForm()
         {
             InitializeComponent();
-            Program.callb = DrawPoly;
+            demos.mouseClickCallback = DrawPoly;
             rbElip.CheckedChanged += delegate { if (rbElip.Checked) selectCirc(); };
             rbRect.CheckedChanged += delegate { if (rbRect.Checked) selectRect(); };
             rbLine.CheckedChanged += delegate { if (rbLine.Checked) selectLine(); };
@@ -71,7 +71,7 @@ namespace GLDrawerDemos
                     panel6.BackColor = temp;
                 updatePreview();
             };
-            Program.mouseMovedCallback = UpdateLineOverlay;
+            demos.mouseMovedCallback = UpdateLineOverlay;
             tabControl1.SelectedIndexChanged += delegate
             {
                 if (tabControl1.SelectedIndex == 0)
@@ -116,8 +116,8 @@ namespace GLDrawerDemos
 
         void recreateText()
         {
-            Program.previewCan.Remove(prevText);
-            prevText = Program.previewCan.Add(new Text(Program.previewCan.Centre, richTextBox1.Text, 20, Color.Invisible, selectedJustification, font: (string)("c:\\windows\\fonts\\" + comboBox2.SelectedItem + ".ttf"))) as Text;
+            demos.previewCan.Remove(prevText);
+            prevText = demos.previewCan.Add(new Text(vec2.Zero, richTextBox1.Text, 20, Color.Invisible, selectedJustification, font: (string)("c:\\windows\\fonts\\" + comboBox2.SelectedItem + ".ttf"))) as Text;
             selectText();
         }
 
@@ -126,9 +126,9 @@ namespace GLDrawerDemos
             {
                 init = true;
 
-                prevLine = Program.previewCan.AddCenteredRectangle(0, 0, 1000, 100, Color.Invisible, trackBar2.Value, Color.Invisible);
-                prevPoly = Program.previewCan.AddCenteredPolygon(0, 0, 210, 210, 1, Color.Invisible, trackBar2.Value, Color.Invisible);
-                prevText = Program.previewCan.Add(new Text(new vec2(0,0), richTextBox1.Text, 20, Color.Invisible)) as Text;
+                prevLine = demos.previewCan.AddCenteredRectangle(0, 0, 1000, 100, Color.Invisible, trackBar2.Value, Color.Invisible);
+                prevPoly = demos.previewCan.AddCenteredPolygon(0, 0, 210, 210, 1, Color.Invisible, trackBar2.Value, Color.Invisible);
+                prevText = demos.previewCan.Add(new Text(new vec2(0,0), richTextBox1.Text, 20, Color.Invisible)) as Text;
                 selectCirc();                                                                                                            
                                                                                                                                          
                 return;
@@ -176,7 +176,7 @@ namespace GLDrawerDemos
         {
             prevPoly.SideCount = 4;
             selected = prevPoly;
-            Program.callb = DrawPoly;
+            demos.mouseClickCallback = DrawPoly;
             updatePreview();
             lastPolySelection = selectRect;
         }
@@ -184,27 +184,27 @@ namespace GLDrawerDemos
         {
             prevPoly.SideCount = 1;
             selected = prevPoly;
-            Program.callb = DrawPoly;
+            demos.mouseClickCallback = DrawPoly;
             updatePreview();
             lastPolySelection = selectCirc;
         }
         void selectPoly()
         {
             selected = prevPoly;
-            Program.callb = DrawPoly;
+            demos.mouseClickCallback = DrawPoly;
             updatePreview();
             lastPolySelection = selectPoly;
         }
         void selectLine()
         {
             selected = prevLine;
-            Program.callb = DrawLine;
+            demos.mouseClickCallback = DrawLine;
             updatePreview();
             lastPolySelection = selectLine;
         }
         void selectSprite()
         {
-            Program.callb = DrawSprite;
+            demos.mouseClickCallback = DrawSprite;
             selected = prevSprite;
             updatePreview();
         }
@@ -214,18 +214,18 @@ namespace GLDrawerDemos
                 return;
             //remove previous sprite from the preview canvas if there is one
             if (prevSprite != null)
-                Program.previewCan.Remove(prevSprite);
+                demos.previewCan.Remove(prevSprite);
             textBox1.Text = openFileDialog.FileName;
-            prevSprite = Program.previewCan.AddCenteredSprite(openFileDialog.FileName, 0, 0, trackBar1.Value, trackBar1.Value);
+            prevSprite = demos.previewCan.AddCenteredSprite(openFileDialog.FileName, 0, 0, trackBar1.Value, trackBar1.Value);
         }
         void selectText()
         {
-            Program.callb = DrawText;
+            demos.mouseClickCallback = DrawText;
             selected = prevText;
             updatePreview();
         }
 
-        //depending on the selected drawmode, One of these functions are called after a click through callb
+        //depending on the selected drawmode, One of these functions are called after a click through mouseClickCallback
         void DrawSprite(vec2 pos, GLCanvas can)
         {
             Sprite spr = can.AddCenteredSprite(prevSprite.FilePath, pos.x, pos.y, prevSprite.Scale.x, prevSprite.Scale.y, prevSprite.Angle);
@@ -234,33 +234,32 @@ namespace GLDrawerDemos
         }
         void DrawPoly(vec2 pos, GLCanvas ca)
         {
-            Polygon pol = Program.can.AddCenteredPolygon(pos.x, pos.y, prevPoly.Scale.x, prevPoly.Scale.y, prevPoly.SideCount, prevPoly.FillColor, prevPoly.BorderWidth, prevPoly.BorderColor, prevPoly.Angle);
+            Polygon pol = demos.can.AddCenteredPolygon(pos.x, pos.y, prevPoly.Scale.x, prevPoly.Scale.y, prevPoly.SideCount, prevPoly.FillColor, prevPoly.BorderWidth, prevPoly.BorderColor, prevPoly.Angle);
             shapes.Add(pol);
             lbAdd("Polygon (" + pol.Position.x + ", " + pol.Position.y + ")");
         }
         void DrawText(vec2 pos, GLCanvas ca)
         {
-            Text txt = Program.can.Add(new Text(pos, prevText.Body,  prevText.Height, prevText.Color, prevText.Justification, prevText.Font, prevText.Angle, 0)) as Text;
+            Text txt = demos.can.Add(new Text(pos, prevText.Body,  prevText.Height, prevText.Color, prevText.Justification, prevText.Font, prevText.Angle, 0)) as Text;
             shapes.Add(txt);
             lbAdd("Text (" + txt.Position.x + ", " + txt.Position.y + ")");
         }
         Line tLine; //persistant referance for an in progress line as they require 2 clicks
         void DrawLine(vec2 pos, GLCanvas ca)
         {
-            Console.WriteLine("c " + clicknum);
             if(clicknum == 0)
             {
                 // tLine = new Line(pos, pos, prevLine.Scale.y, prevLine.FillColor, prevLine.BorderWidth, prevLine.BorderColor);//new Line(pos, pos + 50f, 15f, Color.White); //replace with eventual canvas return function
-                //Program.can.Add(tLine);
-                tLine = Program.can.AddLine(pos.x, pos.y, pos.x, pos.y, prevLine.Scale.y, prevLine.FillColor, prevLine.BorderWidth, prevLine.BorderColor);
+                //demos.can.Add(tLine);
+                tLine = demos.can.AddLine(pos.x, pos.y, pos.x, pos.y, prevLine.Scale.y, prevLine.FillColor, prevLine.BorderWidth, prevLine.BorderColor);
             }
             if(clicknum == 1)
             {
                 tLine.End = pos;
                 Line finalLine = new Line(tLine.Start, tLine.End, tLine.Thickness, tLine.FillColor, tLine.BorderWidth, tLine.BorderColor);
                 shapes.Add(finalLine);
-                Program.can.Remove(tLine);
-                Program.can.Add(finalLine);
+                demos.can.Remove(tLine);
+                demos.can.Add(finalLine);
                 lbAdd("Line (" + finalLine.Start.x + ", " + finalLine.Start.y + ")-(" + finalLine.End.x + ", " + finalLine.End.y + ")");
                 clicknum = 0;
                 return;
@@ -287,10 +286,10 @@ namespace GLDrawerDemos
             if (listBox1.SelectedIndex == -1)
                 return;
             Shape toRemove = shapes[listBox1.SelectedIndex];
-            Program.can.Remove(toRemove);
+            demos.can.Remove(toRemove);
             shapes.RemoveAt(listBox1.SelectedIndex);
             listBox1.Items.RemoveAt(listBox1.SelectedIndex);
-           // Program.can.Refresh();
+           // demos.can.Refresh();
         }
 
         //order object forward button
@@ -299,7 +298,7 @@ namespace GLDrawerDemos
             int i = listBox1.SelectedIndex;
             if (listBox1.Items.Count <= i+1 || i == -1)
                 return;
-            Program.can.SwapDrawOrder(i, i + 1);      
+            demos.can.SwapDrawOrder(i, i + 1);      
             {
                 string temp = listBox1.Items[i].ToString();
                 listBox1.Items[i] = listBox1.Items[i + 1];
@@ -319,17 +318,21 @@ namespace GLDrawerDemos
             int i = listBox1.SelectedIndex;
             if (i < 1)
                 return;
-            Program.can.SwapDrawOrder(i, i - 1);
-            {
+
+            //demos.can.SwapDrawOrder(i, i - 1);
+
+
+            
                 string temp = listBox1.Items[i].ToString();
                 listBox1.Items[i] = listBox1.Items[i - 1];
                 listBox1.Items[i - 1] = temp;
-            }
-            {
-                Shape temp = shapes[i];
-                shapes[i] = shapes[i - 1];
-                shapes[i - 1] = temp;
-            }
+
+            shapes[i].DrawIndex++;
+            shapes[i - 1].DrawIndex--;
+                //Shape temp = shapes[i];
+                //shapes[i] = shapes[i - 1];
+                //shapes[i - 1] = temp;
+
             listBox1.SelectedIndex = i - 1;
         }
 
@@ -337,7 +340,7 @@ namespace GLDrawerDemos
 
         private void timer1_Tick(object sender, EventArgs e)
         {
-           //r.Position = Program.can.mo
+           //r.Position = demos.can.mo
         }
     }
 }

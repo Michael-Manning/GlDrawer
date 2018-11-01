@@ -19,9 +19,9 @@ namespace spaceGame
             can = new GLCanvas(800, 1100);
             can.Gravity = vec2.Zero;
             can.LoadAssets(new string[] {
-                "../../../data/_images/spaceship.png",
-                "../../../data/_images/enemy1.png",
-                "../../../data/_images/Fire_Spritesheet_Small.png"
+                "../../../data/images/spaceship.png",
+                "../../../data/images/enemy1.png",
+                "../../../data/images/Fire_Spritesheet_Small.png"
                 }, true);
 
             //background particle effect
@@ -59,7 +59,7 @@ namespace spaceGame
         public override void Start()
         {
             DrawIndex = 0;
-           AddChildShape(new Sprite("../../../data/_images/spaceship.png", vec2.Zero, new vec2(80)));
+           AddChildShape(new Sprite("../../../data/images/spaceship.png", vec2.Zero, new vec2(80)));
            Instantiate(new rocketFire(), new vec2(0, -40), -3.1459f / 2.0f, this);
         }
         public override void Update()
@@ -89,7 +89,7 @@ namespace spaceGame
             DrawIndex = 1;
             myTime = Time;
             
-            shipRef = AddChildShape(new Sprite("../../../data/_images/enemy1.png", vec2.Zero, new vec2(80),angle: 3.1459f)) as Sprite;
+            shipRef = AddChildShape(new Sprite("../../../data/images/enemy1.png", vec2.Zero, new vec2(80),angle: 3.1459f)) as Sprite;
             Instantiate(new rocketFire(), new vec2(0, +20), 3.1459f / 2.0f, this);
             spaceGame.enemies.Add(this);
         }
@@ -149,7 +149,7 @@ namespace spaceGame
         public override void Start()
         {
             DrawIndex = 2;
-            ParticleSystem fire =  new ParticleSystem(80, 0.6f, "../../../data/_images/Fire_Spritesheet_Small.png", 8);
+            ParticleSystem fire =  new ParticleSystem(80, 0.6f, "../../../data/images/Fire_Spritesheet_Small.png", 8);
             fire.Spread = 0.5f;
             fire.Continuous = true;
             fire.BurstMode = false;
@@ -168,7 +168,7 @@ namespace spaceGame
         public override void Start()
         {
             DrawIndex = 2;
-            ParticleSystem fire = new ParticleSystem(7, 1.0f, "../../../data/_images/Fire_Spritesheet_Small.png", 8);
+            ParticleSystem fire = new ParticleSystem(7, 1.0f, "../../../data/images/Fire_Spritesheet_Small.png", 8);
             fire.Angle = 2;
             fire.Spread = 3.14595f * 2f;
             fire.Continuous = false;
@@ -194,9 +194,9 @@ namespace spaceGame
             if (size < 3)
                 stars = new ParticleSystem(count, 13);
             else
-                stars = new ParticleSystem(count, 13, "../../../data/_images/star.png");
+                stars = new ParticleSystem(count, 13, "../../../data/images/star.png");
             DrawIndex = index;
-            transform.Rotation = -3.1459f / 2.0f; // stars.Angle = -3.1459f / 2.0f;
+            transform.Rotation = -3.1459f / 2.0f;
             stars.Continuous = true;
             stars.StartSize = size;
             stars.EndSize = size;

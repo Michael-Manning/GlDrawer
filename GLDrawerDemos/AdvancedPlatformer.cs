@@ -52,12 +52,6 @@ namespace platformGame
                     Textures.Add(can.Instantiate(new Texture(tilemap.SpritePaths[t.id], l, 
                                                  new vec2(tileScale * t.w, tileScale * t.h)), 
                                                  new vec2(t.x + offset.x + t.w / 2f, -t.y + offset.y - t.h / 2f + tilemap.Ytiles) * tileScale) as Texture);
-            //for (int l = 0; l < tilemap.layers; l++)
-            //    for (int j = 0; j < tilemap.Ytiles; j++)
-            //        for (int i = 0; i < tilemap.Xtiles; i++)
-            //            if (tilemap.SpriteGrid[l][i, j] != 0)
-            //                Textures.Add(can.Instantiate(new Texture(tilemap.SpritePaths[tilemap.SpriteGrid[l][i, j]], l), new vec2((i + (int)offset.x) + 1f / 2f, ((j + (int)offset.y) + 1f / 2f)) * tileScale) as Texture);
-
             //load entites
             tilemap.LoadEntities(GLDrawerDemos.levelEditor.entityFile);
             for (int j = 0; j < tilemap.Ytiles; j++)

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 using System.Threading;
 using GLDrawer;
 
@@ -10,7 +11,8 @@ namespace GLDrawerDemos
 {
     static class demos
     {
-        static GLCanvas can;
+        public static GLCanvas can;
+        public static GLCanvas previewCan;
 
         public static void IntersectTest()
         {
@@ -19,12 +21,13 @@ namespace GLDrawerDemos
             Polygon circ = can.AddCenteredEllipse(150, 0, 150, 150, Color.White);
             can.Update += delegate
             {
-                if (rect.Intersect(can.MousePositionScreenSpace))
+                rect.Angle += 0.005f;
+                if (rect.Intersect(can.MousePosition))
                     rect.FillColor = Color.Red;
                 else
                     rect.FillColor = Color.White;
 
-                if (circ.Intersect(can.MousePositionScreenSpace))
+                if (circ.Intersect(can.MousePosition))
                     circ.FillColor = Color.Red;
                 else
                     circ.FillColor = Color.White;
@@ -46,29 +49,29 @@ namespace GLDrawerDemos
 
             can.Update += delegate
             {
-                traj.End = can.MousePositionScreenSpace;
+                traj.End = can.MousePosition;
                 if (can.GetMouseDown(0))
                 {
-                    A = can.MousePositionScreenSpace;
+                    A = can.MousePosition;
                     traj.Start = A;
                     traj.Hidden = false;
                 }          
                 else if (can.GetMouseUp(0))
                 {
                     traj.Hidden = true;
-                    B = can.MousePositionScreenSpace;
+                    B = can.MousePosition;
                     can.Instantiate(new box(A - B, 4), A);             
                 }
                 else if (can.GetMouseDown(1))
                 {
-                    A = can.MousePositionScreenSpace;
+                    A = can.MousePosition;
                     traj.Start = A;
                     traj.Hidden = false;
                 }
                 else if (can.GetMouseUp(1))
                 {
                     traj.Hidden = true;
-                    B = can.MousePositionScreenSpace;
+                    B = can.MousePosition;
                     can.Instantiate(new box(A - B, 1), A);
                 }
             };
@@ -130,10 +133,10 @@ namespace GLDrawerDemos
             int delay = 5;
             for (int i = 0; i < 10000; i++)
             {
-                Polygon A = can.AddCenteredEllipse(200,300, 300, 300, Color.Random);
+                Polygon A = can.AddCenteredEllipse(-200, 0, 300, 300, Color.Random);
                 Thread.Sleep(delay);
                 can.Remove(A);
-                Polygon B = can.AddCenteredEllipse(600, 300, 300, 300, Color.Random);
+                Polygon B = can.AddCenteredEllipse(300, 0, 300, 300, Color.Random);
                 Thread.Sleep(delay);
                 can.Remove(B);
             }
@@ -145,7 +148,7 @@ namespace GLDrawerDemos
 
             int delay = 1000;
 
-            Sprite s = new Sprite(filepath, can.Centre, new vec2(800, 800));  //can.AddCenteredSprite(filepath, 400, 400, 800, 800);
+            Sprite s = new Sprite(filepath, can.Center, new vec2(800, 800));  //can.AddCenteredSprite(filepath, 400, 400, 800, 800);
 
             for (int i = 0; i < 100; i++)
             {
@@ -156,11 +159,37 @@ namespace GLDrawerDemos
             }
         }
 
+        public static GLMouseEvent mouseClickCallback;
+        public static GLMouseEvent mouseMovedCallback;
+        public static void FormTest()
+        {
+            Application.EnableVisualStyles();
+            TestForm tform = new TestForm();
+
+            can = new GLCanvas(tform, tform.surface, BackColor: Color.LightGray, debugMode: true);
+            previewCan = new GLCanvas(tform, tform.preview, BackColor: tform.BackColor);
+
+            tform.updatePreview();
+            can.MouseLeftClick += Can_MouseLeftClick;
+            can.MouseMove += Can_MouseMove;
+            Application.Run(tform);
+        }
+        private static void Can_MouseMove(vec2 Position, GLCanvas Canvas)
+        {
+            mouseMovedCallback.Invoke(Position, Canvas);
+        }
+
+        private static void Can_MouseLeftClick(vec2 Position, GLCanvas Canvas)
+        {
+            mouseClickCallback.Invoke(Position, Canvas);
+        }
+
         private static Polygon[] Xe = new Polygon[26];
         private static Polygon[] Ye = new Polygon[20];
         public static void BackBufferShapes()
         {
             can = new GLCanvas(1300, 900, TitleDetails: true, VSync: false);
+            can.CameraPosition = can.Center;
             for (int i = 0; i < 1300; i++)
             {
                 for (int j = 0; j < 900; j++)
@@ -185,8 +214,6 @@ namespace GLDrawerDemos
                 Ye[i].Position += disp;
                 can.SetBBShape(Ye[i]);
             }
-
-
             for (int i = 0; i < Xe.Length; i++)
             {
                 Xe[i].Position += disp;

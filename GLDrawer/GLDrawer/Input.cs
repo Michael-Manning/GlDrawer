@@ -37,7 +37,7 @@ namespace GLDrawer
 
         public vec2 MousePosition => CheckInvert(iMousePosition); 
         public vec2 MousePositionScaled => CheckInvert(iMousePosition) / Scale;
-        public vec2 MousePositionScreenSpace => CheckInvert(iMousePosition) - this.Centre;
+        public vec2 MousePositionScreenSpace => CheckInvert(iMousePosition) - this.Center;
         public vec2 MouseDeltaPosition => iMouseDeltaPosition;
         public bool MouseLeftState  => !leftLifted; 
         public bool MouseRightState => !rightLifted;

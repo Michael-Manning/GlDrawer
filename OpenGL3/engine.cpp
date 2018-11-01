@@ -532,7 +532,7 @@ void GLCanvas::onKeyboard(int key, int scancode, int action, int mods) {
 		return;
 	for (int i = 0; i < 10; i++)
 		if (keyBuffer[i].read)
-			keyBuffer[i] = description{ key,action, false };
+			keyBuffer[i] = inputDescription{ key,action, false };
 	keyStates[key] = action;
 }
 void GLCanvas::onMouse(int button, int action, int mods) {
@@ -542,7 +542,7 @@ void GLCanvas::onMouse(int button, int action, int mods) {
 		RightMouseState = action;
 	for (int i = 0; i < 10; i++)
 		if (mouseBuffer[i].read)
-			mouseBuffer[i] = description{ button,action, false };
+			mouseBuffer[i] = inputDescription{ button,action, false };
 }
 void GLCanvas::onCursor() {
 	mouseMoveFlag = true;
