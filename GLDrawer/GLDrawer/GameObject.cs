@@ -16,9 +16,13 @@ namespace GLDrawer
             get => iparent;
             set
             {
+                if (value == null)
+                    throw new NullReferenceException("cannot set parent to null");
+
                 //should signal to old reference first
                 if (iparent != null)
                     iparent.GOchildren.Remove(this);
+
                 internalGO.setParent(value.internalGO);
                 iparent = value;
 
@@ -35,6 +39,13 @@ namespace GLDrawer
             internalGO.clearParent();
             iparent = null;
         }
+
+        public GameObject(GLCanvas can = null)
+        {
+            if(can != null)
+                can.Add(this);
+        }
+
         public int DrawIndex { get => internalGO.drawIndex; set => internalGO.drawIndex = value; }
         public GameObject Instantiate(GameObject original) => Canvas.Instantiate(original);
         public GameObject Instantiate(GameObject original, vec2 position, float rotation = 0) => Canvas.Instantiate(original, position, rotation);
@@ -335,7 +346,7 @@ namespace GLDrawer
         //public vec2 Velocity; // moved to rigidbody
 
 
-        internal GameObject link; //used exclusively to know when to ovveride physics position
+        internal GameObject link = null; //used exclusively to know when to ovveride physics position
 
         public Transform()
         {
@@ -346,6 +357,17 @@ namespace GLDrawer
         {
             Position = position;
             Rotation = rotation;
+        }
+
+        public vec2 GlobalPosition
+        {
+            get
+            {
+                if (link == null)
+                    return Position;
+                unmanaged_vec2 v = link.internalGO.getGlobalPosition();
+                return new vec2(v.x, v.y);
+            }
         }
         //public Transform(vec2 position, float rotation, vec2 velocity) : this(position, rotation)
         //{

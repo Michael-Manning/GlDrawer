@@ -4,6 +4,7 @@ Things left to work on for version 1.0:
 -increase font resolution
 -add file type validation for sprites and fonts
 -better pattern system
+-make rotationspeed a value modifier rather than a post processing effect
 
 finish load asset
 fix reordering tools
@@ -19,3 +20,4 @@ Extra stuff
 
 bugs
 -fix border bleeding in shader
+-window resizing while setting backbuffers on a seperate thread

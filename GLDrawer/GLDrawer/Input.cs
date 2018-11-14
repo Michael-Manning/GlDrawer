@@ -35,15 +35,19 @@ namespace GLDrawer
         public event GLKeyEvent KeyDown = delegate { };
         public event GLKeyEvent KeyUp = delegate { };
 
-        public vec2 MousePosition => CheckInvert(iMousePosition); 
+
+        public vec2 MousePosition => CheckInvert(iMousePosition);
         public vec2 MousePositionScaled => CheckInvert(iMousePosition) / Scale;
         public vec2 MousePositionScreenSpace => CheckInvert(iMousePosition) - this.Center;
         public vec2 MouseDeltaPosition => iMouseDeltaPosition;
-        public bool MouseLeftState  => !leftLifted; 
+        public bool MouseLeftState => !leftLifted;
         public bool MouseRightState => !rightLifted;
         public bool MouseMiddleState => !middleLifted;
         public int MouseScrollDirection { get; private set; }
 
+        public int LastNumberKey { get; private set; }
+        public char LastLetterKey { get; private set; }
+        public char LastKey { get; private set; }
         private KeysConverter kc = new KeysConverter();
         private bool leftLifted = true, rightLifted = true, middleLifted = true;
         private vec2 iMousePosition = vec2.Zero, iMouseDeltaPosition = vec2.Zero;
@@ -53,11 +57,16 @@ namespace GLDrawer
             Keys k = IntToKeys(key);
             //Console.WriteLine(k.ToString() + " " + (action == 1 ? "PRESSED" : "LIFTED"));
             if (key >= (int)SpecialKeys.D0 && key <= (int)SpecialKeys.D9)
-                lastNumber = key - (int)SpecialKeys.D0;
+                LastNumberKey = key - (int)SpecialKeys.D0;
             //ignores numlock
             else if (key >= (int)SpecialKeys.NP0 && key <= (int)SpecialKeys.NP9)
-                lastNumber = key - (int)SpecialKeys.NP0;
-     
+                LastNumberKey = key - (int)SpecialKeys.NP0;
+            else if (key >= 65 && key <= 90)
+                LastLetterKey = char.ToLower((char)key);
+            else if (key >= 32 && key <= 127)
+                LastLetterKey = (char)key;
+            LastKey = (char)key;
+
             if (action == 1)
                 KeyDown.Invoke(k, this);
             if (action == 0)
@@ -70,7 +79,7 @@ namespace GLDrawer
             unmanaged_vec2 v = GLWrapper.getMousePos();
             iMousePosition = new vec2(v.x, v.y);
             //scroll (3 was chosen by me, not glfw)
-            if(btn == 3)
+            if (btn == 3)
             {
                 MouseScrolled.Invoke(action, this);
                 MouseScrollDirection = action;
@@ -85,7 +94,7 @@ namespace GLDrawer
                     MouseLeftClickScaled.Invoke(MousePositionScaled, this);
                     iLastLeft = MousePosition;
                     leftClickToggle = true;
-                }          
+                }
                 leftLifted = false;
 
             }
@@ -147,8 +156,8 @@ namespace GLDrawer
         }
         private vec2 CheckInvert(vec2 v)
         {
-            if(!InvertedYAxis)
-                return new vec2(v.x - Width/2, -v.y + Height /2);
+            if (!InvertedYAxis)
+                return new vec2(v.x - Width / 2, -v.y + Height / 2);
             if (!InvertedYAxis)
                 return new vec2(v.x, -v.y + Height);
             return v;
@@ -216,7 +225,7 @@ namespace GLDrawer
         /// </summary>
         public bool GetMouse(int mouseBTN)
         {
-            if(mouseBTN != 0 && mouseBTN != 1)
+            if (mouseBTN != 0 && mouseBTN != 1)
                 throw new ArgumentException("mouse button must be 1 or 0");
             return GLWrapper.getMouse(mouseBTN);
         }
@@ -240,13 +249,6 @@ namespace GLDrawer
                 throw new ArgumentException("mouse button must be 1 or 0");
             return GLWrapper.getMouseUp(mouseBTN);
         }
-
-        /// <summary>
-        /// Returns the last numeric key press
-        /// </summary>
-        public int LastNumberKey { get => lastNumber; }
-
-        private int lastNumber = 0;
 
         #endregion get key functions
 
@@ -315,7 +317,7 @@ namespace GLDrawer
             }
             return false;
         }
-        
+
         /// <summary>
         /// Returns true if the mouse has moved (within the canvas) since the last time the function was called
         /// <param name="Position">the current position of the mouse</param>>
@@ -349,256 +351,256 @@ namespace GLDrawer
         #endregion GDIDrawer mouse functions
 
         //LIST: http://www.glfw.org/docs/latest/group__keys.html
-       
+
 
         //I'm not proud of this, but it only really exsists prove GLDrawer contains every input function found in GDIDrawer 
         Keys IntToKeys(int key)
         {
             Keys code = Keys.KeyCode;
-            try {
-                //might get lucky here if the key was a letter
-               // return (Keys)kc.ConvertFromString((char.ToUpper((char)key)).ToString());
-            }
+            //    try {
+            //might get lucky here if the key was a letter
+            // return (Keys)kc.ConvertFromString((char.ToUpper((char)key)).ToString());
+            //   }
 
             //many of the keys supported in GLFW are NOT support in windows forms keys, so I've included what I could
             //LIST: http://www.glfw.org/docs/latest/group__keys.html
-            catch
+            //   catch
+            //  {
+            switch (key)
             {
-                switch (key)
-                {
-                    case (32):
-                        code = Keys.Space;
-                        break;
-                    case (39):
-                        code = Keys.OemQuotes; //triggered by GLFW apostrophe
-                        break;
-                    case (44):
-                        code = Keys.Oemcomma;
-                        break;
-                    case (45):
-                        code = Keys.OemMinus;
-                        break;
-                    case (46):
-                        code = Keys.OemPeriod;
-                        break;
-                    case (47):
-                        code = Keys.Divide;
-                        break;
-                    case (59):
-                        code = Keys.OemSemicolon;
-                        break;
-                    case (91):
-                        code = Keys.OemOpenBrackets; // [
-                        break;
-                    case (92):
-                        code = Keys.OemBackslash;
-                        break;
-                    case (93):
-                        code = Keys.OemCloseBrackets; // ]
-                        break;
-                    case (256):
-                        code = Keys.Escape;
-                        break;
-                    case (257):
-                        code = Keys.Enter;
-                        break;
-                    case (258):
-                        code = Keys.Tab;
-                        break;
-                    case (259):
-                        code = Keys.Back; //backspace
-                        break;
-                    case (260):
-                        code = Keys.Insert;
-                        break;
-                    case (261):
-                        code = Keys.Delete;
-                        break;
-                    case (262):
-                        code = Keys.Right;
-                        break;
-                    case (263):
-                        code = Keys.Left;
-                        break;
-                    case (264):
-                        code = Keys.Down;
-                        break;
-                    case (265):
-                        code = Keys.Up;
-                        break;
-                    case (266):
-                        code = Keys.PageUp;
-                        break;
-                    case (267):
-                        code = Keys.PageDown;
-                        break;
-                    case (268):
-                        code = Keys.Home;
-                        break;
-                    case (269):
-                        code = Keys.End;
-                        break;
-                    case (280):
-                        code = Keys.CapsLock;
-                        break;
-                    case (281):
-                        code = Keys.Scroll; //scroll lock
-                        break;
-                    case (282):
-                        code = Keys.NumLock;
-                        break;
-                    case (283):
-                        code = Keys.PrintScreen;
-                        break;
-                    case (284):
-                        code = Keys.Pause;
-                        break;
-                    case (290):
-                        code = Keys.F1;
-                        break;
-                    case (291):
-                        code = Keys.F2;
-                        break;
-                    case (292):
-                        code = Keys.F3;
-                        break;
-                    case (293):
-                        code = Keys.F4;
-                        break;
-                    case (294):
-                        code = Keys.F5;
-                        break;
-                    case (295):
-                        code = Keys.F6;
-                        break;
-                    case (296):
-                        code = Keys.F7;
-                        break;
-                    case (297):
-                        code = Keys.F8;
-                        break;
-                    case (298):
-                        code = Keys.F9;
-                        break;
-                    case (299):
-                        code = Keys.F10;
-                        break;
-                    case (300):
-                        code = Keys.F11;
-                        break;
-                    case (301):
-                        code = Keys.F12;
-                        break;
-                    case (302):
-                        code = Keys.F13;
-                        break;
-                    case (303):
-                        code = Keys.F14;
-                        break;
-                    case (304):
-                        code = Keys.F15;
-                        break;
-                    case (305):
-                        code = Keys.F16;
-                        break;
-                    case (306):
-                        code = Keys.F17;
-                        break;
-                    case (307):
-                        code = Keys.F18;
-                        break;
-                    case (308):
-                        code = Keys.F19;
-                        break;
-                    case (309):
-                        code = Keys.F20;
-                        break;
-                    case (310):
-                        code = Keys.F21;
-                        break;
-                    case (311):
-                        code = Keys.F22;
-                        break;
-                    case (312):
-                        code = Keys.F23;
-                        break;
-                    case (313):
-                        code = Keys.F24;
-                        break;
-                    case (320):
-                        code = Keys.NumPad0;
-                        break;
-                    case (321):
-                        code = Keys.NumPad1;
-                        break;
-                    case (322):
-                        code = Keys.NumPad2;
-                        break;
-                    case (323):
-                        code = Keys.NumPad3;
-                        break;
-                    case (324):
-                        code = Keys.NumPad4;
-                        break;
-                    case (325):
-                        code = Keys.NumPad5;
-                        break;
-                    case (326):
-                        code = Keys.NumPad6;
-                        break;
-                    case (327):
-                        code = Keys.NumPad7;
-                        break;
-                    case (328):
-                        code = Keys.NumPad8;
-                        break;
-                    case (329):
-                        code = Keys.NumPad9;
-                        break;
-                    case (330):
-                        code = Keys.Decimal; //numpad decimal
-                        break;
-                    case (331):
-                        code = Keys.Divide; //numpad divide
-                        break;
-                    case (332):
-                        code = Keys.Multiply; //numpad multiply
-                        break;
-                    case (333):
-                        code = Keys.Subtract; //numpad subtract
-                        break;
-                    case (334):
-                        code = Keys.Add; //numpad add
-                        break;
-                    case (335):
-                        code = Keys.Enter; //numpad enter
-                        break;
-                    case (340):
-                        code = Keys.LShiftKey;
-                        break;
-                    case (341):
-                        code = Keys.LControlKey;
-                        break;
-                    case (342):
-                        code = Keys.Alt;
-                        break;
-                    case (344):
-                        code = Keys.RShiftKey;
-                        break;
-                    case (345):
-                        code = Keys.RControlKey;
-                        break;
-                    case (346):
-                        code = Keys.Alt; //windows forms keys does not suport right and left alt, so they map to the same key
-                        break;
-                    case (348):
-                        code = Keys.Menu;
-                        break;
-                    default:
-                        //throw new ArgumentException("Key not supported by Windows.Forms.Keys. Try using GetKey functions");
-                        break;
-                }
+                case (32):
+                    code = Keys.Space;
+                    break;
+                case (39):
+                    code = Keys.OemQuotes; //triggered by GLFW apostrophe
+                    break;
+                case (44):
+                    code = Keys.Oemcomma;
+                    break;
+                case (45):
+                    code = Keys.OemMinus;
+                    break;
+                case (46):
+                    code = Keys.OemPeriod;
+                    break;
+                case (47):
+                    code = Keys.Divide;
+                    break;
+                case (59):
+                    code = Keys.OemSemicolon;
+                    break;
+                case (91):
+                    code = Keys.OemOpenBrackets; // [
+                    break;
+                case (92):
+                    code = Keys.OemBackslash;
+                    break;
+                case (93):
+                    code = Keys.OemCloseBrackets; // ]
+                    break;
+                case (256):
+                    code = Keys.Escape;
+                    break;
+                case (257):
+                    code = Keys.Enter;
+                    break;
+                case (258):
+                    code = Keys.Tab;
+                    break;
+                case (259):
+                    code = Keys.Back; //backspace
+                    break;
+                case (260):
+                    code = Keys.Insert;
+                    break;
+                case (261):
+                    code = Keys.Delete;
+                    break;
+                case (262):
+                    code = Keys.Right;
+                    break;
+                case (263):
+                    code = Keys.Left;
+                    break;
+                case (264):
+                    code = Keys.Down;
+                    break;
+                case (265):
+                    code = Keys.Up;
+                    break;
+                case (266):
+                    code = Keys.PageUp;
+                    break;
+                case (267):
+                    code = Keys.PageDown;
+                    break;
+                case (268):
+                    code = Keys.Home;
+                    break;
+                case (269):
+                    code = Keys.End;
+                    break;
+                case (280):
+                    code = Keys.CapsLock;
+                    break;
+                case (281):
+                    code = Keys.Scroll; //scroll lock
+                    break;
+                case (282):
+                    code = Keys.NumLock;
+                    break;
+                case (283):
+                    code = Keys.PrintScreen;
+                    break;
+                case (284):
+                    code = Keys.Pause;
+                    break;
+                case (290):
+                    code = Keys.F1;
+                    break;
+                case (291):
+                    code = Keys.F2;
+                    break;
+                case (292):
+                    code = Keys.F3;
+                    break;
+                case (293):
+                    code = Keys.F4;
+                    break;
+                case (294):
+                    code = Keys.F5;
+                    break;
+                case (295):
+                    code = Keys.F6;
+                    break;
+                case (296):
+                    code = Keys.F7;
+                    break;
+                case (297):
+                    code = Keys.F8;
+                    break;
+                case (298):
+                    code = Keys.F9;
+                    break;
+                case (299):
+                    code = Keys.F10;
+                    break;
+                case (300):
+                    code = Keys.F11;
+                    break;
+                case (301):
+                    code = Keys.F12;
+                    break;
+                case (302):
+                    code = Keys.F13;
+                    break;
+                case (303):
+                    code = Keys.F14;
+                    break;
+                case (304):
+                    code = Keys.F15;
+                    break;
+                case (305):
+                    code = Keys.F16;
+                    break;
+                case (306):
+                    code = Keys.F17;
+                    break;
+                case (307):
+                    code = Keys.F18;
+                    break;
+                case (308):
+                    code = Keys.F19;
+                    break;
+                case (309):
+                    code = Keys.F20;
+                    break;
+                case (310):
+                    code = Keys.F21;
+                    break;
+                case (311):
+                    code = Keys.F22;
+                    break;
+                case (312):
+                    code = Keys.F23;
+                    break;
+                case (313):
+                    code = Keys.F24;
+                    break;
+                case (320):
+                    code = Keys.NumPad0;
+                    break;
+                case (321):
+                    code = Keys.NumPad1;
+                    break;
+                case (322):
+                    code = Keys.NumPad2;
+                    break;
+                case (323):
+                    code = Keys.NumPad3;
+                    break;
+                case (324):
+                    code = Keys.NumPad4;
+                    break;
+                case (325):
+                    code = Keys.NumPad5;
+                    break;
+                case (326):
+                    code = Keys.NumPad6;
+                    break;
+                case (327):
+                    code = Keys.NumPad7;
+                    break;
+                case (328):
+                    code = Keys.NumPad8;
+                    break;
+                case (329):
+                    code = Keys.NumPad9;
+                    break;
+                case (330):
+                    code = Keys.Decimal; //numpad decimal
+                    break;
+                case (331):
+                    code = Keys.Divide; //numpad divide
+                    break;
+                case (332):
+                    code = Keys.Multiply; //numpad multiply
+                    break;
+                case (333):
+                    code = Keys.Subtract; //numpad subtract
+                    break;
+                case (334):
+                    code = Keys.Add; //numpad add
+                    break;
+                case (335):
+                    code = Keys.Enter; //numpad enter
+                    break;
+                case (340):
+                    code = Keys.LShiftKey;
+                    break;
+                case (341):
+                    code = Keys.LControlKey;
+                    break;
+                case (342):
+                    code = Keys.Alt;
+                    break;
+                case (344):
+                    code = Keys.RShiftKey;
+                    break;
+                case (345):
+                    code = Keys.RControlKey;
+                    break;
+                case (346):
+                    code = Keys.Alt; //windows forms keys does not suport right and left alt, so they map to the same key
+                    break;
+                case (348):
+                    code = Keys.Menu;
+                    break;
+                default:
+                    //throw new ArgumentException("Key not supported by Windows.Forms.Keys. Try using GetKey functions");
+                    break;
             }
+            //  }
             return code;
         }
     }

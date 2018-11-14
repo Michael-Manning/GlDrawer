@@ -443,6 +443,7 @@ namespace GLDrawer
         }
         /// <summary>
         /// Add an Ellipse to the sanvas
+        /// Add an Ellipse to the sanvas
         /// </summary>
         /// <param name="XStart">Bounding box Left/X start Coordinate</param>
         /// <param name="YStart">Bounding box Top/Y start Coordinate</param>
@@ -659,15 +660,15 @@ namespace GLDrawer
         /// <param name="justification">justification based on the longest line of text</param>
         /// <param name="fontFilepath">path to a truetype font file to use</param>
         /// <returns>a copy of the added shape</returns>
-        public Text AddText(string text, float textHeight, Rectangle BoundingRect, Color? TextColor = null, JustificationType justification = JustificationType.Center, string fontFilepath = "c:\\windows\\fonts\\times.ttf")
-        {
-            Text t = new Text(text, textHeight, TextColor == null ? Color.White : TextColor, justification, fontFilepath)
-            {
-                DrawIndex = nextDrawIndex()
-            };
-            AddToBuffer(t);
-            return t;
-        }
+        //public Text AddText(string text, float textHeight, Rectangle BoundingRect, Color? TextColor = null, JustificationType justification = JustificationType.Center, string fontFilepath = "c:\\windows\\fonts\\times.ttf")
+        //{
+        //    Text t = new Text(text, textHeight, TextColor == null ? Color.White : TextColor, justification, fontFilepath)
+        //    {
+        //        DrawIndex = nextDrawIndex()
+        //    };
+        //    AddToBuffer(t);
+        //    return t;
+        //}
         /// <summary>
         /// Adds text to the canvas, restricted by a described bounding rectangle, the reference to which can be retrieved as a property
         /// </summary>
@@ -681,20 +682,20 @@ namespace GLDrawer
         /// <param name="justification">justification based on the longest line of text</param>
         /// <param name="fontFilepath">path to a truetype font file to use</param>
         /// <returns>a copy of the added shape</returns>
-        public Text AddText(string text, float textHeight, int XStart, int YStart, int width, int height, Color? TextColor = null, JustificationType justification = JustificationType.Center, string fontFilepath = "c:\\windows\\fonts\\times.ttf")
-        {
-            XStart *= Scale;
-            YStart *= Scale;
-            Width *= Scale;
-            Height *= Scale;
-            // Rectangle BoundingRect = new Rectangle(new vec2(XStart + width, YStart + height) / 2f, new vec2(width, height));
-            Text t = new Text(text, textHeight, TextColor == null ? Color.White : TextColor, justification, fontFilepath)
-            {
-                DrawIndex = nextDrawIndex()
-            };
-            AddToBuffer(t);
-            return t;
-        }
+        //public Text AddText(string text, float textHeight, int XStart, int YStart, int width, int height, Color? TextColor = null, JustificationType justification = JustificationType.Center, string fontFilepath = "c:\\windows\\fonts\\times.ttf")
+        //{
+        //    XStart *= Scale;
+        //    YStart *= Scale;
+        //    Width *= Scale;
+        //    Height *= Scale;
+        //    // Rectangle BoundingRect = new Rectangle(new vec2(XStart + width, YStart + height) / 2f, new vec2(width, height));
+        //    Text t = new Text(text, textHeight, TextColor == null ? Color.White : TextColor, justification, fontFilepath)
+        //    {
+        //        DrawIndex = nextDrawIndex()
+        //    };
+        //    AddToBuffer(t);
+        //    return t;
+        //}
 
         public Shape Add(Shape shape)
         {
@@ -880,9 +881,9 @@ namespace GLDrawer
         /// <summary>sets the color of a single pixel on theh back buffer</summary>
         public void SetBBPixel(int x, int y, Color color)
         { 
-            if (x < 0 || x > Width) 
+            if (x < 0 || x >= Width) 
                 throw new ArgumentException("X coordinate must be a positive number less than the canvas width", "x");
-            if (y < 0 || y > Height)
+            if (y < 0 || y >= Height)
                 throw new ArgumentException("Y coordinate must be a positive number less than the canvas height", "y");
             GLWrapper.setBBpixel(x, y, color);
         }

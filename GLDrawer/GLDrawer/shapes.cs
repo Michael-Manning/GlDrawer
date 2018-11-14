@@ -25,7 +25,7 @@ namespace GLDrawer
         public float RotationSpeed { get => internalGO.rSpeed; set => internalGO.rSpeed = value; }
         public bool Hidden { get => internalGO.hidden; set => internalGO.hidden = value; }
         public int DrawIndex { get => internalGO.drawIndex; set => internalGO.drawIndex = value; }
-        
+
         /// <summary>
         /// returns true if the point is inside the shape
         /// </summary>
@@ -59,7 +59,7 @@ namespace GLDrawer
         internal unmanaged_GO internalGO;
 
         //shortcut to replace unfilled automatic arguements with an empty color
-        protected Color CheckNullC(Color? c) 
+        protected Color CheckNullC(Color? c)
         {
             return c == null ? Color.Invisible : (Color)c;
         }
@@ -68,13 +68,13 @@ namespace GLDrawer
         public abstract void Dispose();
     }
 
-    public class Line : Shape 
+    public class Line : Shape
     {
         internal unmanaged_polyData internalPoly;
         public Color FillColor { get => internalPoly.fColor; set => internalPoly.fColor = value; }
         public Color BorderColor { get => internalPoly.bColor; set => internalPoly.bColor = value; }
         public float BorderWidth { get => internalPoly.bWidth; set => internalPoly.bWidth = value; }
-          
+
         public float Thickness
         {
             get { return Scale.y; }
@@ -120,7 +120,7 @@ namespace GLDrawer
             {
                 internalGO.angle = value;
                 //UNTESTED!
-                istart = Position + new vec2((float)Math.Cos(- value) * (Length / 2f), (float)Math.Sin(- value) * (Length/2f));
+                istart = Position + new vec2((float)Math.Cos(-value) * (Length / 2f), (float)Math.Sin(-value) * (Length / 2f));
                 iend = Position + new vec2((float)Math.Cos(value) * (Length / 2f), (float)Math.Sin(value) * (Length / 2f));
             }
         }
@@ -229,14 +229,17 @@ namespace GLDrawer
         public string Body { get => internalText.text; set => internalText.text = value; }
         public string Font { get => internalText.filepath; }
         public float Height { get => internalText.height; set => internalText.height = value; }
+        public vec2 lastLetterPos => new vec2(internalText.lastLetterPos.x, internalText.lastLetterPos.y);
 
         //with bound
-        public Text(string text, float Height, Color? color = null, JustificationType justification = JustificationType.Center,  string font = "c:\\windows\\fonts\\times.ttf", float angle = 0, float rotationSpeed = 0)
+        public Text(vec2 position, vec2 scale, string text, float Height, Color? color = null, JustificationType justification = JustificationType.Center, string font = "c:\\windows\\fonts\\times.ttf", float angle = 0, float rotationSpeed = 0)
         {
-        //    if (!System.IO.File.Exists(font))
+            if (!System.IO.File.Exists(font))
                 throw new ArgumentException("ttf file was not found", "font");
 
-              //  internalShape = new unmanaged_shape(text,  Height, checkNullC(color), (int)justification, FixedBound.internalShape, font, angle, rotationSpeed);          
+
+            internalText = new unmanaged_textData(text, Height, CheckNullC(color), (int)justification, font, true);
+            internalGO = new unmanaged_GO(internalText, position.x, position.y, scale.x, scale.y, angle, rotationSpeed);
         }
         //without bound
         public Text(vec2 position, string text, float Height, Color? color = null, JustificationType justification = JustificationType.Center, string font = "c:\\windows\\fonts\\times.ttf", float angle = 0, float rotationSpeed = 0)
@@ -246,6 +249,14 @@ namespace GLDrawer
 
             internalText = new unmanaged_textData(text, Height, CheckNullC(color), (int)justification, font, false);
             internalGO = new unmanaged_GO(internalText, position.x, position.y, 0, 0, angle, rotationSpeed);
+        }
+        public vec2 GetLetterPosNDC(int letterIndex)
+        {
+            if (letterIndex < 0 || letterIndex > Body.Length)
+                throw new ArgumentException("letter index was out of range");
+
+            unmanaged_vec2 v = internalText.letterPosAtIndexNDC(letterIndex);
+            return new vec2(v.x, v.y);
         }
         public override void Dispose()
         {
@@ -271,6 +282,17 @@ namespace GLDrawer
         public Color Tint { get => internalImage.tint; set => internalImage.tint = value; }
         public vec2 UVOffset { get => new vec2(internalImage.uvPos.x, internalImage.uvPos.y); set => internalImage.uvPos = new unmanaged_vec2(value.x, value.y); }
         public vec2 UVScale { get => new vec2(internalImage.uvScale.x, internalImage.uvPos.y); set => internalImage.uvScale = new unmanaged_vec2(value.x, value.y); }
+
+        public bool playAnimation
+        {
+            get => internalImage.animated && internalImage.play;
+            set
+            {
+                if (internalImage.animated)
+                    internalImage.play = value;
+            }
+        }
+
         public Sprite(string filePath, vec2 position, vec2 scale, float angle = 0, Color? tint = null, vec2? uvScale = null, vec2? uvOffset = null, float rotationSpeed = 0)
         {
             if (!System.IO.File.Exists(filePath))
@@ -296,8 +318,8 @@ namespace GLDrawer
             internalImage.dispose();
             GC.SuppressFinalize(this);
         }
-      //  private vec2 size;
-        public void SetAnimation(int TilesPerLine, float Duration)
+        //  private vec2 size;
+        public void SetAnimation(int TilesPerLine, float Duration, bool autoPlay = true)
         {
             if (!System.IO.File.Exists(FilePath))
                 throw new ArgumentException("image file was not found", "texturePath");

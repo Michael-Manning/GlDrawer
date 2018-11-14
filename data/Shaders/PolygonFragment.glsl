@@ -33,6 +33,15 @@ mat2 rot(float a){
         );
 }
 
+float aastep(float threshold, float value) {
+  #ifdef GL_OES_standard_derivatives
+    float afwidth = length(vec2(dFdx(value), dFdy(value))) * 0.70710678118654757;
+    return smoothstep(threshold-afwidth, threshold+afwidth, value);
+  #else
+    return step(threshold, value);
+  #endif  
+}
+
 
 void main()
 {
@@ -63,36 +72,65 @@ void main()
         }
     }
 
-    
+    //rect
     if(sideCount == 4){
-        vec2 uv =  abs(frag_uv- 0.5) * 2.0;
-        float af = fwidth(max(uv.x, uv.y)); 
-        float f = smoothstep(1.0, 1.0 - af, max(uv.x, uv.y));
+        float bordX = (bordWidth / shapeScale.x) * 1.0;
+        float bordy = (bordWidth / shapeScale.y) * 1.0;
+
+        float vx = 1.0 / shapeScale.x;
+        float vy = 1.0 / shapeScale.y;
+        vec2 uv = vec2(aastep(vx, frag_uv.x), aastep(vx, frag_uv.y));
+        uv *= vec2(aastep(vy, 1.0 - frag_uv.x), aastep(vy, 1.0 - frag_uv.y));    
+        float f = uv.x * uv.y;
+
         vec4 c = vec4(BorderColor.xyz, BorderColor.w - (1.0 - f));
 
-        float bordX = (bordWidth / shapeScale.x) * 2.0;
-        float bordy = (bordWidth / shapeScale.y) * 2.0;
-        f = smoothstep(1.0 - bordX, 1.0 - bordX - af, uv.x);
-        f *= smoothstep(1.0 - bordy, 1.0 - bordy - af, uv.y);
+        uv = vec2(aastep( bordX, frag_uv.x), aastep(bordy, frag_uv.y));
+        uv *= vec2(aastep(bordX, 1.0 - frag_uv.x), aastep(bordy, 1.0 - frag_uv.y));
+        f = uv.x * uv.y;
 
         FragColor = mix(c, FillColor, f);
         return;
     }
+
+    //elipse
     if(sideCount == 1){      
         float f; 
         float af = fwidth(length(frag_uv - 0.5));  
         vec4 c = vec4(FillColor.xyz, 0.0);
         if(bordWidth > 0){         
-            f = smoothstep(0.5, 0.5 - af, length(frag_uv - 0.5));
+            f = 1.0 - aastep(0.5,  length(frag_uv - 0.5));  //f = smoothstep(0.5, 0.5 - af, length(frag_uv - 0.5));
             c = vec4(BorderColor.xyz, BorderColor.w - (1.0 - f));
         }
 
         float bord = bordWidth / shapeScale.x;
-        f = smoothstep(0.5 - bord, 0.5 - bord - af, length(frag_uv - 0.5));
+        f = 1.0 - aastep(0.5 - bord, length(frag_uv - 0.5)); //smoothstep(0.5 - bord, 0.5 - bord - af, length(frag_uv - 0.5));
         FragColor = mix(c, FillColor, f);
         return;
     }
 
+    //polygon
+    // float yoff = 0.5;
+    // float rad = 0.5;
+    // if(sideCount < 33){
+    //     yoff = polyOffs[sideCount -3];
+    //     rad = polyRads[sideCount -3];
+    // }
+
+    // vec2 st = frag_uv - vec2(0.5, yoff);//(frag_uv - 0.5) * 2.0;
+    // float angle = atan(st.x,st.y) + PI;
+    // float slice = TWO_PI / sideCount;
+    // float f = aastep(rad, cos(floor(0.5 + angle / slice ) * slice - angle) * length(st));
+
+    // vec4 c = vec4(BorderColor.xyz, BorderColor.w - (1.0 - f));
+    // rad -= bordWidth / shapeScale.x;
+    
+    // angle = atan(st.x,st.y) + PI;
+    // slice = TWO_PI / sideCount;
+    // f = aastep(rad, cos(floor(0.5 + angle / slice ) * slice - angle) * length(st));
+    // vec4 d = vec4(FillColor.xyz, FillColor.w - (1.0 - f));
+    // c = mix(c, d,  -f);
+    
     float yoff = 0.5;
     float rad = 0.5;
     if(sideCount < 33){

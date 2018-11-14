@@ -53,17 +53,25 @@ struct textData {
 	float * letterTransData;
 	float * letterUVData;
 	int hashIndex = -1; //privately accessd
+	vec2 lastLetterPos;
 
 	textData(string Text, float textHeight, vec4 Color, int Justification, const char * path, bool bound = false );
-	textData() {};
+	textData() { lastLetterPos = vec2(0); };
+	vec2 letterPosAtIndexNDC(int index);
 	int getHashIndex();
 	void dispose();
 };
 
 struct animationData {
-	int sheetSize = 0, cellSize, cells, cellsPerLine = 0; 
+	int sheetSize = 0, cellSize, cells, cellsPerLine = 0;
 	float frequency, iTime = 0;
+	vec2 * UVS; //pre computed UV positions
+	bool play = true;
+	bool repeat = true;
+	int nextFrame = 0;
+
 	animationData(int size, int cellsPerLine, float freq);
+	void dispose();
 };
 
 struct imgData {
@@ -212,6 +220,8 @@ public:
 	int drawIndex = 0;
 	bool hidden = false;
 
+	vec2 getGlobalPosition();
+
 	GO(vec2 pos = vec2(0), vec2 Scale = vec2(0), float Angle = 0, float rotationSpeed = 0);
 	GO(polyData * poly, vec2 pos = vec2(0), vec2 Scale = vec2(0), float Angle = 0, float rotationSpeed = 0);
 	GO(imgData * img, vec2 pos = vec2(0), vec2 Scale = vec2(0), float Angle = 0, float rotationSpeed = 0);
@@ -272,6 +282,7 @@ public :
 	void onKeyboard(int key, int scancode, int action, int mods);
 	void onMouse(int button, int action, int mods);
 	void onCursor();
+	int keyBufferLength = 0, MouseBufferLength = 0;
 	inputDescription keyBuffer[10];
 	inputDescription mouseBuffer[10];
 
@@ -333,6 +344,7 @@ public :
 	float cameraZoom = 1;
 	int ParticleLimit = 10000; //max particles per system. Required for memory allocation
 	vec4 backCol;
+	bool managed = false; //wether code is being run from the wrapper vs native
 
 	//backend only
 	int loadShader(const char * vertexFilename, const char * fragmentFilename); //part of the canvas class to link the packed shaders boolean
@@ -344,7 +356,7 @@ public :
 	void clearSetPixelData();
 	void setGOTransform(GO * s, GLuint aspect, GLuint scale, GLuint pos, GLuint rot, GLuint zoom);
 	void LocalTransformHelper(GO * child, mat4 * m);
-	mat4 makeLocalTransform(GO * child);
+	mat4 getLocalTransform(GO * child);
 	void drawGameobjectShape(GO * g); //automatically applies localized transformations
 	GLCanvas();
 	bool Borderd = false; //skips writing window title

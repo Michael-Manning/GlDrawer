@@ -175,8 +175,8 @@ namespace platformGame
         vec2 Scale = new vec2(AdvancedPlatformer.tileScale * 0.5f);
         public override void Start()
         {
-            Sprite s = (new Sprite("../../../data/images/coin.png", vec2.Zero, Scale));
-            s.SetAnimation(2, 0.5f);
+            Sprite s = (new Sprite("../../../data/images/coin_spritesheet.png", vec2.Zero, Scale));
+            s.SetAnimation(4, 0.5f);
             AddChildShape(s);
             SetCircleCollider(Scale.x);
             rigidbody = new Rigidbody(this, 0, true, true, "coin");

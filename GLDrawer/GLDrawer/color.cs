@@ -39,24 +39,29 @@ namespace GLDrawer
             HazardMode = false;
         }
 
-        public static Color White { get { return new Color(255, 255, 255); } }
-        public static Color Black { get { return new Color(0, 0, 0); } }
-        public static Color Gray { get { return new Color(100, 100, 100); } }
-        public static Color LightGray { get { return new Color(160, 160, 160); } }
-        public static Color DarkGray { get { return new Color(70, 70, 70); } }
-        public static Color Blue { get { return new Color(50, 200, 255); } }
-        public static Color LightBlue { get { return new Color(70, 70, 255); } }
-        public static Color DarkBlue { get { return new Color(0, 0, 160); } }
-        public static Color Red { get { return new Color(255, 0, 0); } }
-        public static Color DarkRed { get { return new Color(150, 0, 0); } }
-        public static Color Yellow { get { return new Color(255, 255, 0); } }
-        public static Color Orange { get { return new Color(255, 130, 0); } }
-        public static Color Purple { get { return new Color(188, 11, 129); } }
-        public static Color Pink { get { return new Color(255, 20, 153); } }
-        public static Color Green { get { return new Color(0, 255, 0); } }
-        public static Color LightGreen { get { return new Color(0, 255, 0); } }
-        public static Color DarkGreen { get { return new Color(0, 130, 0); } }
-        public static Color Invisible { get { return new Color(0, 0, 0, 0); } }
+        public static Color White => new Color(255, 255, 255); 
+        public static Color Black => new Color(0, 0, 0); 
+        public static Color Gray => new Color(100, 100, 100); 
+        public static Color LightGray => new Color(160, 160, 160); 
+        public static Color DarkGray => new Color(70, 70, 70);
+        public static Color Blue => new Color(50, 200, 255); 
+        public static Color LightBlue => new Color(70, 70, 255); 
+        public static Color DarkBlue => new Color(0, 0, 160); 
+        public static Color Red => new Color(255, 0, 0); 
+        public static Color DarkRed => new Color(150, 0, 0); 
+        public static Color Yellow => new Color(255, 255, 0); 
+        public static Color Orange => new Color(255, 130, 0); 
+        public static Color Purple => new Color(188, 11, 129); 
+        public static Color Pink => new Color(255, 20, 153); 
+        public static Color Green => new Color(0, 255, 0); 
+        public static Color LightGreen => new Color(0, 255, 0);
+        public static Color DarkGreen => new Color(0, 130, 0); 
+        public static Color Cyan => new Color(0, 255, 255); 
+        public static Color GreenYellow => new Color(173, 255, 47); 
+        public static Color Tomato => new Color(255, 99, 71); 
+        public static Color Wheat => new Color(254, 222, 179); 
+        public static Color LightCoral => new Color(94, 50, 50); 
+        public static Color Invisible => new Color(0, 0, 0, 0); 
         public static Color Rainbow
         {
             get
@@ -79,10 +84,11 @@ namespace GLDrawer
         public static Color Random { get => new Color(rnd.Next(0, 255), rnd.Next(0, 255), rnd.Next(0, 255)); }
 
         //just in case you're used to system.drawing
-        public static Color FromArgb(int a, int r, int g, int b)
-        {
-            return new Color(r, g, b, a);
-        }
+        public static Color FromArgb(int a, int r, int g, int b) => new Color(r, g, b, a);
+        public static Color FromRed(int r) => new Color(r, 0, 0, 255);
+        public static Color FromGreen(int g) => new Color(0, g, 0, 255);
+        public static Color FromBlue(int b) => new Color(0, 0, b, 255);
+
         /// <summary>Averages the rgb values together</summary>
         public void SetMonochrome()
         {

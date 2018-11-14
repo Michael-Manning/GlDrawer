@@ -394,7 +394,15 @@ animationData::animationData(int size, int cell, float freq)
 	cellSize = size / cell;
 	cellsPerLine = cell;
 
+	UVS = new vec2[cells];
 	frequency = freq;
+
+	for (int i = 0; i < cells; i++)
+	{
+		float x = i % cellsPerLine * cellSize;
+		float y = -i / cellsPerLine * cellSize;
+		UVS[i] = vec2(x / sheetSize, y / sheetSize);
+	}
 }
 
 
@@ -427,12 +435,22 @@ textData::textData(string Text, float textHeight, vec4 Color, int Justification,
 	color = Color;
 	boundMode = bound;
 	justification = Justification;
+	lastLetterPos = vec2(0);
+}
+vec2 textData::letterPosAtIndexNDC(int index)
+{
+	if(!TextLength || index > TextLength)
+		return vec2();
+
+	return vec2(letterTransData[index * 4 + 0] ,
+				letterTransData[index * 4 + 1]);
 }
 void textData::dispose()
 {
 	delete letterTransData;
 	delete letterUVData;
 }
+
 int textData::getHashIndex() {
 	if (hashIndex == -1) {
 		if (fontHashLookup.size() == 0) {
@@ -453,6 +471,44 @@ int textData::getHashIndex() {
 	}
 	else
 		return hashIndex;
+}
+
+void mLocalTransformHelper(GO * child, mat4 * m) {
+	if (!child->parent)
+		return;
+	if (child->parent->parent)
+		mLocalTransformHelper(child->parent, m);
+
+	else {
+		//if the end of the parent chain has been reached, the aspect ratio correction gets applied here
+	// 	*m = translate(*m, vec3(-camera / resolutionV2f * 2.0f, 0.0f));
+		*m = translate(*m, vec3((child->parent->position), 0.0f));
+		//	*m = scale(*m, vec3(aspect, 1.0f, 1.0f));
+	}
+
+	*m = rotate(*m, child->parent->angle, vec3(0.0f, 0.0f, 1.0f));
+	*m = translate(*m, vec3((child->position), 0.0f));
+}
+
+mat4 makeLocalTransform(GO * child) {
+	mat4 m(1.0f);
+	mLocalTransformHelper(child, &m);
+	m = rotate(m, child->angle, vec3(0.0f, 0.0f, 1.0f));
+
+	return m;
+}
+
+vec2 GO::getGlobalPosition()
+{
+
+	if (!parent)
+		return position;
+	mat4 m = makeLocalTransform(this);
+	
+
+	vec3 newPosition(m[3]);
+	return vec2(newPosition.x, newPosition.y);
+
 }
 
 GO::GO(vec2 pos, vec2 Scale, float Angle, float rotationSpeed) {
@@ -528,11 +584,15 @@ void genFramBuffer(GLuint * textID, GLuint * fboID, int width, int height) {
 
 void GLCanvas::onKeyboard(int key, int scancode, int action, int mods) {
 	//Likely redundant
-	if (keyStates[key] == action)
-		return;
-	for (int i = 0; i < 10; i++)
-		if (keyBuffer[i].read)
-			keyBuffer[i] = inputDescription{ key,action, false };
+	//if (keyStates[key] == action)
+		//return;
+	//for (int i = 0; i < 10; i++){}
+	//	if (keyBuffer[i].read)
+	//		keyBuffer[i] = inputDescription{ key,action, false };
+	keyBuffer[keyBufferLength] = inputDescription{ key,action, false };
+	if(keyBufferLength < 10)
+		keyBufferLength++;
+
 	keyStates[key] = action;
 }
 void GLCanvas::onMouse(int button, int action, int mods) {
@@ -540,9 +600,12 @@ void GLCanvas::onMouse(int button, int action, int mods) {
 		LeftMouseState = action;
 	else if (button == 1)
 		RightMouseState = action;
-	for (int i = 0; i < 10; i++)
-		if (mouseBuffer[i].read)
-			mouseBuffer[i] = inputDescription{ button,action, false };
+	//for (int i = 0; i < 10; i++)
+	//	if (mouseBuffer[i].read)
+	//		mouseBuffer[i] = inputDescription{ button,action, false };
+	mouseBuffer[MouseBufferLength] = inputDescription{ button,action, false };
+	if (MouseBufferLength < 10)
+		MouseBufferLength++;
 }
 void GLCanvas::onCursor() {
 	mouseMoveFlag = true;
@@ -798,14 +861,14 @@ void GLCanvas::clearSetPixelData() {
 		setPixelData[i] = 0;
 }
 
-/* My best explenation/guess about what is goin on here:
+/* My best explination/guess about what is goin on here:
 The font textures are rasterized using stb truetype. stbtt also provides data on how to make actually use of the font texture,
 But through my reading, I wasn't able to find/understand any guides on how to implement any of the data that work with this rendering workflow.
 After loading a font map texture, the only other usefull data from stbtt I could use was the aligned quad which I name "c".
 The "s" and "t" components reveal the location of a letter in te texture map as a percentage.
 the "x" and "y" components reveal the scale of the letter. no components reveal the alignment or kerning information.
-Since the letters are actually aligned to a grid withen the texture map, the alignedment can be calculated through 
-a complicated calculation involving just the 4 floats provided by stb. */
+Since the letters are actually aligned to a grid withen the texture map, the alignment can be calculated through 
+a calculation involving just the 4 floats provided by stb. */
 unsigned char TTBuffer[1 << 20];
 fontAsset::fontAsset(const char * filepath) {
 	stbtt_bakedchar cData[96];
@@ -941,31 +1004,30 @@ void GLCanvas::setGOTransform(GO * g, GLuint Aspect, GLuint scale, GLuint pos, G
 	gl(Uniform1f(zoom, cameraZoom));
 }
 
-void GLCanvas::LocalTransformHelper(GO * child,  mat4 * m) {
+void GLCanvas::LocalTransformHelper(GO * child, mat4 * m) {
 	if (!child->parent)
 		return;
-	if (child->parent->parent) {
+	if (child->parent->parent) 
 		LocalTransformHelper(child->parent, m);
-	}
+
 	else {
-		//if the end of the parent chain has been reached, the aspect ratio correction gets applied here
+		//if the end/begining of the parent chain has been reached, the aspect ratio correction gets applied here
 		*m = translate(*m, vec3(-camera / resolutionV2f * 2.0f, 0.0f));
 		*m = translate(*m, vec3((child->parent->position) / resolutionV2f * 2.0f, 0.0f));
 		*m = scale(*m, vec3(aspect, 1.0f, 1.0f));
 	}
 
 	*m = rotate(*m, child->parent->angle, vec3(0.0f, 0.0f, 1.0f));
-	*m = translate(*m, vec3((child->position) / resolutionV2f * 2.0f , 0.0f));
+	*m = translate(*m, vec3((child->position) / resolutionV2f * 2.0f, 0.0f));
 }
 
-mat4 GLCanvas::makeLocalTransform(GO * child) {
+mat4 GLCanvas::getLocalTransform(GO * child) {
 	mat4 m(1.0f);
 	LocalTransformHelper(child, &m);
 	m = rotate(m, child->angle + child->rSpeed * currTime, vec3(0.0f, 0.0f, 1.0f));
 
 	return m;
 }
-
 
 GLCanvas::GLCanvas()
 {
@@ -986,6 +1048,11 @@ void GLCanvas::mainloop(bool render) {
 	glfwMakeContextCurrent(window);
 	clearStates();
 	glfwPollEvents();
+	if (!managed) {
+		keyBufferLength = 0;
+		MouseBufferLength = 0;
+	}
+
 	if (glfwWindowShouldClose(window)) {
 		dispose();
 		glfwDestroyWindow(window);
@@ -1216,7 +1283,7 @@ void GLCanvas::mainloop(bool render) {
 			continue;
 
 		if (g->parent) 
-			m = makeLocalTransform(g);
+			m = getLocalTransform(g);
 
 		//update physics
 		if (g->body) {
@@ -1248,29 +1315,33 @@ void GLCanvas::mainloop(bool render) {
 			if (g->i->adata) {
 				animationData * a = g->i->adata;
 
-				float fuck = (a->iTime / a->frequency);
-				int current = a->cells * fuck;
+				int current = a->nextFrame;
+				if (a->play)
+					current = a->cells * (a->iTime / a->frequency);
 
-				float x = current % a->cellsPerLine * a->cellSize ;
-				float y = -current / a->cellsPerLine * a->cellSize ;
-				gl(Uniform2f(FUVposUniformLocation, x/a->sheetSize, y/a->sheetSize));
+				gl(Uniform2f(FUVposUniformLocation, a->UVS[current].x, a->UVS[current].y));
 				float sc = a->cellSize / (float)a->sheetSize;
-				gl(Uniform2f(FUVscaleUniformLocation,sc, sc));
+				gl(Uniform2f(FUVscaleUniformLocation, sc, sc));
 
-				a->iTime += deltaTime;
-				if (a->iTime > a->frequency)
+				if (a->play)
+					a->iTime += deltaTime;
+
+				if (a->iTime > a->frequency) {
 					a->iTime = 0;
+					if (!a->repeat)
+						a->play = false;
+				}
 			}
 			//no animation
 			else {
 				gl(Uniform2f(FUVposUniformLocation, g->i->UVpos.x, g->i->UVpos.y));
-				gl(Uniform2f(FUVscaleUniformLocation, g->i->UVscale.x, g->i->UVscale.y));			
+				gl(Uniform2f(FUVscaleUniformLocation, g->i->UVscale.x, g->i->UVscale.y));
 			}
 
 			if (g->parent) {
 				m = scale(m, vec3(g->scale / resolutionV2f, 1.0f));
 				gl(UniformMatrix4fv(FxformUniformLocation, 1, GL_FALSE, value_ptr(m)));
-				gl(Uniform1f(FzoomUniformLocation, cameraZoom)); 
+				gl(Uniform1f(FzoomUniformLocation, cameraZoom));
 				gl(DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
 			}
 			else {
@@ -1362,6 +1433,8 @@ void GLCanvas::loadImageAsset(const char * filepath) {
 	imgHashLookup.push_back(filepath);
 }
 
+
+//for Dan's eyes only
 void GLCanvas::setFont(GO * g) {
 	gl(UseProgram(fontShaderProgram));
 
@@ -1377,8 +1450,6 @@ void GLCanvas::setFont(GO * g) {
 		fonts[HashIndex] = fontAsset(g->t->filepath);
 		fonts[HashIndex].loadTexture();
 	}
-
-
 
 	fontAsset * selected = &fonts[HashIndex];
 	gl(BindTexture(GL_TEXTURE_2D, selected->id));
@@ -1397,6 +1468,8 @@ void GLCanvas::setFont(GO * g) {
 	int recordIndex = 0; //which line number is the
 	int Xreference; // iether scaled boundry.X or record
 	int textLength = g->t->text.length();
+	float * lineLengths; //array of pixel lengths for each line
+	bool lineBreak = false; //runtime flag for inserting new lines in bound mode
 
 	float letterPosX, letterPosY, finalScaleX, finalScaleY; //used ever for letter. Allocated here for performance
 
@@ -1405,7 +1478,7 @@ void GLCanvas::setFont(GO * g) {
 	memcpy(text, g->t->text.c_str(), g->t->text.size());
 
 	//allocate an arrays to be coppied to the VBOs
-	if (textLength > g->t->TextLength) {
+	if (textLength  != g->t->TextLength) {
 		//if containers are not being allocated for the first time, delete the previuos data
 		if (g->t->TextLength > 0)
 			g->t->dispose();
@@ -1414,13 +1487,14 @@ void GLCanvas::setFont(GO * g) {
 		g->t->TextLength = textLength;
 	}
 
+
 	//pre calculate the pixel lengths of the final lines
 	for (int i = 0; i < textLength; i++)
 		if (text[i] == '\n')
 			lineCount++;
-	float * lineLengths = new float[lineCount];
+	
+	lineLengths = new float[lineCount];
 
-	//pre compute the eventual line lengths
 	for (int i = 0, lineCounter = 1; i < textLength; i++)
 	{
 		c = text[i];
@@ -1461,7 +1535,7 @@ void GLCanvas::setFont(GO * g) {
 			continue;
 		}
 		//set the cursor for the new line
-		if (i == 0 || text[i - 1] == '\n') {
+		if (i == 0 || text[i - 1] == '\n' || lineBreak) {
 			if (g->t->justification == 0 || (boundMode && lineLengths[lineNum] > g->scale.x / scaleRatio))
 				xof = 0;
 			else if (g->t->justification == 1)
@@ -1469,6 +1543,7 @@ void GLCanvas::setFont(GO * g) {
 			else {
 				xof = (Xreference - lineLengths[lineNum]);
 			}
+			lineBreak = false;
 		}
 		
 		g->t->letterUVData[i * 4 + 0] = selected->uvOffset[c - 32].x;
@@ -1479,8 +1554,14 @@ void GLCanvas::setFont(GO * g) {
 		vec2 letterScale = selected->quadScale[c - 32];
 
 		xof += letterScale.x / 2; //move the scale by  width of current chashapeor
-		if (boundMode && xof *scaleRatio > g->scale.x)
+		if (boundMode && xof *scaleRatio > g->scale.x) {
+			lineNum++;
+			lineBreak = true;
+			if (boundMode && lineNum + 1 > maxLines)
+				break;
+			i--;
 			continue;
+		}
 
 		float xTranslate = xof;
 		float yTranslate = selected->alignment[c - 32] - selected->tallestLetter * lineNum;
@@ -1490,12 +1571,22 @@ void GLCanvas::setFont(GO * g) {
 			if (!boundMode) {
 				xTranslate -= record / 2;
 				yTranslate += selected->alignmentOffset;
-				//yTranslate += (selected->tallestLetter * lineCount) / 2;
+				yTranslate += (selected->tallestLetter * lineCount) / 2;
 			}
-			yTranslate += (selected->tallestLetter * lineCount) / 2;
+			else {
+				//yTranslate += g->scale.y/2;
+			}
+		//	yTranslate += (selected->tallestLetter * lineCount) / 2;
 
 			letterPosX = (xTranslate * scaleRatio) / resolutionWidth * 2.0f;
 			letterPosY = (yTranslate * scaleRatio) / resolutionHeight * 2.0f;
+			
+			if (boundMode) 
+				g->t->lastLetterPos = vec2((xTranslate - selected->alignment[c - 32]) * scaleRatio - g->scale.x / 2,
+										   (yTranslate - selected->alignment[c - 32]) * scaleRatio + g->scale.y / 2);
+			else
+				g->t->lastLetterPos = vec2((xTranslate - selected->alignment[c - 32]) * scaleRatio, 
+										   (yTranslate - selected->alignment[c - 32]) * scaleRatio);
 		}
 		//final scale of the letter
 		{
@@ -1561,7 +1652,7 @@ void GLCanvas::setFont(GO * g) {
 	glVertexAttribDivisor(6, 1); 
 
 	if (boundMode) {
-		gl(Uniform2f(FontmPosUniformLocation, ((g->position.x - camera.x) - g->scale.x/2) / resolutionWidth * 2.0f, (g->position.y - camera.y) / resolutionHeight * 2.0f));
+		gl(Uniform2f(FontmPosUniformLocation, ((g->position.x - camera.x) - g->scale.x/2) / resolutionWidth * 2.0f, (g->position.y - camera.y + g->scale.y/2) / resolutionHeight * 2.0f));
 	}
 	else {
 		gl(Uniform2f(FontmPosUniformLocation, (g->position.x - camera.x) / resolutionWidth * 2.0f, (g->position.y - camera.y) / resolutionHeight * 2.0f));

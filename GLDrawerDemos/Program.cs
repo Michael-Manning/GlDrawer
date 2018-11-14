@@ -13,8 +13,9 @@ namespace GLDrawerDemos
         {
             //platformGame.SimplePlatformer.run();
             //platformGame.AdvancedPlatformer.run();
-            GLDrawerDemos.levelEditorProgram.run();
+            //GLDrawerDemos.levelEditorProgram.run();
             //spaceGame.spaceGame.run();
+            TextEditor.run();
 
             //demos.FormTest();
             //demos.FastRemoval();
