@@ -6,20 +6,21 @@ GLDrawer is a from scratch recreation of GDIDrawer using OpenGL3
 
 Differences from GDIDrawer include:
 - Higher performance and hardware acceleration
-- Ability to use shapes as objects, even while on a canvas 
-- Addition of sprites for easy use of image files as well as extra shape types
+- Object oriented shapes and game objects
+- Addition of sprites and animations for easy use of image files
 - Ability to easily embed a canvas into a windows forms application
 - anti aliasing, mag mapping and min mapping
-- scaling of shapes after their creation
 - rotation of shapes
+- relitive transformations
 - Runtime rasterization of font files
-- The addition of Gameobjects which allow for the use of world coordinates in the form of transforms
-- Timing utilities such as delta times and on frame events
-- Math utilities such a linearly interpolated motion
-- Colliders with collision/point intersection detection (in progress
-- particle engine with physics (in progress)
-- Implementation and wrapper of the Box2D physics engine (in progress)
-- velocity and motion tools
+- Equipt with a game engine
+- Timing utilities
+- Math utilities such a linearly interpolated motion and vector math
+- Colliders with collision/point intersection detection
+- particle engine
+- Implementation of the Box2D physics engine
+- Global camera system / versatile coordinate system
+
 
 
 
