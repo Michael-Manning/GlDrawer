@@ -6,29 +6,74 @@
 #include <Box2D/Box2D.h>
 #include <vector>
 
+#include <stb/stb_truetype.h>
+
 using namespace std;
 using namespace glm;
 
 #define TEXTFILE 256;
 
+//struct fontAsset {
+//	unsigned char bitmapBuffer[512 * 512];
+//	vec2 uvOffset[95]; //location of the letter within the generated bitmap
+//	vec2 uvScale[95]; //size ofthe letter within the bitmap
+//	vec2 quadScale[95]; //size the letter should be displayed
+//	float alignment[95]; //vertical offset of each letter
+//	float tallestLetter = 0; //tallest letter in pixels
+//	float alignmentOffset = 0; //pixels in which the tallest letter sets below the alignemt. Required for precise global positioning
+//	float spaceOff;
+//	GLuint id;
+//	bool init;
+//	const char * filePath;
+//
+//	fontAsset(const char * filepath);
+//	fontAsset() { init = false; }
+//	void loadTexture();
+//	void dipose();
+//};
+
 struct fontAsset {
-	unsigned char bitmapBuffer[512 * 512];
-	vec2 uvOffset[95]; //location of the letter within the generated bitmap
-	vec2 uvScale[95]; //size ofthe letter within the bitmap
-	vec2 quadScale[95]; //size the letter should be displayed
-	float alignment[95]; //vertical offset of each letter
-	float tallestLetter = 0; //tallest letter in pixels
-	float alignmentOffset = 0; //pixels in which the tallest letter sets below the alignemt. Required for precise global positioning
-	float spaceOff;
-	GLuint id;
-	bool init;
+	GLuint tex_atlas;
+	stbtt_fontinfo info;
+	float scaleFactor;
+	float tallestLetter;
+	int ascent;
+	int descent;
+	int line_gap;
+	int baseline;
+	stbtt_packedchar* packed_chars;
 	const char * filePath;
 
+	bool init;
+	
+
 	fontAsset(const char * filepath);
-	fontAsset() { init = false; }
-	void loadTexture();
-	void dipose();
+	fontAsset() { 
+		init = false; 
+		scaleFactor = 0.0f;
+		tallestLetter = 0.0f;
+		ascent = 0;
+		descent = 0;
+		line_gap = 0;
+		packed_chars = NULL;
+	}
+	//void loadTexture();
+	//void dipose();
 };
+
+//these 2 need to be the same for correct kerning
+const float fnt_height_px = 64.0f;
+const uint32_t fnt_size = 64; 
+
+const uint32_t fnt_atlas_padding = 1;
+const uint32_t fnt_atlas_width = 1024;
+const uint32_t fnt_atlas_height = 1024;
+const uint32_t fnt_oversample_x = 2;
+const uint32_t fnt_oversample_y = 2;
+const uint32_t fnt_first_char = ' ';
+const uint32_t fnt_last_char = '~';
+const uint32_t fnt_char_count = '~' - ' ';
+
 
 //while images are small, the same image should be prevented from be loaded multiple times into the same OpnGL context
 struct imgAsset {
@@ -274,6 +319,11 @@ struct inputDescription {
 	}
 };
 
+//very slight performance boost
+struct Pixel {
+	int xy, r, g, b, a;
+};
+
 class GLCanvas {
 public :
 	GLFWwindow * window;
@@ -323,9 +373,10 @@ public :
 	float debugTimer = 0; //used to time frequency of debug information updates
 	float debugUpdateFreq = 0.2; //how many seconds to wait between info updates
 	std::string debugString;
-	bool setPixelFlag = false; //used to determin if work needs to be done based on wether a pixel was set since the previous frame
-	bool setPixelCopyFlag = false;//used to pause the main thread if it tries to write setpixel data while being coppied
-	bool shapeCopyFlag = false; //main thread interupt to prevent loss while coppying the shape buffer for shapes added that frame
+	volatile bool setPixelFlag = false; //used to determin if work needs to be done based on wether a pixel was set since the previous frame
+	volatile bool setPixelCopyFlag = false;//used to pause the main thread if it tries to write setpixel data while being coppied
+	volatile bool shapeCopyFlag = false; //main thread interupt to prevent loss while coppying the shape buffer for shapes added that frame
+	bool firstFrame = true;
 
 	//used by back/middle end
 	const char * title = "Running from Native C++    ";
@@ -341,7 +392,7 @@ public :
 	bool windowTitleFlag = true; //setting the title takes insanely long, so it should only be updated if there's a change
 	bool centerOffset = false;// 0,0 is bottom left of the string
 	vec2 camera;
-	float cameraZoom = 1;
+	vec2 cameraZoom = vec2(1);
 	int ParticleLimit = 10000; //max particles per system. Required for memory allocation
 	vec4 backCol;
 	bool managed = false; //wether code is being run from the wrapper vs native
@@ -349,13 +400,16 @@ public :
 	//backend only
 	int loadShader(const char * vertexFilename, const char * fragmentFilename); //part of the canvas class to link the packed shaders boolean
 	void setFont(GO * g);
+	void DsetFont(GO * g);
 	void setTexture(GO *, GLuint textureLocation);
 	void setPolygon(GO * g); 
+	void createSetPixelTexture();
 	void loadImageAsset(const char * filepath); //like setTexture, but only loads the image to memory for later use
 	void drawParticleSystem(GO * g, float deltaTime, mat4 *global = NULL);
-	void clearSetPixelData();
+	void clearSetPixelData(bool makeOnly = false);
 	void setGOTransform(GO * s, GLuint aspect, GLuint scale, GLuint pos, GLuint rot, GLuint zoom);
 	void LocalTransformHelper(GO * child, mat4 * m);
+	void saveCanvasAsImage(const char * fileName);
 	mat4 getLocalTransform(GO * child);
 	void drawGameobjectShape(GO * g); //automatically applies localized transformations
 	GLCanvas();
@@ -365,7 +419,8 @@ public :
 	void setPos(int x, int y);
 	int createCanvas(int width, int height, bool borderd, vec3 backCol, bool Vsync, bool cursorHidden = false);
 	void addGO(GO* g);
-	void setBBPixel(int x, int y, vec4 col);
+	void setBBPixel(int x, int y,int r, int g, int b, int a);
+	void setBBPixelFast(int x, int y,int r, int g, int b, int a);
 	void setBBShape(GO g); 
 	void dispose();
 	vec3 getPixel(int x, int y);
@@ -392,9 +447,16 @@ public :
 	vector<fontAsset> fonts;
 	vector<imgAsset> imgs;
 	unsigned char* setPixelData;
+	unsigned char* setPixelMask; //optimizes set pixel
+	vector<Pixel> spTransferBuffer; //stores set requests while sending data to the GPU
 	GLuint setPixelDataID;
+	GLuint setPixelMaskID;
 
-	int PolygonShaderProgram, textureShaderProgram, fontShaderProgram, ParticleShaderProgram;
+	int PolygonShaderProgram, 
+		textureShaderProgram, 
+		fontShaderProgram, 
+		ParticleShaderProgram,
+		setPixelShaderProgram;
 	GLuint VBO, VAO, EBO;
 	GLuint PPosVBO, PColVBO, PVertVBO, PuvVBO; //for particle systems
 	GLuint FTranVBO, FuvVBO; //for text
@@ -435,6 +497,19 @@ public :
 	GLuint FUVposUniformLocation;
 	GLuint FaspectUniformLocation;
 	GLuint FzoomUniformLocation;
+
+	//set pixel shader uniforms
+	GLuint SPtextureUniformLocation;
+	GLuint SPTextureMaskUniformLocation;
+
+	GLuint SPxformUniformLocation;
+	GLuint SPPosUniformLocation;
+	GLuint SPScaleUniformLocation;
+	GLuint SPRotUniformLocation;
+	GLuint SPUVscaleUniformLocation;
+	GLuint SPUVposUniformLocation;
+	GLuint SPaspectUniformLocation;
+	GLuint SPzoomUniformLocation;
 
 	//font shader uniforms
 	GLuint FonttextureUniformLocation;

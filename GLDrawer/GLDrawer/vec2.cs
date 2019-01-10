@@ -30,12 +30,6 @@ namespace GLDrawer
         /// <summary>vec2 with abolute values of x and y</summary>
         public vec2 Abs { get { return new vec2(Math.Abs(x), Math.Abs(y)); } }
 
-        //implicit vec2 to Gl3DrawerCLR vec2 convertion which is implcitly converted to glm vec2 internally
-        //public static implicit operator GLDrawerCLR.vec2(vec2 v)
-        //{
-        //    return new GLDrawerCLR.vec2(v.x, v.y);
-        //}
-
         /// <summary>gets the distance from the target</summary>
         public float Length(vec2 Target)
         {

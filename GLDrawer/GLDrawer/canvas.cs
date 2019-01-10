@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Collections.Concurrent;
 using GLDrawerCLR;
@@ -32,13 +33,26 @@ namespace GLDrawer
         /// <summary>wether 0 on the y axis starts from the top or bottom</summary>
         private bool InvertedYAxis = false; //unimplimented for public use as of now
         /// <summary>multiplier for all shape coordinates</summary>
-        public int Scale = 1;
-        /// <summary>wether to display debug info next to the title</summary>
+        public int Scale = 1; //replaced by camera scale
+        /// <summary>display debug info next to the title</summary>
         public bool ExtraInfo { set => GLWrapper.titleDetails = value; }
-        /// <summary>center coordinate of the canvas</summary>
+        /// <summary>center coordinate of the canvas in pixels (half the window size)</summary>
         public vec2 Center { get => new vec2(Width / 2, Height / 2); }
+        /// <summary>globally offsets the coordinate system</summary>
         public vec2 CameraPosition { get => new vec2(GLWrapper.camera.x, GLWrapper.camera.y); set => GLWrapper.camera = new unmanaged_vec2(value.x, value.y); }
-        public float CamerZoom { get => GLWrapper.zoom; set => GLWrapper.zoom = value; }
+        private float iCameraZoom = 1; //zoom is a vec2, so if a user wants to read from their changes, they are stored here
+        /// <summary>Uniformly sets the camera scale</summary>
+        public float CameraZoom
+        {
+            get => iCameraZoom;
+            set
+            {
+                iCameraZoom = value;
+                GLWrapper.zoom = new unmanaged_vec2(value, value);
+            }
+        }
+        /// <summary>scale, stretche, or invert the coordinate system</summary>
+        public vec2 CameraScale { get => new vec2(GLWrapper.zoom.x, GLWrapper.zoom.y); set => GLWrapper.zoom = new unmanaged_vec2(value.x, value.y); }
         public int GameObjectCount => GORefs.Count;
         /// <summary>number of shapes being drawn on the canvas</summary>
         public int ShapeCount { get => GLWrapper.shapeCount; }
@@ -129,11 +143,13 @@ namespace GLDrawer
         internal List<Action> disposeBuffer = new List<Action>();
         private ConcurrentQueue<unmanaged_GO> shapeAddBuffer = new ConcurrentQueue<unmanaged_GO>();
         private ConcurrentQueue<unmanaged_GO> shapeRemoveBuffer = new ConcurrentQueue<unmanaged_GO>();
+        private ConcurrentQueue<Pixel> setPixelBuffer = new ConcurrentQueue<Pixel>();
 
         private static List<GLCanvas> activeCanvases = new List<GLCanvas>();
         private static Thread loopthread;
         private static Thread mainThread;
         private static bool threadsInitialized = false;
+        private object transferLock = new object();
 
         private void StartCanvas(GLCanvas canvas)
         {
@@ -149,9 +165,7 @@ namespace GLDrawer
 
             //it's a bad idea to continue before the canvas is initialized
             while (GLWrapper == null || !GLWrapper.initialized)
-            {
-                Thread.Sleep(1);
-            }
+                Thread.Sleep(0);
         }
 
         private static void ThreadLoop()
@@ -159,7 +173,7 @@ namespace GLDrawer
             while (true)
             {
                 //if the end of the main program is reached, all the canvas windows should close
-                if (!mainThread.IsAlive)
+                    if (!mainThread.IsAlive)
                     for (int i = 0; i < activeCanvases.Count; i++)
                         activeCanvases[i].GLWrapper.close();
 
@@ -297,6 +311,9 @@ namespace GLDrawer
             GLWrapper.setMouseMoveCallback(MouseMoveCallback);
             initialized = true;
         }
+
+        private int tempCounter = 0;
+
         private bool firstLoop = true;
         private void MainLoop()
         {
@@ -315,6 +332,7 @@ namespace GLDrawer
                 Update.Invoke();
                 LateUpdate.Invoke();
 
+                //user invoke list called here as well as thread spesific function call
                 for (int i = 0; i < delayedCalls.Count; i++)
                     delayedCalls[i].timeLeft -= DeltaTime;
                 for (int i = 0; i < delayedCalls.Count; i++)
@@ -328,7 +346,6 @@ namespace GLDrawer
                 }
                 delayedCalls.RemoveAll(o => o.timeLeft <= 0 || o.func == null);
             }
-
             unmanaged_GO bufferGO;
             while (shapeAddBuffer.TryDequeue(out bufferGO))
                 GLWrapper.addGO(bufferGO);
@@ -336,22 +353,31 @@ namespace GLDrawer
             while (shapeRemoveBuffer.TryDequeue(out bufferGO))
                 GLWrapper.removeGO(bufferGO);
 
+            Pixel p;
+            while (setPixelBuffer.TryDequeue(out p))
+            {
+                GLWrapper.setBBpixel(p.x, p.y, p.color.R, p.color.G, p.color.B, p.color.A);
+                tempCounter++;
+            }            
+
             MouseScrollDirection = 0;
 
-
-            //needs to be very spesific due to threads
-            if (!AutoRender)
-            {
-                if (renderNextFrame)
+            //lock (GLWrapper)
+           // {
+                //needs to be very spesific due to threads
+                if (!AutoRender)
                 {
-                    GLWrapper.mainloop(true);
-                    renderNextFrame = false;
+                    if (renderNextFrame)
+                    {
+                        GLWrapper.mainloop(true);
+                        renderNextFrame = false;
+                    }
+                    else
+                        GLWrapper.mainloop(false);
                 }
                 else
-                    GLWrapper.mainloop(false);
-            }
-            else
-                GLWrapper.mainloop(true);
+                    GLWrapper.mainloop(true);
+           // }
 
             disposeBuffer.ForEach(a => a.Invoke());
             disposeBuffer.Clear();
@@ -775,70 +801,96 @@ namespace GLDrawer
             GLWrapper.removeGO(gameObject.internalGO);
             disposeBuffer.Add(gameObject.Dispose);
         }
+
         /// <summary>displays a shape one index behind other shapes on the canvas</summary>
         public void SendBackward(Shape shape)
         {
-            //if (!GLWrapper.checkLoaded(shape.internalGO))
-            //    throw new ArgumentException("Shape was not found on / wasn't added to the canvas", "shape");
+            if (!GLWrapper.checkLoaded(shape.internalGO))
+                throw new ArgumentException("Shape was not found on / wasn't added to the canvas", "shape");
 
+            shapeRefs.Select(o => o.DrawIndex--);
+            shape.DrawIndex++;
+
+            //Old system method:
             //int shapeIndex = GLWrapper.getRectIndex(shape.internalGO);
             //if (shapeIndex > 0)
             //    GLWrapper.swapOrder(shapeIndex, shapeIndex - 1);
         }
+
         /// <summary>displays a shape one index in front of the other shapes on the canvas</summary>
         public void SendForward(Shape shape)
         {
-            //if (!GLWrapper.checkLoaded(shape.internalGO))
-            //    throw new ArgumentException("Shape was not found on / wasn't added to the canvas", "shape");
+            if (!GLWrapper.checkLoaded(shape.internalGO))
+                throw new ArgumentException("Shape was not found on / wasn't added to the canvas", "shape");
 
+            shapeRefs.Select(o => o.DrawIndex++);
+            shape.DrawIndex--;
+
+            //Old system method:
             //int shapeIndex = GLWrapper.getRectIndex(shape.internalGO);
             //if(shapeIndex < ShapeCount -1)
             //    GLWrapper.swapOrder(shapeIndex, shapeIndex +1);
         }
+
         /// <summary>sets a shape to be drawn behind every other shape on the canvas</summary>
         public void SendToBack(Shape shape)
         {
-            //if (!GLWrapper.checkLoaded(shape.internalGO))
-            //    throw new ArgumentException("Shape was not found on / wasn't added to the canvas", "shape");
+            if (!GLWrapper.checkLoaded(shape.internalGO))
+                throw new ArgumentException("Shape was not found on / wasn't added to the canvas", "shape");
 
+            shape.DrawIndex = shapeRefs.Max(o => o.DrawIndex) + 1;
+
+            //Old system method:
             //int shapeIndex = GLWrapper.getRectIndex(shape.internalGO);
             //for (int i = shapeIndex; i > 0; i--)
             //    GLWrapper.swapOrder(i, i - 1);
         }
+
         /// <summary>sets a shape to be drawn in front of every other shape on the canvas</summary>
         public void SendToFront(Shape shape)
         {
-            //if (!GLWrapper.checkLoaded(shape.internalGO))
-            //    throw new ArgumentException("Shape was not found on / wasn't added to the canvas", "shape");
+            if (!GLWrapper.checkLoaded(shape.internalGO))
+                throw new ArgumentException("Shape was not found on / wasn't added to the canvas", "shape");
+ 
+            shape.DrawIndex = shapeRefs.Min(o => o.DrawIndex) -1;
 
+            //Old system method:
             //int max = ShapeCount; //CLR properties are slow
             //int shapeIndex = GLWrapper.getRectIndex(shape.internalGO);
 
-            //for (int i = shapeIndex; i < max-1; i++)
+            //for (int i = shapeIndex; i < max - 1; i++)
             //    GLWrapper.swapOrder(i, i + 1);
         }
+
+        //NOTE This no longer works due to a change which allows shapes with the same draw order index
         /// <summary>
         /// swaps the drawing order of two shapes and which will apear in front of the other
         /// </summary>
         /// <param name="IndexA">order of the first shape is drawn to the canvas</param>
         /// <param name="IndexB">order of the second shape is drawn to the canvas</param>
-        public void SwapDrawOrder(int IndexA, int IndexB)
-        {
-            int max = ShapeCount; //CLR properties are slow
-            if (IndexA > max || IndexA < 0)
-                throw new ArgumentOutOfRangeException("IndexA", IndexA, "Shape index was out of canvas range (0 - " + max + ")");
-            if (IndexB > max || IndexB < 0)
-                throw new ArgumentOutOfRangeException("IndexB", IndexB, "Shape index was out of canvas range (0 - " + max + ")");
+        //public void SwapDrawOrder(int IndexA, int IndexB)
+        //{
+        //    int max = ShapeCount; //CLR properties are slow
+        //    if (IndexA > max || IndexA < 0)
+        //        throw new ArgumentOutOfRangeException("IndexA", IndexA, "Shape index was out of canvas range (0 - " + max + ")");
+        //    if (IndexB > max || IndexB < 0)
+        //        throw new ArgumentOutOfRangeException("IndexB", IndexB, "Shape index was out of canvas range (0 - " + max + ")");
 
-            GLWrapper.swapOrder(IndexA, IndexB);
-        }
+        //    //GLWrapper.swapOrder(IndexA, IndexB);
+        //}
+
         /// <summary>swaps the drawing order of two shapes and which will apear in front of the other</summary>
         public void SwapDrawOrder(Shape shapeA, Shape shapeB)
         {
-            //if (!GLWrapper.checkLoaded(shapeA.internalGO))
-            //    throw new ArgumentException("Shape A was not found on / wasn't added to the canvas", "shapeA");
-            //if (!GLWrapper.checkLoaded(shapeB.internalGO))
-            //    throw new ArgumentException("Shape B was not found on / wasn't added to the canvas", "shapeB");
+            if (!GLWrapper.checkLoaded(shapeA.internalGO))
+                throw new ArgumentException("Shape A was not found on / wasn't added to the canvas", "shapeA");
+            if (!GLWrapper.checkLoaded(shapeB.internalGO))
+                throw new ArgumentException("Shape B was not found on / wasn't added to the canvas", "shapeB");
+
+            int temp = shapeA.DrawIndex;
+            shapeA.DrawIndex = shapeB.DrawIndex;
+            shapeB.DrawIndex = temp;
+
             //GLWrapper.swapOrder(GLWrapper.getRectIndex(shapeA.internalGO), GLWrapper.getRectIndex(shapeB.internalGO));
         }
 
@@ -878,6 +930,14 @@ namespace GLDrawer
             }
         }
 
+        /// <summary>Writes all the pixels on the canvas to a BMP image file</summary>
+        public void WriteToBMP (string filepath)
+        {
+            if (!Regex.IsMatch(filepath, @"\.bmp$"))
+                filepath += ".bmp";
+            Invoke(delegate { GLWrapper.saveCanvasAsImage(filepath); });
+        }
+
         /// <summary>sets the color of a single pixel on theh back buffer</summary>
         public void SetBBPixel(int x, int y, Color color)
         { 
@@ -885,8 +945,15 @@ namespace GLDrawer
                 throw new ArgumentException("X coordinate must be a positive number less than the canvas width", "x");
             if (y < 0 || y >= Height)
                 throw new ArgumentException("Y coordinate must be a positive number less than the canvas height", "y");
-            GLWrapper.setBBpixel(x, y, color);
+            GLWrapper.setBBpixel(x, y, color.R, color.G, color.B, color.A);
         }
+
+        /// <summary>sets a back buffer pixel faser but without error checking or blending. Not Thread Safe!</summary>
+        public void SetBBPixelFast(int x, int y, Color color)
+        {
+            GLWrapper.setBBpixelFast(x, y, color.R, color.G, color.B, color.A);
+        }
+
         /// <summary>draws a whole shape to the back buffer</summary>
         public Shape SetBBShape(Shape shape)
         {
@@ -895,6 +962,7 @@ namespace GLDrawer
             GLWrapper.setBBShape(shape.internalGO);
             return shape;
         }
+        public void tempF() => GLWrapper.tempF();
         /// <summary>gets the color of a single pixel on the canvas</summary>
         public Color GetPixel(vec2 pixel) => GLWrapper.getPixel((int)pixel.x, (int)pixel.y);
         /// <summary>gets the color of a single pixel on the canvas</summary>
@@ -958,10 +1026,16 @@ namespace GLDrawer
         {
             Dispose(false);
         }
-    }
-  
-    public static class GMath
-    {
+
+        /// <summary>Configures the camera to be like GDIDrawer with (0,0) in the top left</summary>
+        public void SetInvertedCoordinates()
+        {
+            CameraScale = new vec2(1, -1);
+            CameraPosition = Center;
+        }
+
+        //Extra, user end functions
+
         /// <summary>
         /// Creates a Trigonometric sawtooth wave over time
         /// </summary>
@@ -991,6 +1065,22 @@ namespace GLDrawer
             return first * time + second * (1 - time);
         }
         //ping pongs: https://www.desmos.com/calculator/bq4qwfxb0e sub t for 1000 and x for t
+    }
+
+    //used for diagnostic purposes only
+    internal struct Pixel
+    {
+        public int x, y;
+        public Color color;
+        public static int count = 0;
+
+        public Pixel(int x, int y, Color color)
+        {
+            this.x = x;
+            this.y = y;
+            this.color = color;
+            Interlocked.Increment(ref count);
+        }
     }
 }
 

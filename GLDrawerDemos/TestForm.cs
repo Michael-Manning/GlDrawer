@@ -298,7 +298,7 @@ namespace GLDrawerDemos
             int i = listBox1.SelectedIndex;
             if (listBox1.Items.Count <= i+1 || i == -1)
                 return;
-            demos.can.SwapDrawOrder(i, i + 1);      
+          //  demos.can.SwapDrawOrder(i, i + 1);      
             {
                 string temp = listBox1.Items[i].ToString();
                 listBox1.Items[i] = listBox1.Items[i + 1];
@@ -319,7 +319,7 @@ namespace GLDrawerDemos
             if (i < 1)
                 return;
 
-            //demos.can.SwapDrawOrder(i, i - 1);
+           // demos.can.SwapDrawOrder(i, i - 1);
 
 
             
@@ -327,8 +327,8 @@ namespace GLDrawerDemos
                 listBox1.Items[i] = listBox1.Items[i - 1];
                 listBox1.Items[i - 1] = temp;
 
-            shapes[i].DrawIndex++;
-            shapes[i - 1].DrawIndex--;
+              shapes[i].DrawIndex++;
+              shapes[i - 1].DrawIndex--;
                 //Shape temp = shapes[i];
                 //shapes[i] = shapes[i - 1];
                 //shapes[i - 1] = temp;

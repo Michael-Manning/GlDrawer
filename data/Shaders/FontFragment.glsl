@@ -7,10 +7,17 @@ out vec4 FragColor;
 void main()
 { 
     vec4 FillColor = Color;
-    if(Color.w == -1.0){
-        FillColor = vec4(0.5 + 0.5*cos(iTime * 1.4 +(frag_uv).xyx+vec3(0,2,4)), 1.0);
-    }
-    FragColor = vec4(FillColor.xyz, texture(Text, frag_uv).x - (1.0-FillColor.w));
+    // if(Color.w == -1.0){
+    //     FillColor = vec4(0.5 + 0.5*cos(iTime * 1.4 +(frag_uv).xyx+vec3(0,2,4)), 1.0);
+    // }
+
+
+    float a =  texture(Text, frag_uv ).a;
+    clamp(a, 0.0, 1.0);
+
+FragColor = vec4(FillColor.xyz, a  + 0.0);
+
+   // FragColor = vec4(FillColor.xyz, texture(Text, frag_uv).x - (1.0-FillColor.w) + 0.3);
 };
 
 

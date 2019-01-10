@@ -152,7 +152,7 @@ int gl3wInit2(GL3WGetProcAddressProc proc)
 	if (res)
 		return res;
 
-	atexit(close_libgl);
+	//atexit(close_libgl);
 	load_procs(proc);
 	return parse_version();
 }

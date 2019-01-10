@@ -28,9 +28,9 @@ namespace platformGame
 
         private static void Can_MouseScrolled(int Delta, GLCanvas Canvas)
         {
-            can.CamerZoom += Delta * 0.01f;
-            if (can.CamerZoom < 0.1f)
-                can.CamerZoom = 0.1f;
+            can.CameraZoom += Delta * 0.01f;
+            if (can.CameraZoom < 0.1f)
+                can.CameraZoom = 0.1f;
         }
 
         public static void loadLevel()

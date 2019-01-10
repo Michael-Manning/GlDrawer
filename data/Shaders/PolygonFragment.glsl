@@ -9,8 +9,9 @@ uniform vec4 bordColor;
 uniform vec2 shapeScale;
 uniform int sideCount;
 uniform float bordWidth;
-uniform float zoom;
+uniform vec2 zoom;
 uniform float iTime;
+uniform float rotation; //needed to skip anti aliasing with rects with no rotation
 out vec4 FragColor;
 
 //scaling and position a #sided polygon precisely within a square based off an equation is impossible, but I've hard coded the first 32
@@ -33,6 +34,7 @@ mat2 rot(float a){
         );
 }
 
+//delux anti aliasing
 float aastep(float threshold, float value) {
   #ifdef GL_OES_standard_derivatives
     float afwidth = length(vec2(dFdx(value), dFdy(value))) * 0.70710678118654757;
@@ -48,6 +50,7 @@ void main()
     float xblur = 1.5/shapeScale.x;
 	float yblur = 1.5/shapeScale.y;
     
+    //get fancy colors and patterns
     vec4 FillColor = Color;
     vec4 BorderColor = bordColor;
     if(Color.a < 0.0)
@@ -74,8 +77,23 @@ void main()
 
     //rect
     if(sideCount == 4){
-        float bordX = (bordWidth / shapeScale.x) * 1.0;
-        float bordy = (bordWidth / shapeScale.y) * 1.0;
+        float bordX = (bordWidth / shapeScale.x);
+        float bordy = (bordWidth / shapeScale.y);
+
+        //there can be anti aliasing artifacts if the angle is zero, so just skip it
+        if(rotation == 0)
+        {
+            vec4 c = vec4(BorderColor.xyz, BorderColor.w);
+            if(
+                frag_uv.x > bordX &&
+                frag_uv.x < 1.0 - bordX &&
+                frag_uv.y > bordy &&
+                frag_uv.y < 1.0 - bordy
+            )
+                c = FillColor;
+            FragColor = c;
+            return;
+        }
 
         float vx = 1.0 / shapeScale.x;
         float vy = 1.0 / shapeScale.y;
@@ -89,7 +107,7 @@ void main()
         uv *= vec2(aastep(bordX, 1.0 - frag_uv.x), aastep(bordy, 1.0 - frag_uv.y));
         f = uv.x * uv.y;
 
-        FragColor = mix(c, FillColor, f);
+        FragColor = mix(c, FillColor, f);       
         return;
     }
 

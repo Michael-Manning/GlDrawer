@@ -232,7 +232,7 @@ namespace GLDrawer
         public vec2 lastLetterPos => new vec2(internalText.lastLetterPos.x, internalText.lastLetterPos.y);
 
         //with bound
-        public Text(vec2 position, vec2 scale, string text, float Height, Color? color = null, JustificationType justification = JustificationType.Center, string font = "c:\\windows\\fonts\\times.ttf", float angle = 0, float rotationSpeed = 0)
+        public Text(vec2 position, vec2 scale, string text, float Height, Color? color = null, JustificationType justification = JustificationType.Center, string font = "c:\\windows\\fonts\\Arialnb.ttf", float angle = 0, float rotationSpeed = 0)
         {
             if (!System.IO.File.Exists(font))
                 throw new ArgumentException("ttf file was not found", "font");
@@ -242,7 +242,7 @@ namespace GLDrawer
             internalGO = new unmanaged_GO(internalText, position.x, position.y, scale.x, scale.y, angle, rotationSpeed);
         }
         //without bound
-        public Text(vec2 position, string text, float Height, Color? color = null, JustificationType justification = JustificationType.Center, string font = "c:\\windows\\fonts\\times.ttf", float angle = 0, float rotationSpeed = 0)
+        public Text(vec2 position, string text, float Height, Color? color = null, JustificationType justification = JustificationType.Center, string font = "c:\\windows\\fonts\\Arialnb.ttf", float angle = 0, float rotationSpeed = 0)
         {
             if (!System.IO.File.Exists(font))
                 throw new ArgumentException("ttf file was not found", "font");

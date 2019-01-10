@@ -4,20 +4,20 @@ Things left to work on for version 1.0:
 -increase font resolution
 -add file type validation for sprites and fonts
 -better pattern system
--make rotationspeed a value modifier rather than a post processing effect
+-make rotationspeed a value modifier rather than a post processing effect //1141 in engine.cpp
+fix text again
+-save as bit map image as well as system drawing bitmap
+-enable font selection
 
-finish load asset
-fix reordering tools
+-finish load asset
+-fix reordering tools
+
+-update docs
 
 
-things to test:
 
--unconventional line transformations
+notes to talk about
 
-Extra stuff
-
--per particle rotation
-
-bugs
--fix border bleeding in shader
--window resizing while setting backbuffers on a seperate thread
+slow speed of getting pixels and the alternative
+Legacy "scaled" functions and how they conflict with camera scale
+default constructor issue

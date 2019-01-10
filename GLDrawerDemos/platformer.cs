@@ -19,7 +19,7 @@ namespace platformGame
             loadLevel();
             can.Gravity = new vec2(0, -10);
             can.Add(new Player());
-            can.CamerZoom = 0.6f;
+            can.CameraZoom = 0.6f;
         }
         public static void loadLevel()
         {

@@ -78,6 +78,7 @@
     <Compile Include="color.cs" />
     <Compile Include="GameObject.cs" />
     <Compile Include="Input.cs" />
+    <Compile Include="Logger.cs" />
     <Compile Include="ParticleSystem.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

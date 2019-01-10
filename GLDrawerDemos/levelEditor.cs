@@ -183,16 +183,16 @@ namespace GLDrawerDemos
 
         private void Can_MouseScrolled(int Delta, GLCanvas Canvas)
         {
-            can.CamerZoom += Delta * 0.01f;
-            if (can.CamerZoom < 0.1f)
-                can.CamerZoom = 0.1f;
-            lines.ForEach(l => l.Thickness = 6 / can.CamerZoom);
+            can.CameraZoom += Delta * 0.01f;
+            if (can.CameraZoom < 0.1f)
+                can.CameraZoom = 0.1f;
+            lines.ForEach(l => l.Thickness = 6 / can.CameraZoom);
         }
 
         private void Can_MouseMove1(vec2 Position, GLCanvas Canvas)
         {
             if (can.MouseMiddleState)
-                can.CameraPosition -= can.MouseDeltaPosition / can.CamerZoom;
+                can.CameraPosition -= can.MouseDeltaPosition / can.CameraZoom;
         }
 
         void drawLines()
@@ -322,7 +322,7 @@ namespace GLDrawerDemos
 
         vec2 mouseGridPos(vec2 Position)
         {
-            Position /= can.CamerZoom;
+            Position /= can.CameraZoom;
             Position += can.CameraPosition;
 
             vec2 pos = new vec2((int)Position.x / (gridScale), (int)Position.y / gridScale);

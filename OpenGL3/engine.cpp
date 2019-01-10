@@ -12,9 +12,14 @@
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3native.h>
 
+#include "engine.h"
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb/stb_image_write.h>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
 #define STB_TRUETYPE_IMPLEMENTATION 
@@ -27,7 +32,7 @@
 #include <sstream>
 #include <vector>
 #include <Box2D/Box2D.h>
-#include "engine.h"
+
 #include "shaders.h"
 
 using namespace std;
@@ -74,7 +79,7 @@ template <typename F> _scope_exit_t<F> _make_scope_exit_t(F f) {
 							gl(Uniform2f(FUVposUniformLocation, 0, 0));\
 							gl(Uniform1f(FaspectUniformLocation, aspect));\
 						    gl(Uniform4f(FColorUniformLocation, 0, 0,0,0));\
-							gl(Uniform1f(FzoomUniformLocation, 1));\
+							gl(Uniform2f(FzoomUniformLocation, 1, 1));\
 							gl(Uniform1f(FOpacityUniformLocation, 1));\
 
 #define asizei(a) (int)(sizeof(a)/sizeof(a[0]))
@@ -101,7 +106,7 @@ const GLfloat particleVertices[] = {
  1.0f, -1.0f, 0.0f,
  -1.0f, 1.0f, 0.0f,
  1.0f, 1.0f, 0.0f,
-}; 
+};
 ParticleSystem::ParticleSystem(int maxCount, float LifeLength) {
 	container = new Particle[maxCount];
 	positionSizeData = new float[maxCount * 3]();
@@ -127,7 +132,7 @@ void ParticleSystem::updateParticles(float delta, float extraAngle) {
 		}
 	}
 	else {
-		newParticles= spawnRate * internalDelta;
+		newParticles = spawnRate * internalDelta;
 		if (newParticles == 0 && count != MaxParticles) {
 			internalDelta += delta;
 		}
@@ -223,7 +228,7 @@ void ParticleSystem::setAnimation(const char * Texture, int WH, int TPL) {
 	{
 		float x = i % TPL * UVScale + (UVScale / 2);
 		float y = i / TPL * UVScale + (UVScale / 2);
-		UVS[i] = vec2(x/ WH, y/ WH);
+		UVS[i] = vec2(x / WH, y / WH);
 
 	}
 }
@@ -258,7 +263,7 @@ int GLCanvas::loadShader(const char * vertexFilename, const char * fragmentFilen
 
 		ifstream fs((string)defaultFilepath + "Shaders\\" + (string)vertexFilename + ".glsl");
 		sstream << fs.rdbuf();
-		str =sstream.str();
+		str = sstream.str();
 		vertexShaderSource = str.c_str();
 
 		if (str == "") {
@@ -268,7 +273,7 @@ int GLCanvas::loadShader(const char * vertexFilename, const char * fragmentFilen
 		ostringstream sstream2;
 		ifstream fs2((string)defaultFilepath + "Shaders\\" + (string)fragmentFilename + ".glsl");
 		sstream2 << fs2.rdbuf();
-	    str2 = sstream2.str();
+		str2 = sstream2.str();
 		fragmentShaderSource = str2.c_str();
 
 		if (str2 == "") {
@@ -323,8 +328,8 @@ void GLCanvas::dispose() {
 	//delete set pixel buffer
 //	delete setPixelData;
 	//delete font asset heap data
-	for (int i = 0; i < fonts.size(); i++)
-		fonts[i].dipose();
+	//for (int i = 0; i < fonts.size(); i++)
+	//	fonts[i].dipose();
 	//delte text heap data
 	for (int i = 0; i < GameObjects.size(); i++)
 		if (GameObjects[i]->t)
@@ -336,7 +341,7 @@ void GLCanvas::setWindowSize(int w, int h) {
 	glfwSetWindowSize(window, w, h);
 }
 
-void GLCanvas::setPos(int x, int y) 
+void GLCanvas::setPos(int x, int y)
 {
 	glfwSetWindowPos(window, x, y);
 }
@@ -347,7 +352,7 @@ void GLCanvas::setVisible(bool visible) {
 		glfwShowWindow(window);
 }
 void GLCanvas::focus() {
-	if(window)
+	if (window)
 		glfwFocusWindow(window);
 }
 
@@ -439,11 +444,11 @@ textData::textData(string Text, float textHeight, vec4 Color, int Justification,
 }
 vec2 textData::letterPosAtIndexNDC(int index)
 {
-	if(!TextLength || index > TextLength)
+	if (!TextLength || index > TextLength)
 		return vec2();
 
-	return vec2(letterTransData[index * 4 + 0] ,
-				letterTransData[index * 4 + 1]);
+	return vec2(letterTransData[index * 4 + 0],
+		letterTransData[index * 4 + 1]);
 }
 void textData::dispose()
 {
@@ -472,6 +477,7 @@ int textData::getHashIndex() {
 	else
 		return hashIndex;
 }
+
 
 void mLocalTransformHelper(GO * child, mat4 * m) {
 	if (!child->parent)
@@ -504,7 +510,7 @@ vec2 GO::getGlobalPosition()
 	if (!parent)
 		return position;
 	mat4 m = makeLocalTransform(this);
-	
+
 
 	vec3 newPosition(m[3]);
 	return vec2(newPosition.x, newPosition.y);
@@ -559,7 +565,7 @@ void genFramBuffer(GLuint * textID, GLuint * fboID, int width, int height) {
 
 		gl(BindFramebuffer(GL_FRAMEBUFFER, *fboID));
 		defer(glBindFramebuffer(GL_FRAMEBUFFER, 0));
-		 
+
 		// attach the texture to FBO color attachment point
 		gl(FramebufferTexture2D(GL_FRAMEBUFFER,        // 1. fbo target: GL_FRAMEBUFFER 
 			GL_COLOR_ATTACHMENT0,  // 2. attachment point
@@ -590,7 +596,7 @@ void GLCanvas::onKeyboard(int key, int scancode, int action, int mods) {
 	//	if (keyBuffer[i].read)
 	//		keyBuffer[i] = inputDescription{ key,action, false };
 	keyBuffer[keyBufferLength] = inputDescription{ key,action, false };
-	if(keyBufferLength < 10)
+	if (keyBufferLength < 10)
 		keyBufferLength++;
 
 	keyStates[key] = action;
@@ -661,19 +667,33 @@ bool GLCanvas::getMouseUp(int button) {
 	return false;
 }
 
+void GLCanvas::saveCanvasAsImage(const char * fileName)
+{
+	//getPixel(100, 100);
+
+
+	unsigned char * pixels = new unsigned char[3 * resolutionWidth * resolutionHeight];
+	gl(ReadPixels(0, 0, resolutionWidth, resolutionHeight, GL_RGB, GL_UNSIGNED_BYTE, pixels));
+
+	stbi_flip_vertically_on_write(true);
+	stbi_write_bmp(fileName, resolutionWidth, resolutionHeight, 3, pixels);
+
+	delete pixels;
+}
+
 int GLCanvas::createCanvas(int width, int height, bool borderd, vec3 backcol, bool Vsync, bool cursorHidden)
 {
 	resolutionWidth = width;
 	resolutionHeight = height;
-	
+
 	backCol = vec4(backcol, 1);
 	int glfwInitResult = glfwInit();
 	if (glfwInitResult != GLFW_TRUE)
 	{
 		fprintf(stderr, "glfwInit returned false\n");
-		 return 1;
+		return 1;
 	}
-	
+
 	Borderd = borderd;
 	glfwWindowHint(GLFW_DECORATED, borderd);
 	glfwWindowHint(GLFW_FLOATING, !borderd);
@@ -683,7 +703,7 @@ int GLCanvas::createCanvas(int width, int height, bool borderd, vec3 backcol, bo
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
 	window = glfwCreateWindow(resolutionWidth, resolutionHeight, "demo", NULL, NULL);
-	
+
 	if (!window)
 	{
 		fprintf(stderr, "failed to open glfw window. is opengl 3.2 supported?\n");
@@ -692,17 +712,17 @@ int GLCanvas::createCanvas(int width, int height, bool borderd, vec3 backcol, bo
 
 	glfwPollEvents();
 	glfwMakeContextCurrent(window);
-	if(cursorHidden)
+	if (cursorHidden)
 		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 
 	int gl3wInitResult = gl3wInit();
-	//return 1;
+	//return 0;
 	if (gl3wInitResult != 0)
 	{
 		fprintf(stderr, "gl3wInit returned error code %d\n", gl3wInitResult);
 		return 1;
 	}
-	
+
 	//only usefull during c++ degug?
 	glfwSetWindowUserPointer(window, this);
 	glfwSetKeyCallback(window, KeyCallback);
@@ -716,6 +736,7 @@ int GLCanvas::createCanvas(int width, int height, bool borderd, vec3 backcol, bo
 	if (usePackedShaders) {
 		PolygonShaderProgram = loadShader(RectVertex, PolygonFragment);
 		textureShaderProgram = loadShader(RectVertex, TextureFragment);
+		setPixelShaderProgram = loadShader(simpleRect, SetPixelFragment);
 		fontShaderProgram = loadShader(FontVertex, FontFragment);
 		ParticleShaderProgram = loadShader(ParticleVertex, ParticleFragment);
 	}
@@ -724,6 +745,7 @@ int GLCanvas::createCanvas(int width, int height, bool borderd, vec3 backcol, bo
 		textureShaderProgram = loadShader("RectVertex", "TextureFragment");
 		fontShaderProgram = loadShader("FontVertex", "FontFragment");
 		ParticleShaderProgram = loadShader("ParticleVertex", "ParticleFragment");
+		setPixelShaderProgram = loadShader("simpleRect", "SetPixelFragment");
 	}
 
 
@@ -746,7 +768,7 @@ int GLCanvas::createCanvas(int width, int height, bool borderd, vec3 backcol, bo
 	// The VBO containing the colors of the particles
 	glGenBuffers(1, &PuvVBO);
 	glBindBuffer(GL_ARRAY_BUFFER, PuvVBO);
-	glBufferData(GL_ARRAY_BUFFER, expectedTextLength* 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, expectedTextLength * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
 
 	//Position and scale VBO for letters in text
 	glGenBuffers(1, &FTranVBO);
@@ -787,15 +809,13 @@ int GLCanvas::createCanvas(int width, int height, bool borderd, vec3 backcol, bo
 	PsideCountUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "sideCount"));
 	PshapeScaleUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "shapeScale"));
 	PborderWidthUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "bordWidth"));
-	//PtextureUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "Text"));
+
 	PtimeUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "iTime"));
 	PzoomUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "zoom"));
 
 	PmPosUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "position"));
 	PmScaleUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "scale"));
 	PmRotUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "rotation"));
-	//PUVscaleUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "scaleOffset"));
-	//PUVposUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "posOffset"));
 	PaspectUniformLocation = gl(GetUniformLocation(PolygonShaderProgram, "aspect"));
 
 	//fbo shader uniforms
@@ -811,6 +831,19 @@ int GLCanvas::createCanvas(int width, int height, bool borderd, vec3 backcol, bo
 	FxformUniformLocation = gl(GetUniformLocation(textureShaderProgram, "xform"));
 	FzoomUniformLocation = gl(GetUniformLocation(textureShaderProgram, "zoom"));
 	FOpacityUniformLocation = gl(GetUniformLocation(textureShaderProgram, "opacity"));
+
+	//set pixel shader uniforms
+	SPtextureUniformLocation = gl(GetUniformLocation(setPixelShaderProgram, "Text"));
+	SPTextureMaskUniformLocation = gl(GetUniformLocation(setPixelShaderProgram, "Mask"));
+
+	//SPPosUniformLocation = gl(GetUniformLocation(setPixelShaderProgram, "position"));
+	//SPScaleUniformLocation = gl(GetUniformLocation(setPixelShaderProgram, "scale"));
+	//SPRotUniformLocation = gl(GetUniformLocation(setPixelShaderProgram, "rotation"));
+	//SPUVscaleUniformLocation = gl(GetUniformLocation(setPixelShaderProgram, "scaleOffset"));
+	//SPUVposUniformLocation = gl(GetUniformLocation(setPixelShaderProgram, "posOffset"));
+	//SPaspectUniformLocation = gl(GetUniformLocation(setPixelShaderProgram, "aspect"));
+	//SPxformUniformLocation = gl(GetUniformLocation(setPixelShaderProgram, "xform"));
+	//SPzoomUniformLocation = gl(GetUniformLocation(setPixelShaderProgram, "zoom"));
 
 	//font shader uniforms
 	FonttextureUniformLocation = gl(GetUniformLocation(fontShaderProgram, "Text"));
@@ -833,7 +866,7 @@ int GLCanvas::createCanvas(int width, int height, bool borderd, vec3 backcol, bo
 	ParticleUVScaleUniformLocation = gl(GetUniformLocation(ParticleShaderProgram, "UVScale"));
 	ParticlexformUniformLocation = gl(GetUniformLocation(ParticleShaderProgram, "xform"));
 
-	if(!Vsync)
+	if (!Vsync)
 		glfwSwapInterval(0);
 	else
 		glfwSwapInterval(1);
@@ -846,98 +879,131 @@ int GLCanvas::createCanvas(int width, int height, bool borderd, vec3 backcol, bo
 		infoText = textData("this will be replaced by some info", 20, vec4(1), 0, "c:\\windows\\fonts\\arial.ttf");
 		infoGO = GO(vec2(170, resolutionV2f.y - 20));
 		infoGO.t = &infoText;
-	}	
+	}
 
 	setPixelData = new unsigned char[width * height * 4];
+	//	setPixelMask = new unsigned char[width * height];
 	clearSetPixelData();
 	world.SetContactListener(&contactListener);
 
 	camera = vec2();
-    prevTime = (float)glfwGetTime();
+	prevTime = (float)glfwGetTime();
 	return 0;
 }
-void GLCanvas::clearSetPixelData() {
-	for (int i = 0; i < resolutionWidth * resolutionHeight * 4; i++)
-		setPixelData[i] = 0;
+void GLCanvas::clearSetPixelData(bool maskOnly) {
+	if (!maskOnly) {
+		int length = resolutionWidth * resolutionHeight * 4;
+		memset(setPixelData, 0, length * sizeof(*setPixelData));
+
+	}
+
+	//int length = resolutionWidth * resolutionHeight;
+	//memset(setPixelMask, 0, length * sizeof(*setPixelMask));
+
+	//int length = resolutionWidth * resolutionHeight * 4;
+	//for (int i = 0; i < length; i++)
+	//	setPixelData[i] = 0;
 }
 
-/* My best explination/guess about what is goin on here:
-The font textures are rasterized using stb truetype. stbtt also provides data on how to make actually use of the font texture,
-But through my reading, I wasn't able to find/understand any guides on how to implement any of the data that work with this rendering workflow.
-After loading a font map texture, the only other usefull data from stbtt I could use was the aligned quad which I name "c".
-The "s" and "t" components reveal the location of a letter in te texture map as a percentage.
-the "x" and "y" components reveal the scale of the letter. no components reveal the alignment or kerning information.
-Since the letters are actually aligned to a grid withen the texture map, the alignment can be calculated through 
-a calculation involving just the 4 floats provided by stb. */
-unsigned char TTBuffer[1 << 20];
+
 fontAsset::fontAsset(const char * filepath) {
-	stbtt_bakedchar cData[96];
 	filePath = filepath;
-	float tallestC = 0; //height of the tallest letter
-	char tc; //the tallest letter
+	FILE * test;
+	gl(GenTextures(1, &tex_atlas));
+	gl(BindTexture(GL_TEXTURE_2D, tex_atlas));
+	gl(TexImage2D(GL_TEXTURE_2D, 0, GL_RGB, fnt_atlas_width, fnt_atlas_height, 0, GL_RED, GL_BYTE, NULL));
+	gl(TexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+	gl(TexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+	gl(TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
+	gl(TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+	// gl(GenerateMipmap(GL_TEXTURE_2D));
+	gl(BindTexture(GL_TEXTURE_2D, 0));
 
-	fread(TTBuffer, 1, 1 << 20, fopen(filepath, "rb"));
 
-	stbtt_BakeFontBitmap(TTBuffer, 0, 32.0, bitmapBuffer, 512, 512, 32, 96, cData); // no guarantee this fits!
-																				   // can free ttf_buffer at this point
-	float xof = 0;
-	float x = 0, y = 0;
-
-	//find tallest letter
-	for (int i = 32; i < 128; i++)
+	u8* tt_buf = NULL;
 	{
-		x = 0;
-		y = 0;
-		char c = i;
-		stbtt_aligned_quad q;
-		stbtt_GetBakedQuad(cData, 512, 512, c - 32, &x, &y, &q, 1);//1=opengl & d3d10+,0=d3d9
-
-		uvOffset[i-32] = vec2(q.s0 + (q.s1 - q.s0) / 2, q.t0 + (q.t1 - q.t0) / 2);
-		uvScale[i-32] = vec2((q.x1 - q.x0) / 2 / 512, abs(q.y1 - q.y0) / 2 / 512);
-		quadScale[i-32] = vec2(q.x1 - q.x0, q.y0 - q.y1);
-
-		float height = abs(q.y0 - q.y1);
-		tallestC = height > tallestC ? height : tallestC;
-		if (tallestC == height)
-			tc = c;
+		FILE* fp = fopen(filePath, "rb");
+		fseek(fp, 0, SEEK_END);
+		size_t size = ftell(fp);
+		fseek(fp, 0, SEEK_SET);
+		tt_buf = (u8*)malloc(size);
+		fread(tt_buf, size, 1, fp);
+		fclose(fp);
 	}
-	//Pre-compute all the position and scale offsets of each letter to save time at runtime
-	for (int i = 32; i < 128; i++)
+
+
+	stbtt_InitFont(&info, tt_buf, 0);
+	scaleFactor = stbtt_ScaleForPixelHeight(&info, fnt_height_px);
+	stbtt_GetFontVMetrics(&info, &ascent, &descent, &line_gap);
+	baseline = (int)(ascent*scaleFactor);
+
+
+	packed_chars = (stbtt_packedchar*)malloc(sizeof(*packed_chars)*fnt_char_count);
+
+
+	u8* fnt_atlas = (u8*)malloc(sizeof(*fnt_atlas)*fnt_atlas_width*fnt_atlas_height);
 	{
-		x = 0;
-		y = 0;
-		char c = i;
-		stbtt_aligned_quad q;
-		stbtt_GetBakedQuad(cData, 512, 512, c - 32, &x, &y, &q, 1);
+		stbtt_pack_context fnt_context;
 
+		STBTT_assert(stbtt_PackBegin(&fnt_context, fnt_atlas, fnt_atlas_width, fnt_atlas_height, 0, fnt_atlas_padding, NULL));
+		//{
+		//	free(tt_buf);
+		//	free(fnt_atlas);
+		//	free(file_paths);
+		//	return;
+		//}
+		stbtt_PackSetOversampling(&fnt_context, fnt_oversample_x, fnt_oversample_y);
+		STBTT_assert(stbtt_PackFontRange(&fnt_context, tt_buf, 0, fnt_size, fnt_first_char, fnt_char_count, packed_chars));
+		//{
+		//	free(tt_buf);
+		//	stbtt_PackEnd(&fnt_context);
+		//	free(fnt_atlas);
+		//	free(file_paths);
+		//	return;
+		//}
 
-		alignment[i - 32] = -q.y1 - (tallestC + (q.y0 - q.y1)) / 2;
+	//	free(tt_buf);
+		stbtt_PackEnd(&fnt_context);
 	}
-	alignmentOffset = alignment[tc - 32];
+	gl(BindTexture(GL_TEXTURE_2D, tex_atlas));
+	gl(PixelStorei(GL_UNPACK_ALIGNMENT, 1));
+	gl(TexImage2D(GL_TEXTURE_2D, 0, GL_RED, fnt_atlas_width, fnt_atlas_height, 0, GL_RED, GL_UNSIGNED_BYTE, fnt_atlas));
+	const GLint swizzle[] = { GL_ONE, GL_ONE, GL_ONE, GL_RED };
+	gl(TexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle));
+	gl(PixelStorei(GL_UNPACK_ALIGNMENT, 4));
+	gl(BindTexture(GL_TEXTURE_2D, 0));
 
-	tallestLetter = tallestC;
-	spaceOff = tallestLetter / 3;
-	id = -1;
-	init = true;
+	free(fnt_atlas);
+
+	float unused_offset_y, xof;
+	for (int i = fnt_first_char; i < fnt_last_char; i++)
+	{
+		const char ch = i;
+		stbtt_aligned_quad quad;
+		stbtt_GetPackedQuad(packed_chars, fnt_atlas_height, fnt_atlas_height, ch - fnt_first_char, &xof, &unused_offset_y, &quad, 1);
+		tallestLetter = glm::max(tallestLetter, (quad.y1 - quad.y0));
+	}
 }
+
+
 //this could be moved into the constuctor
-void fontAsset::loadTexture(){
-	gl(GenTextures(1, &id));
-	gl(BindTexture(GL_TEXTURE_2D, id));
-	//	gl(TexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 512, 512, 0, GL_RGBA, GL_UNSIGNED_BYTE, tempBitmap));
-	gl(TexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 512, 512, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, bitmapBuffer));
-	// can free temp_bitmap at this point
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-}
-
-void fontAsset::dipose()
-{
-//	delete bitmapBuffer;
-	//delete [] uvOffset;
-	//delete uvScale;
-	//delete quadScale;
-	//delete alignment;
-}
+//void fontAsset::loadTexture() {
+//	gl(GenTextures(1, &id));
+//	gl(BindTexture(GL_TEXTURE_2D, id));
+//	//	gl(TexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 512, 512, 0, GL_RGBA, GL_UNSIGNED_BYTE, tempBitmap));
+//	gl(TexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 512, 512, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, bitmapBuffer));
+//	// can free temp_bitmap at this point
+//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+//}
+//
+//void fontAsset::dipose()
+//{
+//	//	delete bitmapBuffer;
+//		//delete [] uvOffset;
+//		//delete uvScale;
+//		//delete quadScale;
+//		//delete alignment;
+//}
 
 
 //this could be moved into the img constructor, same as font
@@ -958,7 +1024,7 @@ void loadTexture(const char * path, GLuint * id) {
 	gl(TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
 	gl(TexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, imW, imH, 0, GL_RGBA, GL_UNSIGNED_BYTE, image));
 	gl(BindTexture(GL_TEXTURE_2D, 0));
-	
+
 	stbi_image_free(image);
 }
 
@@ -968,18 +1034,76 @@ imgAsset::imgAsset(const char * FilePath) {
 	init = true;
 }
 
-void GLCanvas::setBBPixel(int x, int y, vec4 col) {
-	while (setPixelCopyFlag) {
+void GLCanvas::setBBPixel(int x, int y, int r, int g, int b, int a) {
 
+	if (a == 0)
+		return;
+
+	typedef unsigned char byte;
+	while (setPixelCopyFlag) {} //thread safety (no other way i could find with C++/CLI)
+
+	int gridXY = (x * 4) + (resolutionWidth * y * 4);
+
+	//if more than one pixel is set in the same frame (very likely) This block will run
+	if (setPixelFlag) {
+
+		//get preexisting values for manual color blending
+		byte baseR = setPixelData[gridXY];
+		byte baseG = setPixelData[++gridXY];
+		byte baseB = setPixelData[++gridXY];
+		byte tempA = setPixelData[++gridXY];
+
+		//set values normally if preexisiting value is transparent
+		if (tempA == 0)
+		{
+			gridXY -= 3;
+			setPixelData[gridXY] = r;
+			setPixelData[++gridXY] = g;
+			setPixelData[++gridXY] = b;
+			setPixelData[++gridXY] = a;
+		}
+		//perform additive color blending on pixel
+		else {
+			float baseA = tempA / 255.0f;
+
+			float addedA = a / 255.0f;
+			float mixA = 1.0f - (1.0f - a) * (1.0f - baseA);
+			float ratio = (1.0f - addedA / mixA);
+			byte mixR = (r * addedA / mixA) + (baseR * baseA * ratio);
+
+			gridXY -= 3;
+			setPixelData[gridXY] = (r * addedA / mixA) + (baseR * baseA * ratio);
+			setPixelData[++gridXY] = (g * addedA / mixA) + (baseG * baseA * ratio);
+			setPixelData[++gridXY] = (b * addedA / mixA) + (baseB * baseA * ratio);
+			setPixelData[++gridXY] = 255 * mixA;
+		}
 	}
-	int gridX = x * 4;
-	int gridY = resolutionWidth * y * 4;
-	setPixelData[gridY + gridX] = col.r * 255;
-	setPixelData[gridY + gridX + 1] = col.g * 255;
-	setPixelData[gridY + gridX + 2] = col.b * 255;
-	setPixelData[gridY + gridX + 3] = col.a * 255;
+	else {
+		setPixelData[gridXY] = r;
+		setPixelData[++gridXY] = g;
+		setPixelData[++gridXY] = b;
+		setPixelData[++gridXY] = a;
+	}
+
 	setPixelFlag = true;
 }
+void GLCanvas::setBBPixelFast(int x, int y, int r, int g, int b, int a) {
+	while (windowSizeChanged) {}
+	
+	int gridXY = (x * 4) + (resolutionWidth * y * 4);
+
+	if (!setPixelCopyFlag) {
+		setPixelFlag = true;
+		setPixelData[gridXY] = r;
+		setPixelData[++gridXY] = g;
+		setPixelData[++gridXY] = b;
+		setPixelData[++gridXY] = a;
+	}
+	//if the array is currently being transfered to the GPU, send it later as to not lock the thread
+	else
+		spTransferBuffer.push_back({ gridXY, r, g, b, a });
+}
+
 void GLCanvas::setBBShape(GO g) {
 	BBQue.push_back(g);
 }
@@ -992,7 +1116,21 @@ void GLCanvas::setPolygon(GO * g) {
 	gl(Uniform1f(PborderWidthUniformLocation, g->p->bWidth));
 	gl(Uniform4f(PbordColorUniformLocation, g->p->bColor.r, g->p->bColor.g, g->p->bColor.b, g->p->bColor.a));
 	gl(Uniform1f(PtimeUniformLocation, currTime));
-	gl(Uniform1f(PzoomUniformLocation, cameraZoom));
+	gl(Uniform2f(PzoomUniformLocation, cameraZoom.x, cameraZoom.y));
+}
+
+void GLCanvas::createSetPixelTexture()
+{
+	gl(DeleteTextures(1, &setPixelDataID));
+
+	gl(GenTextures(1, &setPixelDataID));
+	gl(BindTexture(GL_TEXTURE_2D, setPixelDataID));
+	gl(TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT));
+	gl(TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT));
+	gl(TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
+	gl(TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+	gl(TexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, resolutionWidth, resolutionHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, setPixelData));
+	gl(BindTexture(GL_TEXTURE_2D, 0));
 }
 
 void GLCanvas::setGOTransform(GO * g, GLuint Aspect, GLuint scale, GLuint pos, GLuint rot, GLuint zoom) {
@@ -1001,13 +1139,13 @@ void GLCanvas::setGOTransform(GO * g, GLuint Aspect, GLuint scale, GLuint pos, G
 	gl(Uniform2f(scale, g->scale.x / resolutionV2f.x, g->scale.y / resolutionV2f.y));
 	gl(Uniform2f(pos, (g->position.x - camera.x) / resolutionWidth * 2.0f, (g->position.y - camera.y) / resolutionHeight * 2.0f));
 	gl(Uniform1f(rot, g->angle - g->rSpeed * currTime));
-	gl(Uniform1f(zoom, cameraZoom));
+	gl(Uniform2f(zoom, cameraZoom.x, cameraZoom.y));
 }
 
 void GLCanvas::LocalTransformHelper(GO * child, mat4 * m) {
 	if (!child->parent)
 		return;
-	if (child->parent->parent) 
+	if (child->parent->parent)
 		LocalTransformHelper(child->parent, m);
 
 	else {
@@ -1058,7 +1196,7 @@ void GLCanvas::mainloop(bool render) {
 		glfwDestroyWindow(window);
 		return;
 	}
-
+	//	return;
 	currTime = (float)glfwGetTime();
 	const float deltaTime = currTime - prevTime;
 	LastRenderTime = floorf(deltaTime * 1000); //possibly reduntant variable
@@ -1068,7 +1206,7 @@ void GLCanvas::mainloop(bool render) {
 	glfwGetWindowSize(window, &resolutionWidth, &resolutionHeight);
 	resolutionV2f = vec2((float)resolutionWidth, (float)resolutionHeight);
 	aspect = resolutionV2f.y / resolutionV2f.x;
-		
+
 	//update physics
 	world.Step(timeStep, velocityIterations, positionIterations);
 
@@ -1085,8 +1223,12 @@ void GLCanvas::mainloop(bool render) {
 		genFramBuffer(&fboTextIdB, &fboIdB, resolutionWidth, resolutionHeight);
 
 		delete setPixelData;
+	//	delete setPixelMask;
 		setPixelData = new unsigned char[resolutionWidth * resolutionHeight * 4];
+	//	setPixelMask = new unsigned char[resolutionWidth * resolutionHeight];
 		clearSetPixelData();
+		createSetPixelTexture();
+		spTransferBuffer.clear();
 	}
 
 	//bind the back writing buffer
@@ -1143,26 +1285,35 @@ void GLCanvas::mainloop(bool render) {
 		BBQue.clear();
 	}
 
+	if (firstFrame) {
+		createSetPixelTexture();
+	}
+
+	for (int i = 0; i < spTransferBuffer.size(); i++)
+	{
+		Pixel p = spTransferBuffer[i];
+		setPixelData[p.xy] = p.r;
+		setPixelData[p.xy + 1] = p.g;
+		setPixelData[p.xy + 2] = p.b;
+		setPixelData[p.xy + 3] = p.a;
+	}
+	spTransferBuffer.clear();
+
+
 	//with the writing buffer still bound, create a texture from the setpixel data buffer and paste it to the back buffer
 	if (setPixelFlag && render) {
 		setPixelCopyFlag = true; //pause other thread while pixels are coppied to buffer
 		gl(BindVertexArray(VAO));
-		gl(UseProgram(textureShaderProgram));
+		gl(UseProgram(setPixelShaderProgram));
 
-		gl(GenTextures(1, &setPixelDataID));
 		gl(BindTexture(GL_TEXTURE_2D, setPixelDataID));
-		gl(TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT));
-		gl(TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT));
-		gl(TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
-		gl(TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
-		gl(TexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, resolutionWidth, resolutionHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, setPixelData));
+		gl(TexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, resolutionWidth, resolutionHeight, GL_RGBA, GL_UNSIGNED_BYTE, setPixelData));
 
-		FBOUniforms();
-		gl(UniformMatrix4fv(FxformUniformLocation, 1, GL_FALSE, value_ptr(empty)));
 		gl(DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
 		gl(BindTexture(GL_TEXTURE_2D, 0));
-		gl(DeleteTextures(1, &setPixelDataID));
-		clearSetPixelData();
+		//gl(DeleteTextures(1, &setPixelDataID));
+
+		clearSetPixelData(false);
 		setPixelFlag = false;
 		setPixelCopyFlag = false; //resume other thread
 	}
@@ -1206,7 +1357,7 @@ void GLCanvas::mainloop(bool render) {
 		gl(Uniform1f(FmRotUniformLocation, 0.0f));
 
 		gl(UniformMatrix4fv(FxformUniformLocation, 1, GL_FALSE, value_ptr(empty)));
-		gl(Uniform1f(FzoomUniformLocation, 1));
+		gl(Uniform2f(FzoomUniformLocation, 1, 1));
 		gl(Uniform1f(FOpacityUniformLocation, 1));
 
 		gl(DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
@@ -1233,7 +1384,7 @@ void GLCanvas::mainloop(bool render) {
 		//thread safe removal of gameobjects
 		for (int j = 0; j < GORemoveBuffer.size(); j++)
 			for (int i = 0; i < GameObjects.size(); i++)
-				if (GameObjects[i] == GORemoveBuffer[j]) 
+				if (GameObjects[i] == GORemoveBuffer[j])
 					GameObjects.erase(GameObjects.begin() + i);
 		GORemoveBuffer.clear();
 
@@ -1262,8 +1413,27 @@ void GLCanvas::mainloop(bool render) {
 	gl(BindVertexArray(VAO));
 	gl(UseProgram(PolygonShaderProgram));
 
+
+
+
+	//if (Dfonts.size() > 0) {
+	//	gl(UseProgram(textureShaderProgram));
+
+	//	GO g = GO(vec2(0), vec2(1024));
+
+	//	gl(Uniform1f(FaspectUniformLocation, aspect));
+	//	gl(BindTexture(GL_TEXTURE_2D, Dfonts[0].tex_atlas));
+	//	gl(Uniform1i(FtextureUniformLocation, 0));
+
+
+	//	setGOTransform(&g, textTransUniforms);
+	//	gl(UniformMatrix4fv(FxformUniformLocation, 1, GL_FALSE, value_ptr(empty)));
+	//	gl(DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
+	//}
+
+
 	//draw Gameobjects
-	int GoSize = GameObjects.size(); 
+	int GoSize = GameObjects.size();
 	mat4 m; //used if parent transforms are involved
 	for (int i = 0; i < GoSize; ++i)
 	{
@@ -1282,7 +1452,7 @@ void GLCanvas::mainloop(bool render) {
 		if (g->hidden)
 			continue;
 
-		if (g->parent) 
+		if (g->parent)
 			m = getLocalTransform(g);
 
 		//update physics
@@ -1341,7 +1511,7 @@ void GLCanvas::mainloop(bool render) {
 			if (g->parent) {
 				m = scale(m, vec3(g->scale / resolutionV2f, 1.0f));
 				gl(UniformMatrix4fv(FxformUniformLocation, 1, GL_FALSE, value_ptr(m)));
-				gl(Uniform1f(FzoomUniformLocation, cameraZoom));
+				gl(Uniform2f(FzoomUniformLocation, cameraZoom.x, cameraZoom.y));
 				gl(DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
 			}
 			else {
@@ -1352,6 +1522,19 @@ void GLCanvas::mainloop(bool render) {
 			gl(UseProgram(PolygonShaderProgram));
 		}
 		//text
+		//else if (g->Dt) {
+		//	DsetFont(g);
+		//	//setFont(g);
+		//	if (g->parent) {
+		//		gl(UniformMatrix4fv(FontxformUniformLocation, 1, GL_FALSE, value_ptr(m)));
+		//		gl(DrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, g->t->TextLength));
+		//	}
+		//	else {
+		//		gl(UniformMatrix4fv(FontxformUniformLocation, 1, GL_FALSE, value_ptr(empty)));
+		//		gl(DrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, g->Dt->TextLength));
+		//	}
+		//	gl(UseProgram(PolygonShaderProgram));
+		//}
 		else if (g->t) {
 			setFont(g);
 			if (g->parent) {
@@ -1368,15 +1551,16 @@ void GLCanvas::mainloop(bool render) {
 		else if (g->p) {
 			gl(UseProgram(PolygonShaderProgram));
 			setPolygon(g);
-			if (g->parent) {			
+			if (g->parent) {
 				m = scale(m, vec3(g->scale / resolutionV2f, 1.0f));
 				gl(UniformMatrix4fv(PxformUniformLocation, 1, GL_FALSE, value_ptr(m)));
-				gl(Uniform1f(PzoomUniformLocation, cameraZoom));
+				gl(Uniform2f(PzoomUniformLocation, cameraZoom.x, cameraZoom.y));
 				gl(DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
 			}
 			else {
 				setGOTransform(g, polyTransUniforms);
 				gl(UniformMatrix4fv(PxformUniformLocation, 1, GL_FALSE, value_ptr(empty)));
+				gl(Uniform1f(PmRotUniformLocation, 0)); //anti aliasing optimization
 				gl(DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
 			}
 		}
@@ -1401,13 +1585,14 @@ void GLCanvas::mainloop(bool render) {
 			glfwSetWindowTitle(window, title);
 		windowTitleFlag = false;
 	}
-	
+
+	firstFrame = false;
 }
 
 //checks if image is loaded to memory. assigns it so and loads it if not
 void GLCanvas::setTexture(GO * g, GLuint textureLocation) {
 	int index = g->i->getHashIndex();
-	if (index + 1> imgs.size())
+	if (index + 1 > imgs.size())
 		imgs.resize(index + 1);
 	if (!&imgs[index] || !imgs[index].init)
 		imgs[index] = imgAsset(g->i->filepath);
@@ -1415,7 +1600,7 @@ void GLCanvas::setTexture(GO * g, GLuint textureLocation) {
 	gl(Uniform1f(FaspectUniformLocation, aspect));
 	gl(BindTexture(GL_TEXTURE_2D, imgs[index].ID));
 	//temp fix
-	if(g->ps == NULL)
+	if (g->ps == NULL)
 		gl(Uniform4f(FColorUniformLocation, g->i->tint.r, g->i->tint.g, g->i->tint.b, g->i->tint.a));
 	gl(Uniform1i(textureLocation, 0));
 }
@@ -1433,8 +1618,6 @@ void GLCanvas::loadImageAsset(const char * filepath) {
 	imgHashLookup.push_back(filepath);
 }
 
-
-//for Dan's eyes only
 void GLCanvas::setFont(GO * g) {
 	gl(UseProgram(fontShaderProgram));
 
@@ -1444,15 +1627,15 @@ void GLCanvas::setFont(GO * g) {
 
 
 	int HashIndex = g->t->getHashIndex();
-	if (HashIndex +1 > fonts.size())
+	if (HashIndex + 1 > fonts.size())
 		fonts.resize(HashIndex + 1);
 	if (!&fonts[HashIndex] || !fonts[HashIndex].init) {
 		fonts[HashIndex] = fontAsset(g->t->filepath);
-		fonts[HashIndex].loadTexture();
+		//fonts[HashIndex].loadTexture();
 	}
 
 	fontAsset * selected = &fonts[HashIndex];
-	gl(BindTexture(GL_TEXTURE_2D, selected->id));
+	gl(BindTexture(GL_TEXTURE_2D, selected->tex_atlas));
 	gl(Uniform1i(FonttextureUniformLocation, 0));
 
 	float xof = 0; //x offset of each letter
@@ -1478,7 +1661,7 @@ void GLCanvas::setFont(GO * g) {
 	memcpy(text, g->t->text.c_str(), g->t->text.size());
 
 	//allocate an arrays to be coppied to the VBOs
-	if (textLength  != g->t->TextLength) {
+	if (textLength != g->t->TextLength) {
 		//if containers are not being allocated for the first time, delete the previuos data
 		if (g->t->TextLength > 0)
 			g->t->dispose();
@@ -1492,118 +1675,153 @@ void GLCanvas::setFont(GO * g) {
 	for (int i = 0; i < textLength; i++)
 		if (text[i] == '\n')
 			lineCount++;
-	
+
 	lineLengths = new float[lineCount];
 
-	for (int i = 0, lineCounter = 1; i < textLength; i++)
-	{
-		c = text[i];
-		//actual letter lengths
-		if (c != '\n' && c != ' ');
-		totalWidth += selected->quadScale[c - 32].x;
-		//add in distace for space characters
-		if (c == ' ')
-			totalWidth += selected->spaceOff;
-		if (c == '\n' || i == textLength - 1) {
-			record = totalWidth > record ? totalWidth : record;
-			lineLengths[lineCounter - 1] = totalWidth;
-			lineCounter++;
-			totalWidth = 0;
-		}
+	//for (int i = 0, lineCounter = 1; i < textLength; i++)
+	//{
+	//	c = text[i];
+	//	//actual letter lengths
+	//	if (c != '\n' && c != ' ');
+	//	totalWidth += selected->quadScale[c - 32].x;
+	//	//add in distace for space characters
+	//	if (c == ' ')
+	//		totalWidth += selected->spaceOff;
+	//	if (c == '\n' || i == textLength - 1) {
+	//		record = totalWidth > record ? totalWidth : record;
+	//		lineLengths[lineCounter - 1] = totalWidth;
+	//		lineCounter++;
+	//		totalWidth = 0;
+	//	}
+	//}
+
+	//if (boundMode) {
+	//	maxLines = g->scale.y / g->t->height;
+	//	if (lineCount > maxLines)
+	//		lineCount = maxLines;
+	//	//g->pos = g->pos + vec2(-g->scale.x / (float)2,
+	//		//g->scale.y / (float)2 - selected->tallestLetter / (float)2);
+	//	Xreference = g->scale.x / scaleRatio;
+	//}
+	//else Xreference = record;
+
+
+	/////////////////////////////////////////////////////////////
+
+	float unused_offset_y = 0.0f;
+	float sdif = g->t->height / selected->tallestLetter;
+
+	xof = 0.0f;
+	unused_offset_y = 0.0f;
+	for (int txt_i = 0; txt_i < textLength; ++txt_i) {
+		const char ch = text[txt_i];
+		stbtt_aligned_quad quad;
+		stbtt_GetPackedQuad(selected->packed_chars, fnt_atlas_height, fnt_atlas_height, ch - fnt_first_char, &xof, &unused_offset_y, &quad, 1);
+
+		const float uvx = (quad.s1 - quad.s0) / 2;
+		const float uvy = (quad.t1 - quad.t0) / 2;
+		g->t->letterUVData[txt_i * 4 + 0] = quad.s0 + uvx;
+		g->t->letterUVData[txt_i * 4 + 1] = quad.t0 + uvy;
+		g->t->letterUVData[txt_i * 4 + 2] = uvx;
+		g->t->letterUVData[txt_i * 4 + 3] = uvy;
+
+		const float quad_width_px = (quad.x1 - quad.x0)  * sdif;
+		const float quad_height_px = (quad.y1 - quad.y0)  *sdif;
+		g->t->letterTransData[txt_i * 4 + 0] = (quad.x0 * sdif + 0.5f*quad_width_px) / (resolutionWidth / 2);
+		g->t->letterTransData[txt_i * 4 + 1] = ((-quad.y1 * sdif + 0.5f*quad_height_px)/* - selected->baseline/2*/) / (resolutionHeight / 2);
+		g->t->letterTransData[txt_i * 4 + 2] = quad_width_px / resolutionWidth;
+		g->t->letterTransData[txt_i * 4 + 3] = -quad_height_px / resolutionHeight;
+
+		if (text[txt_i + 1])
+			xof += selected->scaleFactor * stbtt_GetCodepointKernAdvance(&selected->info, text[txt_i], text[txt_i + 1]);
 	}
 
-	if (boundMode) {
-		maxLines = g->scale.y / g->t->height;
-		if (lineCount > maxLines)
-			lineCount = maxLines;
-		//g->pos = g->pos + vec2(-g->scale.x / (float)2,
-			//g->scale.y / (float)2 - selected->tallestLetter / (float)2);
-		Xreference = g->scale.x / scaleRatio;
-	}
-	else Xreference = record;
+
+	/////////////////////////////////////////////////////////////
+
+	//for (int i = 0; i < textLength; i++)
+	//{
+	//	c = text[i];
+
+	//	//handle new line
+	//	if (c == '\n') {
+	//		lineNum++;
+	//		if (boundMode && lineNum + 1 > maxLines)
+	//			break;
+	//		continue;
+	//	}
+	//	//set the cursor for the new line
+	//	if (i == 0 || text[i - 1] == '\n' || lineBreak) {
+	//		if (g->t->justification == 0 || (boundMode && lineLengths[lineNum] > g->scale.x / scaleRatio))
+	//			xof = 0;
+	//		else if (g->t->justification == 1)
+	//			xof = (Xreference - lineLengths[lineNum]) / 2;
+	//		else {
+	//			xof = (Xreference - lineLengths[lineNum]);
+	//		}
+	//		lineBreak = false;
+	//	}
+
+	//	g->t->letterUVData[i * 4 + 0] = selected->uvOffset[c - 32].x;
+	//	g->t->letterUVData[i * 4 + 1] = selected->uvOffset[c - 32].y;
+	//	g->t->letterUVData[i * 4 + 2] = selected->uvScale[c - 32].x;
+	//	g->t->letterUVData[i * 4 + 3] = selected->uvScale[c - 32].y;
+
+	//	vec2 letterScale = selected->quadScale[c - 32];
+
+	//	xof += letterScale.x / 2; //move the scale by  width of current chashapeor
+	//	if (boundMode && xof *scaleRatio > g->scale.x) {
+	//		lineNum++;
+	//		lineBreak = true;
+	//		if (boundMode && lineNum + 1 > maxLines)
+	//			break;
+	//		i--;
+	//		continue;
+	//	}
+
+	//	float xTranslate = xof;
+	//	float yTranslate = selected->alignment[c - 32] - selected->tallestLetter * lineNum;
+
+	//	//calculate final position of the letter
+	//	{
+	//		if (!boundMode) {
+	//			xTranslate -= record / 2;
+	//			yTranslate += selected->alignmentOffset;
+	//			yTranslate += (selected->tallestLetter * lineCount) / 2;
+	//		}
+	//		else {
+	//			//yTranslate += g->scale.y/2;
+	//		}
+	//		//	yTranslate += (selected->tallestLetter * lineCount) / 2;
+
+	//		letterPosX = (xTranslate * scaleRatio) / resolutionWidth * 2.0f;
+	//		letterPosY = (yTranslate * scaleRatio) / resolutionHeight * 2.0f;
+
+	//		if (boundMode)
+	//			g->t->lastLetterPos = vec2((xTranslate - selected->alignment[c - 32]) * scaleRatio - g->scale.x / 2,
+	//			(yTranslate - selected->alignment[c - 32]) * scaleRatio + g->scale.y / 2);
+	//		else
+	//			g->t->lastLetterPos = vec2((xTranslate - selected->alignment[c - 32]) * scaleRatio,
+	//			(yTranslate - selected->alignment[c - 32]) * scaleRatio);
+	//	}
+	//	//final scale of the letter
+	//	{
+	//		finalScaleX = letterScale.x * scaleRatio / resolutionWidth;
+	//		finalScaleY = letterScale.y * scaleRatio / resolutionHeight;
+	//	}
+
+	//	//transform
+	//	g->t->letterTransData[i * 4 + 0] = letterPosX;
+	//	g->t->letterTransData[i * 4 + 1] = letterPosY;
+	//	g->t->letterTransData[i * 4 + 2] = finalScaleX;
+	//	g->t->letterTransData[i * 4 + 3] = finalScaleY;
+
+	//	if (c == ' ')
+	//		xof += selected->spaceOff;
+	//	xof += letterScale.x / 2;
+	//}
 
 
-	for (int i = 0; i < textLength; i++)
-	{
-		c = text[i];
-
-		//handle new line
-		if (c == '\n') {
-			lineNum++;
-			if (boundMode && lineNum + 1 > maxLines)
-				break;
-			continue;
-		}
-		//set the cursor for the new line
-		if (i == 0 || text[i - 1] == '\n' || lineBreak) {
-			if (g->t->justification == 0 || (boundMode && lineLengths[lineNum] > g->scale.x / scaleRatio))
-				xof = 0;
-			else if (g->t->justification == 1)
-				xof = (Xreference - lineLengths[lineNum]) / 2;
-			else {
-				xof = (Xreference - lineLengths[lineNum]);
-			}
-			lineBreak = false;
-		}
-		
-		g->t->letterUVData[i * 4 + 0] = selected->uvOffset[c - 32].x;
-		g->t->letterUVData[i * 4 + 1] = selected->uvOffset[c - 32].y;
-		g->t->letterUVData[i * 4 + 2] = selected->uvScale[c - 32].x;
-		g->t->letterUVData[i * 4 + 3] = selected->uvScale[c - 32].y;
-
-		vec2 letterScale = selected->quadScale[c - 32];
-
-		xof += letterScale.x / 2; //move the scale by  width of current chashapeor
-		if (boundMode && xof *scaleRatio > g->scale.x) {
-			lineNum++;
-			lineBreak = true;
-			if (boundMode && lineNum + 1 > maxLines)
-				break;
-			i--;
-			continue;
-		}
-
-		float xTranslate = xof;
-		float yTranslate = selected->alignment[c - 32] - selected->tallestLetter * lineNum;
-
-		//calculate final position of the letter
-		{
-			if (!boundMode) {
-				xTranslate -= record / 2;
-				yTranslate += selected->alignmentOffset;
-				yTranslate += (selected->tallestLetter * lineCount) / 2;
-			}
-			else {
-				//yTranslate += g->scale.y/2;
-			}
-		//	yTranslate += (selected->tallestLetter * lineCount) / 2;
-
-			letterPosX = (xTranslate * scaleRatio) / resolutionWidth * 2.0f;
-			letterPosY = (yTranslate * scaleRatio) / resolutionHeight * 2.0f;
-			
-			if (boundMode) 
-				g->t->lastLetterPos = vec2((xTranslate - selected->alignment[c - 32]) * scaleRatio - g->scale.x / 2,
-										   (yTranslate - selected->alignment[c - 32]) * scaleRatio + g->scale.y / 2);
-			else
-				g->t->lastLetterPos = vec2((xTranslate - selected->alignment[c - 32]) * scaleRatio, 
-										   (yTranslate - selected->alignment[c - 32]) * scaleRatio);
-		}
-		//final scale of the letter
-		{
-			finalScaleX = letterScale.x * scaleRatio / resolutionWidth;
-			finalScaleY = letterScale.y * scaleRatio / resolutionHeight;
-		}
-
-		//transform
-		g->t->letterTransData[i * 4 + 0] = letterPosX;
-		g->t->letterTransData[i * 4 + 1] = letterPosY;
-		g->t->letterTransData[i * 4 + 2] = finalScaleX;
-		g->t->letterTransData[i * 4 + 3] = finalScaleY;
-
-		if (c == ' ')
-			xof += selected->spaceOff;
-		xof += letterScale.x / 2;
-	}
 	//update position buffer
 	glBindBuffer(GL_ARRAY_BUFFER, FTranVBO);
 	glBufferData(GL_ARRAY_BUFFER, textLength * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
@@ -1648,18 +1866,18 @@ void GLCanvas::setFont(GO * g) {
 	);
 
 	glVertexAttribDivisor(1, 0);
-	glVertexAttribDivisor(5, 1); 
-	glVertexAttribDivisor(6, 1); 
+	glVertexAttribDivisor(5, 1);
+	glVertexAttribDivisor(6, 1);
 
 	if (boundMode) {
-		gl(Uniform2f(FontmPosUniformLocation, ((g->position.x - camera.x) - g->scale.x/2) / resolutionWidth * 2.0f, (g->position.y - camera.y + g->scale.y/2) / resolutionHeight * 2.0f));
+		gl(Uniform2f(FontmPosUniformLocation, ((g->position.x - camera.x) - g->scale.x / 2) / resolutionWidth * 2.0f, (g->position.y - camera.y + g->scale.y / 2) / resolutionHeight * 2.0f));
 	}
 	else {
 		gl(Uniform2f(FontmPosUniformLocation, (g->position.x - camera.x) / resolutionWidth * 2.0f, (g->position.y - camera.y) / resolutionHeight * 2.0f));
 	}
 	gl(Uniform1f(FontmRotUniformLocation, g->angle - g->rSpeed * currTime));
 
-	gl(Uniform1f(FontzoomUniformLocation, cameraZoom));
+	gl(Uniform2f(FontzoomUniformLocation, cameraZoom.x, cameraZoom.y));
 
 	delete lineLengths;
 	delete text;
@@ -1673,17 +1891,17 @@ void GLCanvas::drawParticleSystem(GO * g, float deltaTime, mat4 * global)
 	gl(UseProgram(ParticleShaderProgram));
 
 	//if (ps.relitivePosition) {
-		if (global) {
-			//vec4 resulting = vec4(g->position, 0, 1) * *global;
-			//g->ps->spawnLocation = vec2(resulting.y, resulting.x);
-			if(g->parent->parent)
-				g->ps->spawnLocation = g->position + g->parent->position + g->parent->parent->position;
-			else
-				g->ps->spawnLocation = g->position + g->parent->position;
-			g->ps->angle = g->angle + g->parent->angle;
-		}
+	if (global) {
+		//vec4 resulting = vec4(g->position, 0, 1) * *global;
+		//g->ps->spawnLocation = vec2(resulting.y, resulting.x);
+		if (g->parent->parent)
+			g->ps->spawnLocation = g->position + g->parent->position + g->parent->parent->position;
 		else
-			g->ps->spawnLocation = g->position;
+			g->ps->spawnLocation = g->position + g->parent->position;
+		g->ps->angle = g->angle + g->parent->angle;
+	}
+	else
+		g->ps->spawnLocation = g->position;
 	//}
 	g->ps->updateParticles(deltaTime, g->angle);
 
@@ -1757,7 +1975,7 @@ void GLCanvas::drawParticleSystem(GO * g, float deltaTime, mat4 * global)
 
 	//wether the particles care about where the particle system moves after being spawned
 	if (g->ps->relitivePosition) {
-		gl(Uniform2f(ParticlePosUniformLocation, -camera.x , -camera.y ));
+		gl(Uniform2f(ParticlePosUniformLocation, -camera.x, -camera.y));
 	}
 	else if (!g->ps->relitivePosition) {
 		gl(Uniform2f(ParticlePosUniformLocation, (g->ps->spawnLocation.x - camera.x), (g->ps->spawnLocation.y - camera.y)));
@@ -1766,13 +1984,13 @@ void GLCanvas::drawParticleSystem(GO * g, float deltaTime, mat4 * global)
 	gl(Uniform2f(ParticleResUniformLocation, resolutionWidth, resolutionHeight));
 
 	if (g->ps->textureMode) {
-			if (!g->i) {
+		if (!g->i) {
 			g->ps->img = imgData(g->ps->filepath);
 			g->i = &g->ps->img; //link the GO img pointer to reference the actual data in the particle system
 		}
 		setTexture(g, ParticleTextureUniformLocation);
-				
-		if(g->ps->tileMode)
+
+		if (g->ps->tileMode)
 			glUniform1f(ParticleUVScaleUniformLocation, g->ps->UVScale / g->ps->resolution);
 		else
 			glUniform1f(ParticleUVScaleUniformLocation, 1.0);
@@ -1782,10 +2000,12 @@ void GLCanvas::drawParticleSystem(GO * g, float deltaTime, mat4 * global)
 
 	gl(DrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, g->ps->count));
 
-		gl(BindTexture(GL_TEXTURE_2D, 0));
+	gl(BindTexture(GL_TEXTURE_2D, 0));
 }
 
-vec3 GLCanvas::getPixel(int x, int y){
+vec3 GLCanvas::getPixel(int x, int y) {
+	glfwMakeContextCurrent(window);
+
 	y = -y + resolutionHeight;
 	unsigned char pixel[3] = { 0 };
 	gl(ReadPixels(x, y, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, &pixel));
@@ -1841,7 +2061,7 @@ rigBody::rigBody(b2World * World, GO * Link, int type, float friction, bool Kini
 	tag = Tag;
 
 #ifdef _DEBUG
-	if(link->scale.x < 1 || link->scale.y < 1){
+	if (link->scale.x < 1 || link->scale.y < 1) {
 		cout << "Debug warning: < 1 pixel rigidbody scale detected\n";
 		return;
 	}
@@ -1850,7 +2070,7 @@ rigBody::rigBody(b2World * World, GO * Link, int type, float friction, bool Kini
 	fixtureDef.isSensor = trigger;
 
 	//as rect
-	if( type == 1) {
+	if (type == 1) {
 		// Define the dynamic body. We set its position and call the body factory.
 		bodyDef.position.Set((link->position.x / phScale), (link->position.y / phScale));
 		bodyDef.angle = link->angle;
@@ -1867,7 +2087,7 @@ rigBody::rigBody(b2World * World, GO * Link, int type, float friction, bool Kini
 		fixtureDef.density = 1.0f;
 		// Override the default friction.
 		fixtureDef.friction = friction;
-		
+
 		// Add the shape to the body.
 		body->CreateFixture(&fixtureDef);
 	}
@@ -1922,7 +2142,7 @@ void MyContactListener::BeginContact(b2Contact * contact)
 	b2Fixture* fixtureA = contact->GetFixtureA();
 	b2Body* bodyA = fixtureA->GetBody();
 	GO* actorA = (GO*)bodyA->GetUserData();
-	
+
 	b2Fixture* fixtureB = contact->GetFixtureB();
 	b2Body* bodyB = fixtureB->GetBody();
 	GO* actorB = (GO*)bodyB->GetUserData();
@@ -1971,3 +2191,235 @@ bool GLCanvas::raycast(vec2 start, vec2 end)
 //	}
 }
 
+
+
+
+//void GLCanvas::setFont(GO * g) {
+//	gl(UseProgram(fontShaderProgram));
+//
+//	gl(Uniform1f(FontaspectUniformLocation, aspect));
+//	gl(Uniform4f(FontColorUniformLocation, g->t->color.r, g->t->color.g, g->t->color.b, g->t->color.a));
+//	gl(Uniform1f(FonttimeUniformLocation, currTime));
+//
+//
+//	int HashIndex = g->t->getHashIndex();
+//	if (HashIndex + 1 > fonts.size())
+//		fonts.resize(HashIndex + 1);
+//	if (!&fonts[HashIndex] || !fonts[HashIndex].init) {
+//		fonts[HashIndex] = fontAsset(g->t->filepath);
+//		fonts[HashIndex].loadTexture();
+//	}
+//
+//	fontAsset * selected = &fonts[HashIndex];
+//	gl(BindTexture(GL_TEXTURE_2D, selected->id));
+//	gl(Uniform1i(FonttextureUniformLocation, 0));
+//
+//	float xof = 0; //x offset of each letter
+//	float x = 0, y = 0; //required by stbtt
+//	float scaleRatio = g->t->height / selected->tallestLetter;
+//	float totalWidth = 0;
+//	int lineCount = 1; //number of lines in the string (# of '\n')
+//	int lineNum = 0;  //current line being worked on
+//	char c; //used to store each letter for calculations
+//	bool boundMode = g->t->boundMode; //bounding box mode
+//	int maxLines; //Only used for bounding box mode
+//	float record = 0; //longest line of text
+//	int recordIndex = 0; //which line number is the
+//	int Xreference; // iether scaled boundry.X or record
+//	int textLength = g->t->text.length();
+//	float * lineLengths; //array of pixel lengths for each line
+//	bool lineBreak = false; //runtime flag for inserting new lines in bound mode
+//
+//	float letterPosX, letterPosY, finalScaleX, finalScaleY; //used ever for letter. Allocated here for performance
+//
+//	//much faster to convert the string to a char *
+//	char * text = new char[g->t->text.size() + 1];
+//	memcpy(text, g->t->text.c_str(), g->t->text.size());
+//
+//	//allocate an arrays to be coppied to the VBOs
+//	if (textLength != g->t->TextLength) {
+//		//if containers are not being allocated for the first time, delete the previuos data
+//		if (g->t->TextLength > 0)
+//			g->t->dispose();
+//		g->t->letterTransData = new float[textLength * 4]();
+//		g->t->letterUVData = new float[textLength * 4]();
+//		g->t->TextLength = textLength;
+//	}
+//
+//
+//	//pre calculate the pixel lengths of the final lines
+//	for (int i = 0; i < textLength; i++)
+//		if (text[i] == '\n')
+//			lineCount++;
+//
+//	lineLengths = new float[lineCount];
+//
+//	for (int i = 0, lineCounter = 1; i < textLength; i++)
+//	{
+//		c = text[i];
+//		//actual letter lengths
+//		if (c != '\n' && c != ' ');
+//		totalWidth += selected->quadScale[c - 32].x;
+//		//add in distace for space characters
+//		if (c == ' ')
+//			totalWidth += selected->spaceOff;
+//		if (c == '\n' || i == textLength - 1) {
+//			record = totalWidth > record ? totalWidth : record;
+//			lineLengths[lineCounter - 1] = totalWidth;
+//			lineCounter++;
+//			totalWidth = 0;
+//		}
+//	}
+//
+//	if (boundMode) {
+//		maxLines = g->scale.y / g->t->height;
+//		if (lineCount > maxLines)
+//			lineCount = maxLines;
+//		//g->pos = g->pos + vec2(-g->scale.x / (float)2,
+//			//g->scale.y / (float)2 - selected->tallestLetter / (float)2);
+//		Xreference = g->scale.x / scaleRatio;
+//	}
+//	else Xreference = record;
+//
+//
+//	for (int i = 0; i < textLength; i++)
+//	{
+//		c = text[i];
+//
+//		//handle new line
+//		if (c == '\n') {
+//			lineNum++;
+//			if (boundMode && lineNum + 1 > maxLines)
+//				break;
+//			continue;
+//		}
+//		//set the cursor for the new line
+//		if (i == 0 || text[i - 1] == '\n' || lineBreak) {
+//			if (g->t->justification == 0 || (boundMode && lineLengths[lineNum] > g->scale.x / scaleRatio))
+//				xof = 0;
+//			else if (g->t->justification == 1)
+//				xof = (Xreference - lineLengths[lineNum]) / 2;
+//			else {
+//				xof = (Xreference - lineLengths[lineNum]);
+//			}
+//			lineBreak = false;
+//		}
+//
+//		g->t->letterUVData[i * 4 + 0] = selected->uvOffset[c - 32].x;
+//		g->t->letterUVData[i * 4 + 1] = selected->uvOffset[c - 32].y;
+//		g->t->letterUVData[i * 4 + 2] = selected->uvScale[c - 32].x;
+//		g->t->letterUVData[i * 4 + 3] = selected->uvScale[c - 32].y;
+//
+//		vec2 letterScale = selected->quadScale[c - 32];
+//
+//		xof += letterScale.x / 2; //move the scale by  width of current chashapeor
+//		if (boundMode && xof *scaleRatio > g->scale.x) {
+//			lineNum++;
+//			lineBreak = true;
+//			if (boundMode && lineNum + 1 > maxLines)
+//				break;
+//			i--;
+//			continue;
+//		}
+//
+//		float xTranslate = xof;
+//		float yTranslate = selected->alignment[c - 32] - selected->tallestLetter * lineNum;
+//
+//		//calculate final position of the letter
+//		{
+//			if (!boundMode) {
+//				xTranslate -= record / 2;
+//				yTranslate += selected->alignmentOffset;
+//				yTranslate += (selected->tallestLetter * lineCount) / 2;
+//			}
+//			else {
+//				//yTranslate += g->scale.y/2;
+//			}
+//			//	yTranslate += (selected->tallestLetter * lineCount) / 2;
+//
+//			letterPosX = (xTranslate * scaleRatio) / resolutionWidth * 2.0f;
+//			letterPosY = (yTranslate * scaleRatio) / resolutionHeight * 2.0f;
+//
+//			if (boundMode)
+//				g->t->lastLetterPos = vec2((xTranslate - selected->alignment[c - 32]) * scaleRatio - g->scale.x / 2,
+//				(yTranslate - selected->alignment[c - 32]) * scaleRatio + g->scale.y / 2);
+//			else
+//				g->t->lastLetterPos = vec2((xTranslate - selected->alignment[c - 32]) * scaleRatio,
+//				(yTranslate - selected->alignment[c - 32]) * scaleRatio);
+//		}
+//		//final scale of the letter
+//		{
+//			finalScaleX = letterScale.x * scaleRatio / resolutionWidth;
+//			finalScaleY = letterScale.y * scaleRatio / resolutionHeight;
+//		}
+//
+//		//transform
+//		g->t->letterTransData[i * 4 + 0] = letterPosX;
+//		g->t->letterTransData[i * 4 + 1] = letterPosY;
+//		g->t->letterTransData[i * 4 + 2] = finalScaleX;
+//		g->t->letterTransData[i * 4 + 3] = finalScaleY;
+//
+//		if (c == ' ')
+//			xof += selected->spaceOff;
+//		xof += letterScale.x / 2;
+//	}
+//	//update position buffer
+//	glBindBuffer(GL_ARRAY_BUFFER, FTranVBO);
+//	glBufferData(GL_ARRAY_BUFFER, textLength * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
+//	glBufferSubData(GL_ARRAY_BUFFER, 0, textLength * sizeof(GLfloat) * 4, g->t->letterTransData);
+//
+//	glBindBuffer(GL_ARRAY_BUFFER, FuvVBO);
+//	glBufferData(GL_ARRAY_BUFFER, textLength * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
+//	glBufferSubData(GL_ARRAY_BUFFER, 0, textLength * sizeof(GLfloat) * 4, g->t->letterUVData);
+//
+//	//vertices
+//	glEnableVertexAttribArray(1);
+//	glBindBuffer(GL_ARRAY_BUFFER, PVertVBO);
+//	glVertexAttribPointer(
+//		1,
+//		3,
+//		GL_FLOAT,
+//		GL_FALSE,
+//		0,
+//		(void*)0
+//	);
+//	// position and scale
+//	glEnableVertexAttribArray(5);
+//	glBindBuffer(GL_ARRAY_BUFFER, FTranVBO);
+//	glVertexAttribPointer(
+//		5,
+//		4,
+//		GL_FLOAT,
+//		GL_FALSE,
+//		0,
+//		(void*)0
+//	);
+//	// UV position and scale
+//	glEnableVertexAttribArray(6);
+//	glBindBuffer(GL_ARRAY_BUFFER, FuvVBO);
+//	glVertexAttribPointer(
+//		6,
+//		4,
+//		GL_FLOAT,
+//		GL_FALSE,
+//		0,
+//		(void*)0
+//	);
+//
+//	glVertexAttribDivisor(1, 0);
+//	glVertexAttribDivisor(5, 1);
+//	glVertexAttribDivisor(6, 1);
+//
+//	if (boundMode) {
+//		gl(Uniform2f(FontmPosUniformLocation, ((g->position.x - camera.x) - g->scale.x / 2) / resolutionWidth * 2.0f, (g->position.y - camera.y + g->scale.y / 2) / resolutionHeight * 2.0f));
+//	}
+//	else {
+//		gl(Uniform2f(FontmPosUniformLocation, (g->position.x - camera.x) / resolutionWidth * 2.0f, (g->position.y - camera.y) / resolutionHeight * 2.0f));
+//	}
+//	gl(Uniform1f(FontmRotUniformLocation, g->angle - g->rSpeed * currTime));
+//
+//	gl(Uniform1f(FontzoomUniformLocation, cameraZoom));
+//
+//	delete lineLengths;
+//	delete text;
+//}

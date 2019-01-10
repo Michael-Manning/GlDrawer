@@ -5,7 +5,7 @@ uniform mat4 xform;
 uniform vec2 scale;
 uniform vec2 position;
 uniform float rotation;
-uniform float zoom;
+uniform vec2 zoom;
 out vec2 frag_uv;
 
 mat4 trans(){
@@ -47,8 +47,8 @@ void main()
 {
     vec4 ndcPos;
 
-mat4 camZoom = mat4( zoom,  0.0,  0.0, 0.0,
-                     0.0,   zoom,  0.0, 0.0,
+mat4 camZoom = mat4( zoom.x,  0.0,  0.0, 0.0,
+                     0.0,   zoom.y,  0.0, 0.0,
                      0.0, 0.0, 1.0, 0.0,
                      0.0, 0.0, 0.0, 1.0);
 
