@@ -244,14 +244,15 @@ namespace GLDrawer
         /// </summary>
         /// <param name="width">Width of the window</param>
         /// <param name="height">Height of the window</param>
-        /// <param name="title">Name of the window title</param>
+        /// <param name="windowTitle">Name of the window title</param>
         /// <param name="BackColor">Background color of the canvas</param>
+        /// <param name="LegacyCoordinates">Sets the camera scale and position to emulate the GDIDraw system</param>
         /// <param name="TitleDetails">Displays render time, FPS, and shape count in the title</param>
         /// <param name="VSync">Limits the framerate to 60fps and waits for vertical screen synchronization. Set to false for uncapped framerate</param>
         /// <param name="autoRender">wether to automatically render objects on the canvas each frame</param>
         /// <param name="debugMode">Display rendering information on top of the canvas</param>
         /// <param name="borderless">Wether or not the window is borderless</param>
-        public GLCanvas(int width = 800, int height = 600, string windowTitle = "Canvas Window", Color? BackColor = null, bool TitleDetails = true, bool VSync = true, bool autoRender = true, bool debugMode = false, bool borderless = false)
+        public GLCanvas(int width = 800, int height = 600, string windowTitle = "Canvas Window", Color? BackColor = null, bool LegacyCoordinates = true, bool TitleDetails = true, bool VSync = true, bool autoRender = true, bool debugMode = false, bool borderless = false)
         {
             GLWrapper = new unmanaged_Canvas(usePackedShaders)
             {
@@ -266,6 +267,9 @@ namespace GLDrawer
             iBackColor = BackColor == null ? Color.Black : (Color)BackColor;
             AutoRender = autoRender;
             renderNextFrame = autoRender;
+
+            if (LegacyCoordinates)
+                Invoke(SetInvertedCoordinates);
 
             StartCanvas(this);
         }
@@ -284,25 +288,25 @@ namespace GLDrawer
         /// <param name="BackColor">Background color of the canvas</param>
         /// <param name="autoRender">wether to automatically render objects on the canvas each frame </param>
         /// <param name="debugMode">Display rendering information on top of the canvas</param>
-        public GLCanvas(Form form, Panel panel, Color? BackColor = null, bool autoRender = true, bool debugMode = false)
-        {        
-            GLWrapper = new unmanaged_Canvas(usePackedShaders);
-            iHeight = panel.Height;
-            iWidth = panel.Width;
-            form.FormClosed += delegate { Close(); }; //close the canvas when the parent form is closed
-            panelHandle = panel.Handle;
-            this.VSync = activeCanvases.Count > 0 ? false : true; //can't have more than one context with vsync, or it will run at 30fps
-            Borderless = true;
-            DebugMode = debugMode;
-            iform = form;
-            ipanel = panel;
-            iBackColor = BackColor == null ? Color.Black : (Color)BackColor;
-            embedded = true;
-            AutoRender = autoRender;
-            renderNextFrame = autoRender;
+        //public GLCanvas(Form form, Panel panel, Color? BackColor = null, bool autoRender = true, bool debugMode = false)
+        //{
+        //    GLWrapper = new unmanaged_Canvas(usePackedShaders);
+        //    iHeight = panel.Height;
+        //    iWidth = panel.Width;
+        //    form.FormClosed += delegate { Close(); }; //close the canvas when the parent form is closed
+        //    panelHandle = panel.Handle;
+        //    this.VSync = activeCanvases.Count > 0 ? false : true; //can't have more than one context with vsync, or it will run at 30fps
+        //    Borderless = true;
+        //    DebugMode = debugMode;
+        //    iform = form;
+        //    ipanel = panel;
+        //    iBackColor = BackColor == null ? Color.Black : (Color)BackColor;
+        //    embedded = true;
+        //    AutoRender = autoRender;
+        //    renderNextFrame = autoRender;
 
-            StartCanvas(this);
-        }
+        //    StartCanvas(this);
+        //}
         //C++ backend needs to know where to trigger input events
         private void Initialize()
         {
@@ -531,7 +535,7 @@ namespace GLDrawer
         /// <returns>a copy of the added shape</returns>
         public Line AddLine(float XStart, float YStart, float XEnd, float YEnd, float Thickness, Color? LineColor = null, float BorderThickness = 0, Color? BorderColor = null, float RotationSpeed = 0)
         {
-            Line l = new Line(new vec2(XStart, YStart) * Scale, new vec2(XEnd, YEnd) * Scale, Thickness, LineColor, BorderThickness, BorderColor, RotationSpeed)
+            Line l = new Line(new vec2(XStart, YStart), new vec2(XEnd, YEnd), Thickness, LineColor, BorderThickness, BorderColor, RotationSpeed)
             {
                 DrawIndex = nextDrawIndex()
             };
@@ -577,10 +581,10 @@ namespace GLDrawer
         /// <returns>a copy of the added shape</returns>
         public Polygon AddCenteredPolygon(float Xpos, float Ypos, float Width, float Height, int SideCount, Color? FillColor = null, float BorderThickness = 0, Color? BorderColor = null, float Angle = 0, float RotationSpeed = 0)
         {
-            Xpos *= Scale;
-            Ypos *= Scale;
-            Width *= Scale;
-            Height *= Scale;
+            //Xpos *= Scale;
+            //Ypos *= Scale;
+            //Width *= Scale;
+            //Height *= Scale;
             Polygon p = new Polygon(new vec2(Xpos, Ypos), new vec2(Width, Height), Angle, SideCount, FillColor, BorderThickness, BorderColor, RotationSpeed)
             {
                 DrawIndex = nextDrawIndex()

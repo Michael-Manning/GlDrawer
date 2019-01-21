@@ -100,27 +100,27 @@
       0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
     </grid>
   </entityMap>
-  <sprite id="21">../../../data/images/tile set\Tile (13).png</sprite>
-  <sprite id="27">../../../data/images/tile set\Tile (5).png</sprite>
-  <sprite id="31">../../../data/images/tile set\Tile (9).png</sprite>
-  <sprite id="24">../../../data/images/tile set\Tile (2).png</sprite>
-  <sprite id="17">../../../data/images/tile set\Tile (1).png</sprite>
-  <sprite id="25">../../../data/images/tile set\Tile (3).png</sprite>
-  <sprite id="26">../../../data/images/tile set\Tile (4).png</sprite>
-  <sprite id="28">../../../data/images/tile set\Tile (6).png</sprite>
-  <sprite id="19">../../../data/images/tile set\Tile (11).png</sprite>
-  <sprite id="7">../../../data/images/tile set\BGTile (3).png</sprite>
-  <sprite id="10">../../../data/images/tile set\BGTile (6).png</sprite>
-  <sprite id="13">../../../data/images/tile set\Fence (1).png</sprite>
-  <sprite id="15">../../../data/images/tile set\Fence (3).png</sprite>
-  <sprite id="23">../../../data/images/tile set\Tile (15).png</sprite>
-  <sprite id="22">../../../data/images/tile set\Tile (14).png</sprite>
-  <sprite id="20">../../../data/images/tile set\Tile (12).png</sprite>
-  <sprite id="8">../../../data/images/tile set\BGTile (4).png</sprite>
-  <sprite id="3">../../../data/images/tile set\Barrel (1).png</sprite>
-  <sprite id="12">../../../data/images/tile set\Box.png</sprite>
-  <sprite id="14">../../../data/images/tile set\Fence (2).png</sprite>
-  <sprite id="9">../../../data/images/tile set\BGTile (5).png</sprite>
+  <sprite id="21">../../../../data/images/tile set\Tile (13).png</sprite>
+  <sprite id="27">../../../../data/images/tile set\Tile (5).png</sprite>
+  <sprite id="31">../../../../data/images/tile set\Tile (9).png</sprite>
+  <sprite id="24">../../../../data/images/tile set\Tile (2).png</sprite>
+  <sprite id="17">../../../../data/images/tile set\Tile (1).png</sprite>
+  <sprite id="25">../../../../data/images/tile set\Tile (3).png</sprite>
+  <sprite id="26">../../../../data/images/tile set\Tile (4).png</sprite>
+  <sprite id="28">../../../../data/images/tile set\Tile (6).png</sprite>
+  <sprite id="19">../../../../data/images/tile set\Tile (11).png</sprite>
+  <sprite id="7">../../../../data/images/tile set\BGTile (3).png</sprite>
+  <sprite id="10">../../../../data/images/tile set\BGTile (6).png</sprite>
+  <sprite id="13">../../../../data/images/tile set\Fence (1).png</sprite>
+  <sprite id="15">../../../../data/images/tile set\Fence (3).png</sprite>
+  <sprite id="23">../../../../data/images/tile set\Tile (15).png</sprite>
+  <sprite id="22">../../../../data/images/tile set\Tile (14).png</sprite>
+  <sprite id="20">../../../../data/images/tile set\Tile (12).png</sprite>
+  <sprite id="8">../../../../data/images/tile set\BGTile (4).png</sprite>
+  <sprite id="3">../../../../data/images/tile set\Barrel (1).png</sprite>
+  <sprite id="12">../../../../data/images/tile set\Box.png</sprite>
+  <sprite id="14">../../../../data/images/tile set\Fence (2).png</sprite>
+  <sprite id="9">../../../../data/images/tile set\BGTile (5).png</sprite>
   <spriteMap>
     <grid layer="0">
       0 0 0 0 0 0 0 0 0 26 28 0 0 0 27 0 0 0 0 0 0 0 0 0 

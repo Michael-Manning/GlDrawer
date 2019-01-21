@@ -4,10 +4,10 @@
 	<color rgba="0,0,255,150"/>
   </entity>
   <entity tag="sawblade" id="2">
-	<img scale="2,2" rotationSpeed="-8">../../../data/images/tile set/objects/Saw.png</img>
+	<img scale="2,2" rotationSpeed="-8">../../../../data/images/tile set/objects/Saw.png</img>
   </entity>
   <entity tag="coin" id="3">
-	<img scale="0.5, 0.5">../../../data/images/coin.png</img>
+	<img scale="0.5, 0.5">../../../../data/images/coin.png</img>
 	<animationDetails tilesPerRow="2" duration="0.5"/>
   </entity>
 </entities>

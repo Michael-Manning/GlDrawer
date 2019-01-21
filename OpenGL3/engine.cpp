@@ -6,6 +6,7 @@
 #include <assert.h>
 
 #include <gl3w/gl3w.h>
+
 #include <GL/GLU.h>
 #include <GLFW/glfw3.h>
 
@@ -1560,7 +1561,7 @@ void GLCanvas::mainloop(bool render) {
 			else {
 				setGOTransform(g, polyTransUniforms);
 				gl(UniformMatrix4fv(PxformUniformLocation, 1, GL_FALSE, value_ptr(empty)));
-				gl(Uniform1f(PmRotUniformLocation, 0)); //anti aliasing optimization
+				//gl(Uniform1f(PmRotUniformLocation, 0)); //anti aliasing optimization
 				gl(DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
 			}
 		}
@@ -1670,13 +1671,13 @@ void GLCanvas::setFont(GO * g) {
 		g->t->TextLength = textLength;
 	}
 
-
+	
 	//pre calculate the pixel lengths of the final lines
 	for (int i = 0; i < textLength; i++)
 		if (text[i] == '\n')
 			lineCount++;
 
-	lineLengths = new float[lineCount];
+	lineLengths = new float[lineCount];	
 
 	//for (int i = 0, lineCounter = 1; i < textLength; i++)
 	//{
