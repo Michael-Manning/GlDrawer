@@ -288,25 +288,25 @@ namespace GLDrawer
         /// <param name="BackColor">Background color of the canvas</param>
         /// <param name="autoRender">wether to automatically render objects on the canvas each frame </param>
         /// <param name="debugMode">Display rendering information on top of the canvas</param>
-        //public GLCanvas(Form form, Panel panel, Color? BackColor = null, bool autoRender = true, bool debugMode = false)
-        //{
-        //    GLWrapper = new unmanaged_Canvas(usePackedShaders);
-        //    iHeight = panel.Height;
-        //    iWidth = panel.Width;
-        //    form.FormClosed += delegate { Close(); }; //close the canvas when the parent form is closed
-        //    panelHandle = panel.Handle;
-        //    this.VSync = activeCanvases.Count > 0 ? false : true; //can't have more than one context with vsync, or it will run at 30fps
-        //    Borderless = true;
-        //    DebugMode = debugMode;
-        //    iform = form;
-        //    ipanel = panel;
-        //    iBackColor = BackColor == null ? Color.Black : (Color)BackColor;
-        //    embedded = true;
-        //    AutoRender = autoRender;
-        //    renderNextFrame = autoRender;
+        public GLCanvas(Form form, Panel panel, Color? BackColor = null, bool autoRender = true, bool debugMode = false)
+        {
+            GLWrapper = new unmanaged_Canvas(usePackedShaders);
+            iHeight = panel.Height;
+            iWidth = panel.Width;
+            form.FormClosed += delegate { Close(); }; //close the canvas when the parent form is closed
+            panelHandle = panel.Handle;
+            this.VSync = activeCanvases.Count > 0 ? false : true; //can't have more than one context with vsync, or it will run at 30fps
+            Borderless = true;
+            DebugMode = debugMode;
+            iform = form;
+            ipanel = panel;
+            iBackColor = BackColor == null ? Color.Black : (Color)BackColor;
+            embedded = true;
+            AutoRender = autoRender;
+            renderNextFrame = autoRender;
 
-        //    StartCanvas(this);
-        //}
+            StartCanvas(this);
+        }
         //C++ backend needs to know where to trigger input events
         private void Initialize()
         {

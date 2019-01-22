@@ -18,7 +18,7 @@ namespace GLDrawerDemos
             //spaceGame.spaceGame.run();
             //TextEditor.run();
 
-            //demos.FormTest();
+            demos.FormTest();
             //demos.FastRemoval();
             //demos.BackBufferTest();
             //demos.IntersectTest();
@@ -28,14 +28,17 @@ namespace GLDrawerDemos
             // tempim();
 
 
-             GLCanvas can = new GLCanvas();
+            // GLCanvas can = new GLCanvas();
 
-            can.AddLine(100, 0, -100, 0, 5, Color.White);
-            can.AddLine(0, -100, 0, 5, 5, Color.Red);
-            can.AddLine(vec2.Zero, 100, 2, 5, Color.Blue);
-            Polygon p = new Polygon(vec2.Zero, new vec2(100), 2, 4, Color.Green);
-            p.RotationSpeed = 1.0f;
-            can.Add(p);
+            //can.AddLine(100, 0, -100, 0, 5, Color.White);
+            //can.AddLine(0, -100, 0, 5, 5, Color.Red);
+            //can.AddLine(vec2.Zero, 100, 2, 5, Color.Blue);
+            //Polygon p = new Polygon(vec2.Zero, new vec2(100), 2, 4, Color.Green);
+            //p.RotationSpeed = 1.0f;
+            //can.Add(p);
+
+
+
            // can.SetInvertedCoordinates();
            // can.AddCenteredText("test", 50, 100, 20, Color.White);
           //  Polygon p = can.AddCenteredEllipse(0, 30, 100, 100, Color.White) as Polygon;

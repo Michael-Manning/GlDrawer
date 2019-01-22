@@ -977,12 +977,13 @@ fontAsset::fontAsset(const char * filepath) {
 	free(fnt_atlas);
 
 	float unused_offset_y, xof;
-	for (int i = fnt_first_char; i < fnt_last_char; i++)
+	for (int i = fnt_first_char + 1; i < fnt_last_char; i++)
 	{
 		const char ch = i;
 		stbtt_aligned_quad quad;
 		stbtt_GetPackedQuad(packed_chars, fnt_atlas_height, fnt_atlas_height, ch - fnt_first_char, &xof, &unused_offset_y, &quad, 1);
 		tallestLetter = glm::max(tallestLetter, (quad.y1 - quad.y0));
+		float tttttttttt = -quad.y1 + (quad.y1 - quad.y0);
 	}
 }
 
@@ -1090,7 +1091,7 @@ void GLCanvas::setBBPixel(int x, int y, int r, int g, int b, int a) {
 }
 void GLCanvas::setBBPixelFast(int x, int y, int r, int g, int b, int a) {
 	while (windowSizeChanged) {}
-	
+
 	int gridXY = (x * 4) + (resolutionWidth * y * 4);
 
 	if (!setPixelCopyFlag) {
@@ -1224,9 +1225,9 @@ void GLCanvas::mainloop(bool render) {
 		genFramBuffer(&fboTextIdB, &fboIdB, resolutionWidth, resolutionHeight);
 
 		delete setPixelData;
-	//	delete setPixelMask;
+		//	delete setPixelMask;
 		setPixelData = new unsigned char[resolutionWidth * resolutionHeight * 4];
-	//	setPixelMask = new unsigned char[resolutionWidth * resolutionHeight];
+		//	setPixelMask = new unsigned char[resolutionWidth * resolutionHeight];
 		clearSetPixelData();
 		createSetPixelTexture();
 		spTransferBuffer.clear();
@@ -1648,12 +1649,12 @@ void GLCanvas::setFont(GO * g) {
 	char c; //used to store each letter for calculations
 	bool boundMode = g->t->boundMode; //bounding box mode
 	int maxLines; //Only used for bounding box mode
-	float record = 0; //longest line of text
 	int recordIndex = 0; //which line number is the
 	int Xreference; // iether scaled boundry.X or record
 	int textLength = g->t->text.length();
 	float * lineLengths; //array of pixel lengths for each line
 	bool lineBreak = false; //runtime flag for inserting new lines in bound mode
+	bool inverted = cameraZoom.y < 0;
 
 	float letterPosX, letterPosY, finalScaleX, finalScaleY; //used ever for letter. Allocated here for performance
 
@@ -1671,53 +1672,153 @@ void GLCanvas::setFont(GO * g) {
 		g->t->TextLength = textLength;
 	}
 
-	
-	//pre calculate the pixel lengths of the final lines
-	for (int i = 0; i < textLength; i++)
-		if (text[i] == '\n')
-			lineCount++;
 
-	lineLengths = new float[lineCount];	
+	if (!boundMode) {
+		for (int i = 0; i < textLength; i++)
+			if (text[i] == '\n')
+				lineCount++;
+	}
 
-	//for (int i = 0, lineCounter = 1; i < textLength; i++)
-	//{
-	//	c = text[i];
-	//	//actual letter lengths
-	//	if (c != '\n' && c != ' ');
-	//	totalWidth += selected->quadScale[c - 32].x;
-	//	//add in distace for space characters
-	//	if (c == ' ')
-	//		totalWidth += selected->spaceOff;
-	//	if (c == '\n' || i == textLength - 1) {
-	//		record = totalWidth > record ? totalWidth : record;
-	//		lineLengths[lineCounter - 1] = totalWidth;
-	//		lineCounter++;
-	//		totalWidth = 0;
-	//	}
-	//}
+	else
+		lineCount = g->scale.y / g->t->height;
 
-	//if (boundMode) {
-	//	maxLines = g->scale.y / g->t->height;
-	//	if (lineCount > maxLines)
-	//		lineCount = maxLines;
-	//	//g->pos = g->pos + vec2(-g->scale.x / (float)2,
-	//		//g->scale.y / (float)2 - selected->tallestLetter / (float)2);
-	//	Xreference = g->scale.x / scaleRatio;
-	//}
-	//else Xreference = record;
+	lineLengths = new float[lineCount + 10];
 
 
 	/////////////////////////////////////////////////////////////
 
 	float unused_offset_y = 0.0f;
-	float sdif = g->t->height / selected->tallestLetter;
+
+
+
+
+
+	float of;
+	{
+		const char ch = '}';
+
+		stbtt_aligned_quad quad;
+		stbtt_GetPackedQuad(selected->packed_chars, fnt_atlas_height, fnt_atlas_height, ch - fnt_first_char, &xof, &unused_offset_y, &quad, 1);
+
+		of = (quad.y1 - quad.y0);
+		//of = quad.y0;
+	}
+
+
+
+
+	float sdif = g->t->height / of; //selected->tallestLetter;
 
 	xof = 0.0f;
 	unused_offset_y = 0.0f;
-	for (int txt_i = 0; txt_i < textLength; ++txt_i) {
+
+	float record = 0; //longest line of text
+	for (int txt_i = 0, lineCounter = 1; txt_i < textLength; ++txt_i) {
 		const char ch = text[txt_i];
+
 		stbtt_aligned_quad quad;
 		stbtt_GetPackedQuad(selected->packed_chars, fnt_atlas_height, fnt_atlas_height, ch - fnt_first_char, &xof, &unused_offset_y, &quad, 1);
+
+		if (!boundMode) {
+			if (ch == '\n' || txt_i == textLength - 1) {
+				record = xof > record ? xof : record;
+				lineLengths[lineCounter - 1] = xof;
+				lineCounter++;
+				xof = 0;
+			}
+		}
+		else {
+			if (ch == '\n' || txt_i == textLength - 1) {
+				lineLengths[lineCounter - 1] = xof;
+				lineCounter++;
+				xof = 0;
+			}
+			else if (xof > g->scale.x / sdif) {
+				lineLengths[lineCounter - 1] = xof;
+				lineCounter++;
+				xof = 0;
+				txt_i--;
+			}
+			if (lineCounter > lineCount)
+				break;
+		}
+	}
+
+
+
+
+	//float minOffset = 0;
+	float maxOffset = 0;
+	for (int txt_i = fnt_first_char + 1; txt_i < fnt_last_char; ++txt_i) {
+		const char ch = txt_i;
+
+		stbtt_aligned_quad quad;
+		stbtt_GetPackedQuad(selected->packed_chars, fnt_atlas_height, fnt_atlas_height, ch - fnt_first_char, &xof, &unused_offset_y, &quad, 1);
+
+
+		maxOffset = glm::max(maxOffset, -quad.y1 * sdif + ((quad.y1 - quad.y0)  *sdif));
+	//	minOffset = glm::min(minOffset, -quad.y1 * sdif + ((quad.y1 - quad.y0)  *sdif));
+	}
+
+	if (!boundMode) {
+		if (g->t->justification == 0)
+			xof = -record / 2;
+		else if (g->t->justification == 1)
+			xof = -lineLengths[lineNum] / 2;
+		else if (g->t->justification == 2)
+			xof = -record / 2 + (record - lineLengths[lineNum]);
+	}
+	else {
+		if (g->t->justification == 0)
+			xof = 0;
+		else if (g->t->justification == 1)
+			xof = g->scale.x / sdif / 2 - lineLengths[lineNum] / 2;
+		else if (g->t->justification == 2)
+			xof = g->scale.x / sdif - lineLengths[lineNum];
+	}
+
+	bool lineCut = false;
+	//lineNum--; //compensation for first execution
+
+	for (int txt_i = 0; txt_i < textLength; ++txt_i) {
+		const char ch = text[txt_i];
+
+		//handle new line
+		if (ch == '\n' || lineCut) {
+			lineNum++;
+			lineCut = false;
+
+			if (!boundMode) {
+				if (g->t->justification == 0)
+					xof = -record / 2;
+				else if (g->t->justification == 1)
+					xof = -lineLengths[lineNum] / 2;
+				else if (g->t->justification == 2)
+					xof = -record / 2 + (record - lineLengths[lineNum]);
+			}
+			else {
+				if (g->t->justification == 0)
+					xof = 0;
+				else if (g->t->justification == 1)
+					xof = g->scale.x / sdif / 2 - lineLengths[lineNum] / 2;
+				else if (g->t->justification == 2)
+					xof = g->scale.x / sdif - lineLengths[lineNum];
+
+				if (boundMode && lineNum + 1 > lineCount)
+					break;
+			}
+
+			continue;
+		}
+
+		stbtt_aligned_quad quad;
+		stbtt_GetPackedQuad(selected->packed_chars, fnt_atlas_height, fnt_atlas_height, ch - fnt_first_char, &xof, &unused_offset_y, &quad, 1);
+
+		if (boundMode && xof > g->scale.x / sdif) {
+			lineCut = true;
+			txt_i -= 2;
+			continue;
+		}
 
 		const float uvx = (quad.s1 - quad.s0) / 2;
 		const float uvy = (quad.t1 - quad.t0) / 2;
@@ -1728,8 +1829,73 @@ void GLCanvas::setFont(GO * g) {
 
 		const float quad_width_px = (quad.x1 - quad.x0)  * sdif;
 		const float quad_height_px = (quad.y1 - quad.y0)  *sdif;
+
+		float temmppp = -quad.y1 * sdif +
+			quad_height_px;
+
+
+		//position X and Y
 		g->t->letterTransData[txt_i * 4 + 0] = (quad.x0 * sdif + 0.5f*quad_width_px) / (resolutionWidth / 2);
-		g->t->letterTransData[txt_i * 4 + 1] = ((-quad.y1 * sdif + 0.5f*quad_height_px)/* - selected->baseline/2*/) / (resolutionHeight / 2);
+		g->t->letterTransData[txt_i * 4 + 1] =
+			(
+				//		//gives vertical allignment but breaks vertical position
+
+				(			
+					!inverted ?
+					- quad.y1 * sdif
+					+ quad_height_px
+					:
+					+ quad.y1 * sdif
+					- quad_height_px			
+				)
+				
+				+
+
+				(
+					!inverted ?
+					-maxOffset
+					:
+					+maxOffset
+				)
+
+				+
+
+
+				(
+					!inverted ?
+					-g->t->height * lineNum * 2
+					:
+					+g->t->height * lineNum * 2
+					-lineCount * g->t->height * 2
+				)
+
+				//- selected->tallestLetter * sdif 
+				//-30->t->height
+
+				
+				// minOffset
+				//- selected->descent * selected-=>sc
+			    //	+of * 2
+				//- selected->baseline /2
+
+
+
+				
+				//- selected->tallestLetter * sdif
+				//- g->t->height
+
+				+(!boundMode ?
+				(g->t->height * (lineCount - 1))
+
+					+ 0
+					:
+					g->scale.y / 1
+					- g->t->height
+
+					))
+			/ (resolutionHeight / 1);
+
+		//Scale X and Y
 		g->t->letterTransData[txt_i * 4 + 2] = quad_width_px / resolutionWidth;
 		g->t->letterTransData[txt_i * 4 + 3] = -quad_height_px / resolutionHeight;
 
@@ -1871,7 +2037,7 @@ void GLCanvas::setFont(GO * g) {
 	glVertexAttribDivisor(6, 1);
 
 	if (boundMode) {
-		gl(Uniform2f(FontmPosUniformLocation, ((g->position.x - camera.x) - g->scale.x / 2) / resolutionWidth * 2.0f, (g->position.y - camera.y + g->scale.y / 2) / resolutionHeight * 2.0f));
+		gl(Uniform2f(FontmPosUniformLocation, ((g->position.x - camera.x) - g->scale.x / 2) / resolutionWidth * 2.0f, (g->position.y - camera.y /* + g->scale.y / 2*/) / resolutionHeight * 2.0f));
 	}
 	else {
 		gl(Uniform2f(FontmPosUniformLocation, (g->position.x - camera.x) / resolutionWidth * 2.0f, (g->position.y - camera.y) / resolutionHeight * 2.0f));
@@ -2324,7 +2490,7 @@ bool GLCanvas::raycast(vec2 start, vec2 end)
 //		}
 //
 //		float xTranslate = xof;
-//		float yTranslate = selected->alignment[c - 32] - selected->tallestLetter * lineNum;
+//		float yTranslate = selected->alignment[c - 32] - selected->tallest`Letter * lineNum;
 //
 //		//calculate final position of the letter
 //		{
