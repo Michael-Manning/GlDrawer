@@ -30,10 +30,6 @@ namespace GLDrawer
         public float DeltaTime { get => iDeltaTime; }
         /// <summary>text to display on the window title</summary>
         public string WindowTitle { get => GLWrapper.title; set => GLWrapper.title = value; }
-        /// <summary>wether 0 on the y axis starts from the top or bottom</summary>
-        private bool InvertedYAxis = false; //unimplimented for public use as of now
-        /// <summary>multiplier for all shape coordinates</summary>
-        public int Scale = 1; //replaced by camera scale
         /// <summary>display debug info next to the title</summary>
         public bool ExtraInfo { set => GLWrapper.titleDetails = value; }
         /// <summary>center coordinate of the canvas in pixels (half the window size)</summary>
@@ -438,10 +434,6 @@ namespace GLDrawer
         /// <returns>a copy of the added shape</returns>
         public Polygon AddRectangle(float XStart, float YStart, float Width, float Height, Color? FillColor = null, float BorderThickness = 0, Color? BorderColor = null, float Angle = 0, float RotationSpeed = 0)
         {
-            XStart *= Scale;
-            YStart *= Scale;
-            Width *= Scale;
-            Height *= Scale;
             Polygon r = new Polygon(new vec2(XStart + Width / 2f, YStart + Height / 2f), new vec2(Width, Height), Angle, 4, FillColor, BorderThickness, BorderColor, RotationSpeed)
             {
                 DrawIndex = nextDrawIndex()
@@ -464,7 +456,7 @@ namespace GLDrawer
         /// <returns>a copy of the added shape</returns>
         public Polygon AddCenteredRectangle(float Xpos, float Ypos, float Width, float Height, Color? FillColor = null, float BorderThickness = 0, Color? BorderColor = null, float Angle = 0, float RotationSpeed = 0)
         {
-            Polygon r = new Polygon(new vec2(Xpos, Ypos) * Scale, new vec2(Width, Height) * Scale, Angle, 4, FillColor, BorderThickness, BorderColor, RotationSpeed)
+            Polygon r = new Polygon(new vec2(Xpos, Ypos), new vec2(Width, Height), Angle, 4, FillColor, BorderThickness, BorderColor, RotationSpeed)
             {
                 DrawIndex = nextDrawIndex()
             };
@@ -487,10 +479,6 @@ namespace GLDrawer
         /// <returns>a copy of the added shape</returns>
         public Polygon AddEllipse(float XStart, float YStart, float Width, float Height, Color? FillColor = null, float BorderThickness = 0, Color? BorderColor = null, float Angle = 0, float RotationSpeed = 0)
         {
-            XStart *= Scale;
-            YStart *= Scale;
-            Width *= Scale;
-            Height *= Scale;
             Polygon e = new Polygon(new vec2(XStart + Width / 2f, YStart + Height / 2f), new vec2(Width, Height), Angle, 1, FillColor, BorderThickness, BorderColor, RotationSpeed)
             {
                 DrawIndex = nextDrawIndex()
@@ -513,7 +501,7 @@ namespace GLDrawer
         /// <returns>a copy of the added shape</returns>
         public Polygon AddCenteredEllipse(float Xpos, float Ypos, float Width, float Height, Color? FillColor = null, float BorderThickness = 0, Color? BorderColor = null, float Angle = 0, float RotationSpeed = 0)
         {
-            Polygon e = new Polygon(new vec2(Xpos, Ypos) * Scale, new vec2(Width, Height) * Scale, Angle, 1, FillColor, BorderThickness, BorderColor, RotationSpeed)
+            Polygon e = new Polygon(new vec2(Xpos, Ypos), new vec2(Width, Height), Angle, 1, FillColor, BorderThickness, BorderColor, RotationSpeed)
             {
                 DrawIndex = nextDrawIndex()
             };
@@ -556,8 +544,6 @@ namespace GLDrawer
         /// <returns>a copy of the added shape</returns>
         public Line AddLine(vec2 StartPos, float Length, float Angle, float Thickness, Color? LineColor = null, float BorderThickness = 0, Color? BorderColor = null, float RotationSpeed = 0)
         {
-            StartPos *= Scale;
-            Length *= Scale;
             Line l = new Line(StartPos, Length, Thickness, Angle, LineColor, BorderThickness, BorderColor, RotationSpeed)
             {
                 DrawIndex = nextDrawIndex()
@@ -608,7 +594,7 @@ namespace GLDrawer
         /// <returns>Reference to the added sprite</returns>
         public Sprite AddCenteredSprite(string FilePath, float Xpos, float Ypos, float Width, float Height, float Angle = 0, float RotationSpeed = 0)
         {
-            Sprite s = new Sprite(FilePath, new vec2(Xpos, Ypos) * Scale, new vec2(Width, Height) * Scale, Angle, rotationSpeed: RotationSpeed)
+            Sprite s = new Sprite(FilePath, new vec2(Xpos, Ypos), new vec2(Width, Height), Angle, rotationSpeed: RotationSpeed)
             {
                 DrawIndex = nextDrawIndex()
             };
@@ -631,10 +617,6 @@ namespace GLDrawer
         /// <returns>Reference to the added sprite</returns>
         public Sprite AddSprite(string FilePath, float XStart, float YStart, float Width, float Height, Color? Color = null, float Angle = 0, float RotationSpeed = 0)
         {
-            XStart *= Scale;
-            YStart *= Scale;
-            Width *= Scale;
-            Height *= Scale;
             Sprite s = new Sprite(FilePath, new vec2(XStart + Width / 2f, YStart + Height / 2f), new vec2(Width, Height), Angle, rotationSpeed: RotationSpeed)
             {
                 DrawIndex = nextDrawIndex()
@@ -673,7 +655,7 @@ namespace GLDrawer
         /// <returns>a copy of the added shape</returns>
         public Text AddCenteredText(string text, float textHeight, float Xpos, float Ypos, Color? TextColor = null, JustificationType justification = JustificationType.Center, string fontFilepath = "c:\\windows\\fonts\\times.ttf")
         {
-            Text t = new Text(new vec2(Xpos, Ypos) * Scale, text, textHeight, TextColor == null ? Color.White : TextColor, justification, fontFilepath)
+            Text t = new Text(new vec2(Xpos, Ypos), text, textHeight, TextColor == null ? Color.White : TextColor, justification, fontFilepath)
             {
                 DrawIndex = nextDrawIndex()
             };
@@ -1036,6 +1018,12 @@ namespace GLDrawer
         {
             CameraScale = new vec2(1, -1);
             CameraPosition = Center;
+        }
+        /// <summary>Configures the camera to it's original cartesian system</summary>
+        public void SetCartesianCoordinates()
+        {
+            CameraScale = new vec2(1, 1);
+            CameraPosition = vec2.Zero;
         }
 
         //Extra, user end functions

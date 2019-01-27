@@ -18,7 +18,7 @@ namespace GLDrawerDemos
             //spaceGame.spaceGame.run();
             //TextEditor.run();
 
-            demos.FormTest();
+            //demos.FormTest();
             //demos.FastRemoval();
             //demos.BackBufferTest();
             //demos.IntersectTest();
@@ -28,6 +28,36 @@ namespace GLDrawerDemos
             // tempim();
 
 
+            GLCanvas can = new GLCanvas(LegacyCoordinates: false);
+
+            var e = can.AddCenteredEllipse(0, 0, 20, 20, Color.White);
+            var text = can.AddCenteredText("test", 40, Color.White);
+            bool inverted = false;
+
+            can.Update += delegate {
+                e.Position = can.MousePositionScaled;
+                if(can.GetKeyDown('c'))
+                {
+                    inverted = !inverted;
+                    if (inverted)
+                    {
+                        can.SetInvertedCoordinates();
+                        text.Position = can.Center;
+                    }
+
+                    else
+                    {
+                        can.SetCartesianCoordinates();
+                        text.Position = vec2.Zero;
+                    }
+
+                }
+                text.Body = string.Format(
+                    "Press C to toggle Coordinates: {0}\n X: {1} Y: {2}",
+                     inverted ? "Legacy" : "Cartesian", can.MousePosition.x, can.MousePosition.y
+                    );
+            };
+            
             // GLCanvas can = new GLCanvas();
 
             //can.AddLine(100, 0, -100, 0, 5, Color.White);
@@ -39,18 +69,18 @@ namespace GLDrawerDemos
 
 
 
-           // can.SetInvertedCoordinates();
-           // can.AddCenteredText("test", 50, 100, 20, Color.White);
-          //  Polygon p = can.AddCenteredEllipse(0, 30, 100, 100, Color.White) as Polygon;
+            // can.SetInvertedCoordinates();
+            // can.AddCenteredText("test", 50, 100, 20, Color.White);
+            //  Polygon p = can.AddCenteredEllipse(0, 30, 100, 100, Color.White) as Polygon;
 
-           // can.Update += () => can.CameraScale = new vec2(can.CameraScale.x, (float)Math.Sin(can.Time) * 2);
+            // can.Update += () => can.CameraScale = new vec2(can.CameraScale.x, (float)Math.Sin(can.Time) * 2);
 
 
 
-          //  can.Close();
-          ////  Console.ReadKey();
-          //  // Polygon p = new Polygon(vec2.Zero, vec2.Zero);
-          //  Thread.Sleep(1000);
+            //  can.Close();
+            ////  Console.ReadKey();
+            //  // Polygon p = new Polygon(vec2.Zero, vec2.Zero);
+            //  Thread.Sleep(1000);
             Console.ReadKey();
         }
 

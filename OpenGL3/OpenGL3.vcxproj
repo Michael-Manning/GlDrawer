@@ -100,7 +100,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>..\Include\GLFWwin32\glfw3.lib;Glu32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>..\Include\GLFWwin32\glfw3.lib;..\Include\Box2D\Box2D.lib;Glu32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <EmbedManagedResourceFile>%(EmbedManagedResourceFile)</EmbedManagedResourceFile>
     </Link>
     <Bscmake>
@@ -190,11 +190,6 @@
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="OpenGL3.rc" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Include\Build\Box2D.vcxproj">
-      <Project>{a434e80c-1049-10be-d9ca-b31d459e0cef}</Project>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

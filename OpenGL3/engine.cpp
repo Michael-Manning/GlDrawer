@@ -1209,6 +1209,10 @@ void GLCanvas::mainloop(bool render) {
 	resolutionV2f = vec2((float)resolutionWidth, (float)resolutionHeight);
 	aspect = resolutionV2f.y / resolutionV2f.x;
 
+	//window is minimized
+	if (resolutionWidth == 0 || resolutionHeight == 0)
+		return;
+
 	//update physics
 	world.Step(timeStep, velocityIterations, positionIterations);
 
@@ -1745,9 +1749,6 @@ void GLCanvas::setFont(GO * g) {
 	}
 
 
-
-
-	//float minOffset = 0;
 	float maxOffset = 0;
 	for (int txt_i = fnt_first_char + 1; txt_i < fnt_last_char; ++txt_i) {
 		const char ch = txt_i;
@@ -1755,9 +1756,7 @@ void GLCanvas::setFont(GO * g) {
 		stbtt_aligned_quad quad;
 		stbtt_GetPackedQuad(selected->packed_chars, fnt_atlas_height, fnt_atlas_height, ch - fnt_first_char, &xof, &unused_offset_y, &quad, 1);
 
-
 		maxOffset = glm::max(maxOffset, -quad.y1 * sdif + ((quad.y1 - quad.y0)  *sdif));
-	//	minOffset = glm::min(minOffset, -quad.y1 * sdif + ((quad.y1 - quad.y0)  *sdif));
 	}
 
 	if (!boundMode) {
@@ -1836,63 +1835,48 @@ void GLCanvas::setFont(GO * g) {
 
 		//position X and Y
 		g->t->letterTransData[txt_i * 4 + 0] = (quad.x0 * sdif + 0.5f*quad_width_px) / (resolutionWidth / 2);
+		
+		//the y value of each letter is fairly complicated
 		g->t->letterTransData[txt_i * 4 + 1] =
-			(
-				//		//gives vertical allignment but breaks vertical position
-
-				(			
+			(	
+				(	//gives vertical allignment but breaks vertical position		
 					!inverted ?
 					- quad.y1 * sdif
 					+ quad_height_px
 					:
 					+ quad.y1 * sdif
 					- quad_height_px			
-				)
-				
-				+
-
-				(
+				)			
+				+(
 					!inverted ?
 					-maxOffset
 					:
 					+maxOffset
 				)
-
-				+
-
-
-				(
+				+(
 					!inverted ?
 					-g->t->height * lineNum * 2
 					:
 					+g->t->height * lineNum * 2
-					-lineCount * g->t->height * 2
 				)
-
-				//- selected->tallestLetter * sdif 
-				//-30->t->height
-
-				
-				// minOffset
-				//- selected->descent * selected-=>sc
-			    //	+of * 2
-				//- selected->baseline /2
-
-
-
-				
-				//- selected->tallestLetter * sdif
-				//- g->t->height
-
-				+(!boundMode ?
-				(g->t->height * (lineCount - 1))
-
-					+ 0
+				+(
+					!boundMode ?
+					(
+						!inverted ?
+						g->t->height * (lineCount - 1)
+						:
+						-g->t->height * (lineCount - 1)
+					)			
 					:
-					g->scale.y / 1
-					- g->t->height
-
-					))
+					(
+						!inverted ?
+						g->scale.y / 1
+						- g->t->height
+						:
+						-g->scale.y / 1
+						+g->t->height
+					)
+				))
 			/ (resolutionHeight / 1);
 
 		//Scale X and Y
@@ -1902,92 +1886,6 @@ void GLCanvas::setFont(GO * g) {
 		if (text[txt_i + 1])
 			xof += selected->scaleFactor * stbtt_GetCodepointKernAdvance(&selected->info, text[txt_i], text[txt_i + 1]);
 	}
-
-
-	/////////////////////////////////////////////////////////////
-
-	//for (int i = 0; i < textLength; i++)
-	//{
-	//	c = text[i];
-
-	//	//handle new line
-	//	if (c == '\n') {
-	//		lineNum++;
-	//		if (boundMode && lineNum + 1 > maxLines)
-	//			break;
-	//		continue;
-	//	}
-	//	//set the cursor for the new line
-	//	if (i == 0 || text[i - 1] == '\n' || lineBreak) {
-	//		if (g->t->justification == 0 || (boundMode && lineLengths[lineNum] > g->scale.x / scaleRatio))
-	//			xof = 0;
-	//		else if (g->t->justification == 1)
-	//			xof = (Xreference - lineLengths[lineNum]) / 2;
-	//		else {
-	//			xof = (Xreference - lineLengths[lineNum]);
-	//		}
-	//		lineBreak = false;
-	//	}
-
-	//	g->t->letterUVData[i * 4 + 0] = selected->uvOffset[c - 32].x;
-	//	g->t->letterUVData[i * 4 + 1] = selected->uvOffset[c - 32].y;
-	//	g->t->letterUVData[i * 4 + 2] = selected->uvScale[c - 32].x;
-	//	g->t->letterUVData[i * 4 + 3] = selected->uvScale[c - 32].y;
-
-	//	vec2 letterScale = selected->quadScale[c - 32];
-
-	//	xof += letterScale.x / 2; //move the scale by  width of current chashapeor
-	//	if (boundMode && xof *scaleRatio > g->scale.x) {
-	//		lineNum++;
-	//		lineBreak = true;
-	//		if (boundMode && lineNum + 1 > maxLines)
-	//			break;
-	//		i--;
-	//		continue;
-	//	}
-
-	//	float xTranslate = xof;
-	//	float yTranslate = selected->alignment[c - 32] - selected->tallestLetter * lineNum;
-
-	//	//calculate final position of the letter
-	//	{
-	//		if (!boundMode) {
-	//			xTranslate -= record / 2;
-	//			yTranslate += selected->alignmentOffset;
-	//			yTranslate += (selected->tallestLetter * lineCount) / 2;
-	//		}
-	//		else {
-	//			//yTranslate += g->scale.y/2;
-	//		}
-	//		//	yTranslate += (selected->tallestLetter * lineCount) / 2;
-
-	//		letterPosX = (xTranslate * scaleRatio) / resolutionWidth * 2.0f;
-	//		letterPosY = (yTranslate * scaleRatio) / resolutionHeight * 2.0f;
-
-	//		if (boundMode)
-	//			g->t->lastLetterPos = vec2((xTranslate - selected->alignment[c - 32]) * scaleRatio - g->scale.x / 2,
-	//			(yTranslate - selected->alignment[c - 32]) * scaleRatio + g->scale.y / 2);
-	//		else
-	//			g->t->lastLetterPos = vec2((xTranslate - selected->alignment[c - 32]) * scaleRatio,
-	//			(yTranslate - selected->alignment[c - 32]) * scaleRatio);
-	//	}
-	//	//final scale of the letter
-	//	{
-	//		finalScaleX = letterScale.x * scaleRatio / resolutionWidth;
-	//		finalScaleY = letterScale.y * scaleRatio / resolutionHeight;
-	//	}
-
-	//	//transform
-	//	g->t->letterTransData[i * 4 + 0] = letterPosX;
-	//	g->t->letterTransData[i * 4 + 1] = letterPosY;
-	//	g->t->letterTransData[i * 4 + 2] = finalScaleX;
-	//	g->t->letterTransData[i * 4 + 3] = finalScaleY;
-
-	//	if (c == ' ')
-	//		xof += selected->spaceOff;
-	//	xof += letterScale.x / 2;
-	//}
-
 
 	//update position buffer
 	glBindBuffer(GL_ARRAY_BUFFER, FTranVBO);

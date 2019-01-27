@@ -35,10 +35,9 @@ namespace GLDrawer
         public event GLKeyEvent KeyDown = delegate { };
         public event GLKeyEvent KeyUp = delegate { };
 
-
-        public vec2 MousePosition => CheckInvert(iMousePosition);
-        public vec2 MousePositionScaled => CheckInvert(iMousePosition) / Scale;
-        public vec2 MousePositionScreenSpace => CheckInvert(iMousePosition) - this.Center;
+        public vec2 MousePosition => iMousePosition;
+        public vec2 MousePositionScaled => iMousePosition * CameraScale + CameraPosition; 
+        public vec2 MousePositionScreenSpace => iMousePosition - this.Center;
         public vec2 MouseDeltaPosition => iMouseDeltaPosition;
         public bool MouseLeftState => !leftLifted;
         public bool MouseRightState => !rightLifted;
@@ -76,8 +75,6 @@ namespace GLDrawer
         //this gets called by GLFW (unmanaged code)
         private void MouseCallback(int btn, int action, int mods)
         {
-            unmanaged_vec2 v = GLWrapper.getMousePos();
-            iMousePosition = new vec2(v.x, v.y);
             //scroll (3 was chosen by me, not glfw)
             if (btn == 3)
             {
@@ -147,20 +144,12 @@ namespace GLDrawer
         private void MouseMoveCallback()
         {
             unmanaged_vec2 v = GLWrapper.getMousePos();
-            vec2 pos = new vec2(v.x, v.y);
+            vec2 pos = new vec2(v.x - Width / 2, Height / 2 - v.y);
             iMouseDeltaPosition = pos - iMousePosition;
             iMouseDeltaPosition *= new vec2(1, -1);
             iMousePosition = pos;
             MouseMove.Invoke(MousePosition, this);
             MouseMoveScaled.Invoke(MousePositionScaled, this);
-        }
-        private vec2 CheckInvert(vec2 v)
-        {
-            if (!InvertedYAxis)
-                return new vec2(v.x - Width / 2, -v.y + Height / 2);
-            if (!InvertedYAxis)
-                return new vec2(v.x, -v.y + Height);
-            return v;
         }
 
         #region get key functions
@@ -295,7 +284,7 @@ namespace GLDrawer
         /// </summary>
         public bool GetLastMouseLeftClickScaled(out vec2 Postion)
         {
-            Postion = LastLeftClick / Scale;
+            Postion = LastLeftClick * CameraScale + CameraPosition;
             if (leftClickToggle)
             {
                 leftClickToggle = false;
@@ -309,7 +298,7 @@ namespace GLDrawer
         /// </summary>
         public bool GetLastMouseRightClickScaled(out vec2 Postion)
         {
-            Postion = LastRightClick / Scale;
+            Postion = LastRightClick * CameraScale + CameraPosition;
             if (rightClickToggle)
             {
                 rightClickToggle = false;
@@ -340,7 +329,7 @@ namespace GLDrawer
         /// </summary>
         public bool GetLastMousePositionScaled(out vec2 Postion)
         {
-            Postion = MousePosition / Scale;
+            Postion = MousePositionScaled;
             if (mouseMovedToggle)
             {
                 mouseMovedToggle = false;
