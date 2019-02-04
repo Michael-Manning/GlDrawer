@@ -14,7 +14,7 @@ namespace GLDrawerDemos
         {
             //platformGame.SimplePlatformer.run();
             //platformGame.AdvancedPlatformer.run();
-            // GLDrawerDemos.levelEditorProgram.run();
+            //GLDrawerDemos.levelEditorProgram.run();
             //spaceGame.spaceGame.run();
             //TextEditor.run();
 
@@ -22,11 +22,11 @@ namespace GLDrawerDemos
             //demos.FastRemoval();
             //demos.BackBufferTest();
             //demos.IntersectTest();
-            //demos.PhysicsTest();       
+         //   demos.PhysicsTest();       
             //demos.BackBufferMultithread();
 
             // tempim();
-
+        //    Console.ReadKey();
 
             GLCanvas can = new GLCanvas(LegacyCoordinates: false);
 

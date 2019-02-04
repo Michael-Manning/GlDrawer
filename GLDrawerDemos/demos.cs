@@ -45,7 +45,7 @@ namespace GLDrawerDemos
         /// </summary>
         public static void PhysicsTest()
         {
-            can = new GLCanvas(1000, 1000, BackColor: new Color(50));
+            can = new GLCanvas(1000, 1000, BackColor: new Color(50), LegacyCoordinates: true);
             can.AddCenteredText("Click and drag to fling boxes and balls.", 30, new Color(255, 160));
 
             can.Instantiate(new wall(), new vec2(1000, 0));

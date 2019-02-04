@@ -130,6 +130,7 @@ namespace GLDrawer
         private Panel ipanel;
         private bool embedded = false;
         internal bool initialized = false;
+        private bool initializedWithLegacyCoords = false; //used by addCentered Text to ensure expected behaviour
         private bool disposed = false;
         private bool frozen = false; //used to emergency freeze the main thread in case of runtime memory alocation such as a window resize
         private bool renderNextFrame = true; //tracks manual rendering
@@ -263,6 +264,7 @@ namespace GLDrawer
             iBackColor = BackColor == null ? Color.Black : (Color)BackColor;
             AutoRender = autoRender;
             renderNextFrame = autoRender;
+            initializedWithLegacyCoords = LegacyCoordinates;
 
             if (LegacyCoordinates)
                 Invoke(SetInvertedCoordinates);
@@ -635,7 +637,8 @@ namespace GLDrawer
         /// <returns>a copy of the added shape</returns>
         public Text AddCenteredText(string text, float textHeight, Color ? TextColor = null, JustificationType justification = JustificationType.Center, string fontFilepath  = "c:\\windows\\fonts\\times.ttf")
         {
-            Text t = new Text(this.CameraPosition, text, textHeight, TextColor == null ? Color.White : TextColor, justification, fontFilepath)
+            vec2 pos = initializedWithLegacyCoords ? Center : vec2.Zero;
+            Text t = new Text(pos, text, textHeight, TextColor == null ? Color.White : TextColor, justification, fontFilepath)
             {
                 DrawIndex = nextDrawIndex()
             };

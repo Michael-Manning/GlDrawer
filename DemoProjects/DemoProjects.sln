@@ -11,6 +11,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AdvancedPlatformer", "Advan
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LevelEditor", "LevelEditor\LevelEditor.csproj", "{1567AFAE-59B2-45C8-B5A3-463E07E3A187}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TextEditor", "TextEditor\TextEditor.csproj", "{771F124A-BFE5-4433-9E38-AE54691E228E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimplePhysics", "SimplePhysics\SimplePhysics.csproj", "{5D390772-9E40-44E5-A79E-BBC9CF1DC697}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +37,14 @@ Global
 		{1567AFAE-59B2-45C8-B5A3-463E07E3A187}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1567AFAE-59B2-45C8-B5A3-463E07E3A187}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1567AFAE-59B2-45C8-B5A3-463E07E3A187}.Release|Any CPU.Build.0 = Release|Any CPU
+		{771F124A-BFE5-4433-9E38-AE54691E228E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{771F124A-BFE5-4433-9E38-AE54691E228E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{771F124A-BFE5-4433-9E38-AE54691E228E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{771F124A-BFE5-4433-9E38-AE54691E228E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5D390772-9E40-44E5-A79E-BBC9CF1DC697}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5D390772-9E40-44E5-A79E-BBC9CF1DC697}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5D390772-9E40-44E5-A79E-BBC9CF1DC697}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5D390772-9E40-44E5-A79E-BBC9CF1DC697}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

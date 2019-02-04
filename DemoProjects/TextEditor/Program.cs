@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms;
+using GLDrawer;
 
 namespace TextEditor
 {
@@ -10,6 +12,7 @@ namespace TextEditor
     {
         static void Main(string[] args)
         {
+            run();
         }
 
 
@@ -24,7 +27,7 @@ namespace TextEditor
 
         public static void run()
         {
-            can = new GLCanvas(initialWidth, initialHight, BackColor: new Color(200));
+            can = new GLCanvas(initialWidth, initialHight, BackColor: new Color(200), LegacyCoordinates: false);
             text = can.Add(new Text(vec2.Zero, new vec2(initialWidth - pageMargin - textMargin, initialHight - pageMargin - textMargin), "", textHeight, Color.Black, JustificationType.Left)) as Text;
             text.DrawIndex = 0;
             page = can.AddCenteredRectangle(0, 0, pageWidth, initialHight - pageMargin, Color.White, 4, new Color(50, 14));
@@ -210,7 +213,7 @@ namespace TextEditor
             cursorTimer = 0;
             cursor.Hidden = false;
             cursorBlink = false;
-        }
+        }   
 
     }
 }

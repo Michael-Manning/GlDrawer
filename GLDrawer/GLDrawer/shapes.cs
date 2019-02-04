@@ -232,6 +232,17 @@ namespace GLDrawer
         public vec2 lastLetterPos => new vec2(internalText.lastLetterPos.x, internalText.lastLetterPos.y);
 
         //with bound
+        /// <summary>
+        /// Create Text with bounding box
+        /// </summary>
+        /// <param name="position">center position</param>
+        /// <param name="scale">size of the bounding box</param>
+        /// <param name="text">text to display</param>
+        /// <param name="Height">height of the text</param>
+        /// <param name="color">text color</param>
+        /// <param name="justification">paragraph formating</param>
+        /// <param name="font">path to a truetype font file</param>
+        /// <param name="angle">rotation of the text</param>
         public Text(vec2 position, vec2 scale, string text, float Height, Color? color = null, JustificationType justification = JustificationType.Center, string font = "c:\\windows\\fonts\\arialbd.ttf", float angle = 0, float rotationSpeed = 0)
         {
             if (!System.IO.File.Exists(font))
@@ -242,6 +253,17 @@ namespace GLDrawer
             internalGO = new unmanaged_GO(internalText, position.x, position.y, scale.x, scale.y, angle, rotationSpeed);
         }
         //without bound
+        /// <summary>
+        /// Create text with no bounding box
+        /// </summary>
+        /// <param name="position">center position</param>
+        /// <param name="scale">size of the bounding box</param>
+        /// <param name="text">text to display</param>
+        /// <param name="Height">height of the text</param>
+        /// <param name="color">text color</param>
+        /// <param name="justification">paragraph formating</param>
+        /// <param name="font">path to a truetype font file</param>
+        /// <param name="angle">rotation of the text</param>
         public Text(vec2 position, string text, float Height, Color? color = null, JustificationType justification = JustificationType.Center, string font = "c:\\windows\\fonts\\arialbd.ttf", float angle = 0, float rotationSpeed = 0)
         {
             if (!System.IO.File.Exists(font))
