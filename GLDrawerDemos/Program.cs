@@ -22,11 +22,15 @@ namespace GLDrawerDemos
             //demos.FastRemoval();
             //demos.BackBufferTest();
             //demos.IntersectTest();
-         //   demos.PhysicsTest();       
+            //   demos.PhysicsTest();       
             //demos.BackBufferMultithread();
 
             // tempim();
-        //    Console.ReadKey();
+             //Console.ReadKey();
+
+
+
+
 
             GLCanvas can = new GLCanvas(LegacyCoordinates: false);
 
@@ -34,9 +38,10 @@ namespace GLDrawerDemos
             var text = can.AddCenteredText("test", 40, Color.White);
             bool inverted = false;
 
-            can.Update += delegate {
+            can.Update += delegate
+            {
                 e.Position = can.MousePositionScaled;
-                if(can.GetKeyDown('c'))
+                if (can.GetKeyDown('c'))
                 {
                     inverted = !inverted;
                     if (inverted)
@@ -57,7 +62,10 @@ namespace GLDrawerDemos
                      inverted ? "Legacy" : "Cartesian", can.MousePosition.x, can.MousePosition.y
                     );
             };
-            
+
+
+
+
             // GLCanvas can = new GLCanvas();
 
             //can.AddLine(100, 0, -100, 0, 5, Color.White);
@@ -87,7 +95,7 @@ namespace GLDrawerDemos
         static void tempim()
         {
             int dims = 1000;
-            GLCanvas can = new GLCanvas(dims, dims, BackColor: Color.White, VSync: false);
+            GLCanvas can = new GLCanvas(dims, dims, BackColor: Color.White, VSync: true);
             can.CameraPosition = can.Center;
             int padding = 100;
             int lines = 10;

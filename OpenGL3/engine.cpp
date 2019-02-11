@@ -433,7 +433,7 @@ int imgData::getHashIndex() {
 	else
 		return hashIndex;
 }
-textData::textData(string Text, float textHeight, vec4 Color, int Justification, const char * path, bool bound)
+textData::textData(string Text, float textHeight, vec4 Color, int Justification, const char * path, bool bound, bool kerning)
 {
 	text = Text;
 	filepath = path;
@@ -442,6 +442,7 @@ textData::textData(string Text, float textHeight, vec4 Color, int Justification,
 	boundMode = bound;
 	justification = Justification;
 	lastLetterPos = vec2(0);
+	useKerning = kerning;
 }
 vec2 textData::letterPosAtIndexNDC(int index)
 {
@@ -982,6 +983,7 @@ fontAsset::fontAsset(const char * filepath) {
 		const char ch = i;
 		stbtt_aligned_quad quad;
 		stbtt_GetPackedQuad(packed_chars, fnt_atlas_height, fnt_atlas_height, ch - fnt_first_char, &xof, &unused_offset_y, &quad, 1);
+		quads[i] = quad;
 		tallestLetter = glm::max(tallestLetter, (quad.y1 - quad.y0));
 		float tttttttttt = -quad.y1 + (quad.y1 - quad.y0);
 	}
@@ -1181,11 +1183,13 @@ GLCanvas::GLCanvas()
 	}
 }
 
-void GLCanvas::mainloop(bool render) {
+void GLCanvas::mainloop(bool render, bool focusContext) {
 	if (disposed)
 		return;
-
-	glfwMakeContextCurrent(window);
+	
+	if(focusContext)
+		glfwMakeContextCurrent(window);
+	
 	clearStates();
 	glfwPollEvents();
 	if (!managed) {
@@ -1372,50 +1376,45 @@ void GLCanvas::mainloop(bool render) {
 		gl(BindVertexArray(0));
 	}
 
-	if (render) {
-		//thread safe transfer object buffer to canvas draw list
-		shapeCopyFlag = true;
 
-		if (clearShapeFlag) {
-			GameObjects.clear();
-			clearShapeFlag = false;
-		}
-
-		//thread safe transfer of gameobjects
-		for (int i = 0; i < GOBuffer.size(); i++)
-			GameObjects.push_back(GOBuffer[i]);
-		int newGOs = GOBuffer.size();
-		GOBuffer.clear();
-
-		//thread safe removal of gameobjects
-		for (int j = 0; j < GORemoveBuffer.size(); j++)
-			for (int i = 0; i < GameObjects.size(); i++)
-				if (GameObjects[i] == GORemoveBuffer[j])
-					GameObjects.erase(GameObjects.begin() + i);
-		GORemoveBuffer.clear();
-
-		int length = GameObjects.size();
-
-		shapeCopyFlag = false;
-		for (int i = 0; i < length; i++)
-		{
-			bool change = false;
-			int s = GameObjects.size() - 1; //only works when declared outside the loop?
-			for (int j = 0; j < s; j++)
-			{
-
-				if (GameObjects[j]->drawIndex < GameObjects[j + 1]->drawIndex) {
-					GO * temp = GameObjects[j];
-					GameObjects[j] = GameObjects[j + 1];
-					GameObjects[j + 1] = temp;
-					change = true;
-				}
-			}
-			if (!change)
-				break;
-		}
+	//thread safe transfer object buffer to canvas draw list
+	if (clearShapeFlag) {
+		GameObjects.clear();
+		clearShapeFlag = false;
 	}
 
+	//thread safe transfer of gameobjects
+	for (int i = 0; i < GOBuffer.size(); i++)
+		GameObjects.push_back(GOBuffer[i]);
+	int newGOs = GOBuffer.size();
+	GOBuffer.clear();
+
+	//thread safe removal of gameobjects
+	for (int j = 0; j < GORemoveBuffer.size(); j++)
+		for (int i = 0; i < GameObjects.size(); i++)
+			if (GameObjects[i] == GORemoveBuffer[j])
+				GameObjects.erase(GameObjects.begin() + i);
+	GORemoveBuffer.clear();
+
+	int length = GameObjects.size();
+
+	for (int i = 0; i < length; i++)
+	{
+		bool change = false;
+		int s = GameObjects.size() - 1; //only works when declared outside the loop?
+		for (int j = 0; j < s; j++)
+		{
+			if (GameObjects[j]->drawIndex < GameObjects[j + 1]->drawIndex) {
+				GO * temp = GameObjects[j];
+				GameObjects[j] = GameObjects[j + 1];
+				GameObjects[j + 1] = temp;
+				change = true;
+			}
+		}
+		if (!change)
+			break;
+	}
+	
 	gl(BindVertexArray(VAO));
 	gl(UseProgram(PolygonShaderProgram));
 
@@ -1437,151 +1436,156 @@ void GLCanvas::mainloop(bool render) {
 	//	gl(DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
 	//}
 
+	if (render) {
 
-	//draw Gameobjects
-	int GoSize = GameObjects.size();
-	mat4 m; //used if parent transforms are involved
-	for (int i = 0; i < GoSize; ++i)
-	{
-		GO * g = GameObjects[i];
+
+		//draw Gameobjects
+		int GoSize = GameObjects.size();
+		mat4 m; //used if parent transforms are involved
+		for (int i = 0; i < GoSize; ++i)
+		{
+			GO * g = GameObjects[i];
 
 #ifdef _DEBUG
-		int shapeCount = 0;
-		shapeCount += g->p != nullptr;
-		shapeCount += (g->i != nullptr) && (g->ps == nullptr); //particle systems might also have a texture
-		shapeCount += g->t != nullptr;
-		shapeCount += g->ps != nullptr;
-		if (shapeCount > 1)
-			cout << "Debug warning : GO with multiple draw targets detected\n";
+			int shapeCount = 0;
+			shapeCount += g->p != nullptr;
+			shapeCount += (g->i != nullptr) && (g->ps == nullptr); //particle systems might also have a texture
+			shapeCount += g->t != nullptr;
+			shapeCount += g->ps != nullptr;
+			if (shapeCount > 1)
+				cout << "Debug warning : GO with multiple draw targets detected\n";
 #endif
 
-		if (g->hidden)
-			continue;
+			if (g->hidden)
+				continue;
 
-		if (g->parent)
-			m = getLocalTransform(g);
-
-		//update physics
-		if (g->body) {
-			if (g->body->setPositionFlag) {
-				g->body->body->SetTransform(toB2(g->position), g->angle);
-				g->body->setPositionFlag = false;
-			}
-			else {
-				b2Vec2 pos = g->body->body->GetPosition();
-				g->position = vec2(pos.x, pos.y) * phScale;
-				g->angle = g->body->body->GetAngle();
-			}
-		}
-		//particle system
-		if (g->ps) {
 			if (g->parent)
-				drawParticleSystem(g, deltaTime, &m);
-			else
-				drawParticleSystem(g, deltaTime, NULL);
-			gl(BindVertexArray(VAO));
-			gl(UseProgram(PolygonShaderProgram));
-		}
-		//sprite
-		else if (g->i) {
-			gl(UseProgram(textureShaderProgram));
-			setTexture(g, FtextureUniformLocation);
-			gl(Uniform1f(FOpacityUniformLocation, g->i->opacity));
-			//animation
-			if (g->i->adata) {
-				animationData * a = g->i->adata;
+				m = getLocalTransform(g);
 
-				int current = a->nextFrame;
-				if (a->play)
-					current = a->cells * (a->iTime / a->frequency);
-
-				gl(Uniform2f(FUVposUniformLocation, a->UVS[current].x, a->UVS[current].y));
-				float sc = a->cellSize / (float)a->sheetSize;
-				gl(Uniform2f(FUVscaleUniformLocation, sc, sc));
-
-				if (a->play)
-					a->iTime += deltaTime;
-
-				if (a->iTime > a->frequency) {
-					a->iTime = 0;
-					if (!a->repeat)
-						a->play = false;
+			//update physics
+			if (g->body) {
+				if (g->body->setPositionFlag) {
+					g->body->body->SetTransform(toB2(g->position), g->angle);
+					g->body->setPositionFlag = false;
+				}
+				else {
+					b2Vec2 pos = g->body->body->GetPosition();
+					g->position = vec2(pos.x, pos.y) * phScale;
+					g->angle = g->body->body->GetAngle();
 				}
 			}
-			//no animation
-			else {
-				gl(Uniform2f(FUVposUniformLocation, g->i->UVpos.x, g->i->UVpos.y));
-				gl(Uniform2f(FUVscaleUniformLocation, g->i->UVscale.x, g->i->UVscale.y));
+			//particle system
+			if (g->ps) {
+				if (g->parent)
+					drawParticleSystem(g, deltaTime, &m);
+				else
+					drawParticleSystem(g, deltaTime, NULL);
+				gl(BindVertexArray(VAO));
+				gl(UseProgram(PolygonShaderProgram));
 			}
+			//sprite
+			else if (g->i) {
+				gl(UseProgram(textureShaderProgram));
+				setTexture(g, FtextureUniformLocation);
+				gl(Uniform1f(FOpacityUniformLocation, g->i->opacity));
+				//animation
+				if (g->i->adata) {
+					animationData * a = g->i->adata;
 
-			if (g->parent) {
-				m = scale(m, vec3(g->scale / resolutionV2f, 1.0f));
-				gl(UniformMatrix4fv(FxformUniformLocation, 1, GL_FALSE, value_ptr(m)));
-				gl(Uniform2f(FzoomUniformLocation, cameraZoom.x, cameraZoom.y));
-				gl(DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
+					int current = a->nextFrame;
+					if (a->play)
+						current = a->cells * (a->iTime / a->frequency);
+
+					gl(Uniform2f(FUVposUniformLocation, a->UVS[current].x, a->UVS[current].y));
+					float sc = a->cellSize / (float)a->sheetSize;
+					gl(Uniform2f(FUVscaleUniformLocation, sc, sc));
+
+					if (a->play)
+						a->iTime += deltaTime;
+
+					if (a->iTime > a->frequency) {
+						a->iTime = 0;
+						if (!a->repeat)
+							a->play = false;
+					}
+				}
+				//no animation
+				else {
+					gl(Uniform2f(FUVposUniformLocation, g->i->UVpos.x, g->i->UVpos.y));
+					gl(Uniform2f(FUVscaleUniformLocation, g->i->UVscale.x, g->i->UVscale.y));
+				}
+
+				if (g->parent) {
+					m = scale(m, vec3(g->scale / resolutionV2f, 1.0f));
+					gl(UniformMatrix4fv(FxformUniformLocation, 1, GL_FALSE, value_ptr(m)));
+					gl(Uniform2f(FzoomUniformLocation, cameraZoom.x, cameraZoom.y));
+					gl(DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
+				}
+				else {
+					setGOTransform(g, textTransUniforms);
+					gl(UniformMatrix4fv(FxformUniformLocation, 1, GL_FALSE, value_ptr(empty)));
+					gl(DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
+				}
+				gl(UseProgram(PolygonShaderProgram));
 			}
-			else {
-				setGOTransform(g, textTransUniforms);
-				gl(UniformMatrix4fv(FxformUniformLocation, 1, GL_FALSE, value_ptr(empty)));
-				gl(DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
+			//text
+			//else if (g->Dt) {
+			//	DsetFont(g);
+			//	//setFont(g);
+			//	if (g->parent) {
+			//		gl(UniformMatrix4fv(FontxformUniformLocation, 1, GL_FALSE, value_ptr(m)));
+			//		gl(DrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, g->t->TextLength));
+			//	}
+			//	else {
+			//		gl(UniformMatrix4fv(FontxformUniformLocation, 1, GL_FALSE, value_ptr(empty)));
+			//		gl(DrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, g->Dt->TextLength));
+			//	}
+			//	gl(UseProgram(PolygonShaderProgram));
+			//}
+			else if (g->t) {
+				setFont(g);
+				if (g->parent) {
+					gl(UniformMatrix4fv(FontxformUniformLocation, 1, GL_FALSE, value_ptr(m)));
+					gl(DrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, g->t->TextLength));
+				}
+				else {
+					gl(UniformMatrix4fv(FontxformUniformLocation, 1, GL_FALSE, value_ptr(empty)));
+					gl(DrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, g->t->TextLength));
+				}
+				gl(UseProgram(PolygonShaderProgram));
 			}
-			gl(UseProgram(PolygonShaderProgram));
+			//polygon
+			else if (g->p) {
+				gl(UseProgram(PolygonShaderProgram));
+				setPolygon(g);
+				if (g->parent) {
+					m = scale(m, vec3(g->scale / resolutionV2f, 1.0f));
+					gl(UniformMatrix4fv(PxformUniformLocation, 1, GL_FALSE, value_ptr(m)));
+					gl(Uniform2f(PzoomUniformLocation, cameraZoom.x, cameraZoom.y));
+					gl(DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
+				}
+				else {
+					setGOTransform(g, polyTransUniforms);
+					gl(UniformMatrix4fv(PxformUniformLocation, 1, GL_FALSE, value_ptr(empty)));
+					//gl(Uniform1f(PmRotUniformLocation, 0)); //anti aliasing optimization
+					gl(DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
+				}
+			}
 		}
-		//text
-		//else if (g->Dt) {
-		//	DsetFont(g);
-		//	//setFont(g);
-		//	if (g->parent) {
-		//		gl(UniformMatrix4fv(FontxformUniformLocation, 1, GL_FALSE, value_ptr(m)));
-		//		gl(DrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, g->t->TextLength));
-		//	}
-		//	else {
-		//		gl(UniformMatrix4fv(FontxformUniformLocation, 1, GL_FALSE, value_ptr(empty)));
-		//		gl(DrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, g->Dt->TextLength));
-		//	}
-		//	gl(UseProgram(PolygonShaderProgram));
-		//}
-		else if (g->t) {
-			setFont(g);
-			if (g->parent) {
-				gl(UniformMatrix4fv(FontxformUniformLocation, 1, GL_FALSE, value_ptr(m)));
-				gl(DrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, g->t->TextLength));
-			}
-			else {
-				gl(UniformMatrix4fv(FontxformUniformLocation, 1, GL_FALSE, value_ptr(empty)));
-				gl(DrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, g->t->TextLength));
-			}
-			gl(UseProgram(PolygonShaderProgram));
+		if (debugMode) {
+			infoGO.position = vec2(170, resolutionV2f.y - 30);
+			infoText.text = debugString;
+			setFont(&infoGO);
+			gl(DrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, infoText.TextLength));
 		}
-		//polygon
-		else if (g->p) {
-			gl(UseProgram(PolygonShaderProgram));
-			setPolygon(g);
-			if (g->parent) {
-				m = scale(m, vec3(g->scale / resolutionV2f, 1.0f));
-				gl(UniformMatrix4fv(PxformUniformLocation, 1, GL_FALSE, value_ptr(m)));
-				gl(Uniform2f(PzoomUniformLocation, cameraZoom.x, cameraZoom.y));
-				gl(DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
-			}
-			else {
-				setGOTransform(g, polyTransUniforms);
-				gl(UniformMatrix4fv(PxformUniformLocation, 1, GL_FALSE, value_ptr(empty)));
-				//gl(Uniform1f(PmRotUniformLocation, 0)); //anti aliasing optimization
-				gl(DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
-			}
-		}
-	}
-	if (debugMode) {
-		infoGO.position = vec2(170, resolutionV2f.y - 30);
-		infoText.text = debugString;
-		setFont(&infoGO);
-		gl(DrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, infoText.TextLength));
 	}
 	gl(UseProgram(0));
 	gl(BindVertexArray(0));
 
 	windowSizeChanged = false;
-	glfwSwapBuffers(window);
+
+	if(render)
+		glfwSwapBuffers(window);
 	updateDebugInfo();
 
 	if (windowTitleFlag && Borderd) {
@@ -1811,7 +1815,7 @@ void GLCanvas::setFont(GO * g) {
 		}
 
 		stbtt_aligned_quad quad;
-		stbtt_GetPackedQuad(selected->packed_chars, fnt_atlas_height, fnt_atlas_height, ch - fnt_first_char, &xof, &unused_offset_y, &quad, 1);
+		stbtt_GetPackedQuad(selected->packed_chars, fnt_atlas_height, fnt_atlas_height, ch - fnt_first_char, &xof, &unused_offset_y, &quad, 0);
 
 		if (boundMode && xof > g->scale.x / sdif) {
 			lineCut = true;
@@ -1883,8 +1887,8 @@ void GLCanvas::setFont(GO * g) {
 		g->t->letterTransData[txt_i * 4 + 2] = quad_width_px / resolutionWidth;
 		g->t->letterTransData[txt_i * 4 + 3] = -quad_height_px / resolutionHeight;
 
-		if (text[txt_i + 1])
-			xof += selected->scaleFactor * stbtt_GetCodepointKernAdvance(&selected->info, text[txt_i], text[txt_i + 1]);
+		//if (text[txt_i + 1])
+		//	xof += selected->scaleFactor * stbtt_GetCodepointKernAdvance(&selected->info, text[txt_i], text[txt_i + 1]);
 	}
 
 	//update position buffer

@@ -32,6 +32,19 @@ using namespace glm;
 //	void dipose();
 //};
 
+//these 2 need to be the same for correct kerning
+const float fnt_height_px = 64.0f;
+const uint32_t fnt_size = 64;
+
+const uint32_t fnt_atlas_padding = 1;
+const uint32_t fnt_atlas_width = 1024;
+const uint32_t fnt_atlas_height = 1024;
+const uint32_t fnt_oversample_x = 2;
+const uint32_t fnt_oversample_y = 2;
+const uint32_t fnt_first_char = ' ';
+const uint32_t fnt_last_char = '~';
+const uint32_t fnt_char_count = '~' - ' ';
+
 struct fontAsset {
 	GLuint tex_atlas;
 	stbtt_fontinfo info;
@@ -41,11 +54,11 @@ struct fontAsset {
 	int descent;
 	int line_gap;
 	int baseline;
-	stbtt_packedchar* packed_chars;
+	stbtt_packedchar * packed_chars;
+	stbtt_aligned_quad quads[fnt_last_char];
 	const char * filePath;
 
 	bool init;
-	
 
 	fontAsset(const char * filepath);
 	fontAsset() { 
@@ -60,19 +73,6 @@ struct fontAsset {
 	//void loadTexture();
 	//void dipose();
 };
-
-//these 2 need to be the same for correct kerning
-const float fnt_height_px = 64.0f;
-const uint32_t fnt_size = 64; 
-
-const uint32_t fnt_atlas_padding = 1;
-const uint32_t fnt_atlas_width = 1024;
-const uint32_t fnt_atlas_height = 1024;
-const uint32_t fnt_oversample_x = 2;
-const uint32_t fnt_oversample_y = 2;
-const uint32_t fnt_first_char = ' ';
-const uint32_t fnt_last_char = '~';
-const uint32_t fnt_char_count = '~' - ' ';
 
 
 //while images are small, the same image should be prevented from be loaded multiple times into the same OpnGL context
@@ -93,6 +93,7 @@ struct textData {
 	float height;
 	int justification;
 	bool boundMode;
+	bool useKerning;
 
 	int TextLength = 0;
 	float * letterTransData;
@@ -100,7 +101,7 @@ struct textData {
 	int hashIndex = -1; //privately accessd
 	vec2 lastLetterPos;
 
-	textData(string Text, float textHeight, vec4 Color, int Justification, const char * path, bool bound = false );
+	textData(string Text, float textHeight, vec4 Color, int Justification, const char * path, bool bound = false, bool kerning = false);
 	textData() { lastLetterPos = vec2(0); };
 	vec2 letterPosAtIndexNDC(int index);
 	int getHashIndex();
@@ -427,7 +428,7 @@ public :
 	void updateDebugInfo();
 	HWND getNativeHWND();
 	void focus();
-	void mainloop(bool render = true); //steps the program forward (and maybe renders the scene)
+	void mainloop(bool render = true, bool focusContext = true); //steps the program forward (and maybe renders the scene)
 
 	//physics
 	b2World world = b2World(b2Vec2(0, -10)); //world with default gravity

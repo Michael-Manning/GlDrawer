@@ -240,7 +240,7 @@ namespace GLDrawerDemos
         }
         void DrawText(vec2 pos, GLCanvas ca)
         {
-            Text txt = demos.can.Add(new Text(pos, prevText.Body,  prevText.Height, prevText.Color, prevText.Justification, prevText.Font, prevText.Angle, 0)) as Text;
+            Text txt = demos.can.Add(new Text(pos, prevText.Body,  prevText.Height, prevText.Color, prevText.Justification, prevText.Font, prevText.Angle)) as Text;
             shapes.Add(txt);
             lbAdd("Text (" + txt.Position.x + ", " + txt.Position.y + ")");
         }
@@ -341,6 +341,30 @@ namespace GLDrawerDemos
         private void timer1_Tick(object sender, EventArgs e)
         {
            //r.Position = demos.can.mo
+        }
+
+   //     GLCanvas can2 = new GLCanvas(width:1000, height:800, autoRender: false, LegacyCoordinates: false, VSync: true);
+        float xpos = 0;
+        float xpos2 = 0;
+        float delta = 0;
+        private void timer2_Tick(object sender, EventArgs e)
+        {
+            //delta += 0.01f;
+            //xpos = (float)Math.Sin(delta) * 200;
+            //xpos2 = (float)Math.Cos(delta) * 200;
+
+            //can2.Clear();
+            //for (int i = 0; i < 1200; i+= 10)
+            //{
+            //    can2.AddCenteredEllipse(xpos - i, 50 + i, 100, 100, new Color(255, 100));
+            //    can2.AddCenteredEllipse(xpos - i, 0 + i, 100, 100, new Color(255, 100));
+            //    can2.AddCenteredEllipse(xpos + i, -50 + i, 100 + i, 100, new Color(255, 100));
+            //    can2.AddCenteredEllipse(xpos2 + i, xpos2 + i, 100, 100, new Color(255, 100));
+            //    can2.AddCenteredEllipse(xpos2 + i, xpos + i, 100 + i, 100, new Color(255, 100));
+            //    can2.AddCenteredEllipse(xpos + i, xpos2 + i, 100, 100, new Color(255, 100));
+            //}
+
+            //can2.Render();
         }
     }
 }

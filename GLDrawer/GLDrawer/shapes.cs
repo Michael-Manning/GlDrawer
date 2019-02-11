@@ -243,13 +243,14 @@ namespace GLDrawer
         /// <param name="justification">paragraph formating</param>
         /// <param name="font">path to a truetype font file</param>
         /// <param name="angle">rotation of the text</param>
-        public Text(vec2 position, vec2 scale, string text, float Height, Color? color = null, JustificationType justification = JustificationType.Center, string font = "c:\\windows\\fonts\\arialbd.ttf", float angle = 0, float rotationSpeed = 0)
+        /// <param name="useKerning">Better looking and more accurate at the cost of render speed</param>
+        public Text(vec2 position, vec2 scale, string text, float Height, Color? color = null, JustificationType justification = JustificationType.Center, string font = "c:\\windows\\fonts\\arialbd.ttf", float angle = 0, bool useKerning = false, float rotationSpeed = 0)
         {
             if (!System.IO.File.Exists(font))
                 throw new ArgumentException("ttf file was not found", "font");
 
 
-            internalText = new unmanaged_textData(text, Height, CheckNullC(color), (int)justification, font, true);
+            internalText = new unmanaged_textData(text, Height, CheckNullC(color), (int)justification, font, true, useKerning);
             internalGO = new unmanaged_GO(internalText, position.x, position.y, scale.x, scale.y, angle, rotationSpeed);
         }
         //without bound
@@ -264,12 +265,13 @@ namespace GLDrawer
         /// <param name="justification">paragraph formating</param>
         /// <param name="font">path to a truetype font file</param>
         /// <param name="angle">rotation of the text</param>
-        public Text(vec2 position, string text, float Height, Color? color = null, JustificationType justification = JustificationType.Center, string font = "c:\\windows\\fonts\\arialbd.ttf", float angle = 0, float rotationSpeed = 0)
+        /// <param name="useKerning">Better looking and more accurate at the cost of render speed</param>
+        public Text(vec2 position, string text, float Height, Color? color = null, JustificationType justification = JustificationType.Center, string font = "c:\\windows\\fonts\\arialbd.ttf", float angle = 0, bool useKerning = false, float rotationSpeed = 0)
         {
             if (!System.IO.File.Exists(font))
                 throw new ArgumentException("ttf file was not found", "font");
 
-            internalText = new unmanaged_textData(text, Height, CheckNullC(color), (int)justification, font, false);
+            internalText = new unmanaged_textData(text, Height, CheckNullC(color), (int)justification, font, false, useKerning);
             internalGO = new unmanaged_GO(internalText, position.x, position.y, 0, 0, angle, rotationSpeed);
         }
         public vec2 GetLetterPosNDC(int letterIndex)

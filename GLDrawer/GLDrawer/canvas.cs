@@ -133,7 +133,9 @@ namespace GLDrawer
         private bool initializedWithLegacyCoords = false; //used by addCentered Text to ensure expected behaviour
         private bool disposed = false;
         private bool frozen = false; //used to emergency freeze the main thread in case of runtime memory alocation such as a window resize
+        private bool busy = false; //used to lock the main thread for all canvas' if they're being pushed too hard (like updating 3 windows faster than they can be rendered)
         private bool renderNextFrame = true; //tracks manual rendering
+        private static bool singleContext = true; //Skips switching Opengl context if there is only one canvas which can half render times. 
         private List<Shape> shapeRefs = new List<Shape>();
         private List<GameObject> GORefs = new List<GameObject>();
         private List<DelayedCall> delayedCalls = new List<DelayedCall>(); //primary used for games
@@ -159,6 +161,8 @@ namespace GLDrawer
 
                 loopthread.Start();
             }
+            else
+                singleContext = false;
 
             //it's a bad idea to continue before the canvas is initialized
             while (GLWrapper == null || !GLWrapper.initialized)
@@ -201,7 +205,10 @@ namespace GLDrawer
                         activeCanvases[i].OnClose.Invoke(activeCanvases[i]);
                         activeCanvases.RemoveAt(i);
                         continue;
-                    }                  
+                    }
+                    //can't can't try to render before buffers have been swapped from last frame
+                    while (can.busy)
+                        Thread.Sleep(0);
                     can.MainLoop();
                 }
             }
@@ -314,16 +321,14 @@ namespace GLDrawer
             initialized = true;
         }
 
-        private int tempCounter = 0;
-
         private bool firstLoop = true;
         private void MainLoop()
         {
+            busy = true;
+
             //let OpenGL warm up a bit before calling time sensitive delegates
-            if (firstLoop)
-            {
-                firstLoop = false;
-            }
+            if (firstLoop)      
+                firstLoop = false;        
             else
             {
                 iTime = GLWrapper.ellapsedTime;
@@ -359,27 +364,23 @@ namespace GLDrawer
             while (setPixelBuffer.TryDequeue(out p))
             {
                 GLWrapper.setBBpixel(p.x, p.y, p.color.R, p.color.G, p.color.B, p.color.A);
-                tempCounter++;
             }            
 
             MouseScrollDirection = 0;
 
-            //lock (GLWrapper)
-           // {
-                //needs to be very spesific due to threads
-                if (!AutoRender)
+            //needs to be very spesific due to threads
+            if (!AutoRender)
+            {
+                if (renderNextFrame)
                 {
-                    if (renderNextFrame)
-                    {
-                        GLWrapper.mainloop(true);
-                        renderNextFrame = false;
-                    }
-                    else
-                        GLWrapper.mainloop(false);
+                    GLWrapper.mainloop(true, !singleContext);
+                    renderNextFrame = false;
                 }
                 else
-                    GLWrapper.mainloop(true);
-           // }
+                    GLWrapper.mainloop(false, !singleContext);
+            }
+            else
+                GLWrapper.mainloop(true, !singleContext);
 
             disposeBuffer.ForEach(a => a.Invoke());
             disposeBuffer.Clear();
@@ -393,6 +394,7 @@ namespace GLDrawer
                 GLWrapper.reSize = false;
                 CanvasResized.Invoke(iWidth, iHeight, this);
             }
+            busy = false;
         }
 
         //shortcut for converting null colors to transparent colors for default parameters
@@ -635,10 +637,10 @@ namespace GLDrawer
         /// <param name="justification">justification based on the longest line of text</param>
         /// <param name="fontFilepath">path to a truetype font file to use</param>
         /// <returns>a copy of the added shape</returns>
-        public Text AddCenteredText(string text, float textHeight, Color ? TextColor = null, JustificationType justification = JustificationType.Center, string fontFilepath  = "c:\\windows\\fonts\\times.ttf")
+        public Text AddCenteredText(string text, float textHeight, Color ? TextColor = null, JustificationType justification = JustificationType.Center, string fontFilepath  = "c:\\windows\\fonts\\times.ttf", bool useKerning = false)
         {
             vec2 pos = initializedWithLegacyCoords ? Center : vec2.Zero;
-            Text t = new Text(pos, text, textHeight, TextColor == null ? Color.White : TextColor, justification, fontFilepath)
+            Text t = new Text(pos, text, textHeight, TextColor == null ? Color.White : TextColor, justification, fontFilepath, useKerning: useKerning)
             {
                 DrawIndex = nextDrawIndex()
             };
@@ -655,10 +657,11 @@ namespace GLDrawer
         /// <param name="TextColor">color of the text (defaults to white)</param>
         /// <param name="justification">justification based on the longest line of text</param>
         /// <param name="fontFilepath">path to a truetype font file to use</param>
+        /// <param name="useKerning">Better looking and more accurate at the cost of render speed</param>
         /// <returns>a copy of the added shape</returns>
-        public Text AddCenteredText(string text, float textHeight, float Xpos, float Ypos, Color? TextColor = null, JustificationType justification = JustificationType.Center, string fontFilepath = "c:\\windows\\fonts\\times.ttf")
+        public Text AddCenteredText(string text, float textHeight, float Xpos, float Ypos, Color? TextColor = null, JustificationType justification = JustificationType.Center, string fontFilepath = "c:\\windows\\fonts\\times.ttf", bool useKerning = false)
         {
-            Text t = new Text(new vec2(Xpos, Ypos), text, textHeight, TextColor == null ? Color.White : TextColor, justification, fontFilepath)
+            Text t = new Text(new vec2(Xpos, Ypos), text, textHeight, TextColor == null ? Color.White : TextColor, justification, fontFilepath, useKerning: useKerning)
             {
                 DrawIndex = nextDrawIndex()
             };
@@ -675,9 +678,9 @@ namespace GLDrawer
         /// <param name="justification">justification based on the longest line of text</param>
         /// <param name="fontFilepath">path to a truetype font file to use</param>
         /// <returns>a copy of the added shape</returns>
-        //public Text AddText(string text, float textHeight, Rectangle BoundingRect, Color? TextColor = null, JustificationType justification = JustificationType.Center, string fontFilepath = "c:\\windows\\fonts\\times.ttf")
+        //public Text AddText(string text, float textHeight, Rectangle BoundingRect, Color? TextColor = null, JustificationType justification = JustificationType.Center, string fontFilepath = "c:\\windows\\fonts\\times.ttf", bool useKerning = false)
         //{
-        //    Text t = new Text(text, textHeight, TextColor == null ? Color.White : TextColor, justification, fontFilepath)
+        //    Text t = new Text(text, textHeight, TextColor == null ? Color.White : TextColor, justification, fontFilepath, useKerning: useKerning)
         //    {
         //        DrawIndex = nextDrawIndex()
         //    };
@@ -697,20 +700,16 @@ namespace GLDrawer
         /// <param name="justification">justification based on the longest line of text</param>
         /// <param name="fontFilepath">path to a truetype font file to use</param>
         /// <returns>a copy of the added shape</returns>
-        //public Text AddText(string text, float textHeight, int XStart, int YStart, int width, int height, Color? TextColor = null, JustificationType justification = JustificationType.Center, string fontFilepath = "c:\\windows\\fonts\\times.ttf")
-        //{
-        //    XStart *= Scale;
-        //    YStart *= Scale;
-        //    Width *= Scale;
-        //    Height *= Scale;
-        //    // Rectangle BoundingRect = new Rectangle(new vec2(XStart + width, YStart + height) / 2f, new vec2(width, height));
-        //    Text t = new Text(text, textHeight, TextColor == null ? Color.White : TextColor, justification, fontFilepath)
-        //    {
-        //        DrawIndex = nextDrawIndex()
-        //    };
-        //    AddToBuffer(t);
-        //    return t;
-        //}
+        public Text AddText(string text, float textHeight, int XStart, int YStart, int width, int height, Color? TextColor = null, JustificationType justification = JustificationType.Center, string fontFilepath = "c:\\windows\\fonts\\times.ttf", bool useKerning = false)
+        {
+            // Rectangle BoundingRect = new Rectangle(new vec2(XStart + width, YStart + height) / 2f, new vec2(width, height));
+            Text t = new Text(new vec2(XStart + width / 2, YStart + height / 2), new vec2(width, height), text, textHeight, TextColor == null ? Color.White : TextColor, justification, fontFilepath, useKerning: useKerning)
+            {
+                DrawIndex = nextDrawIndex()
+            };
+            AddToBuffer(t);
+            return t;
+        }
 
         public Shape Add(Shape shape)
         {
@@ -763,9 +762,10 @@ namespace GLDrawer
             return GLWrapper.raycast(start.x, start.y, end.x, end.y);
         }
 
+        /// <summary>Loads image in to memory emediatly. Can prevent stuttering when trying to use an unloaded image at runtime</summary
         public void LoadAsset(string filePath)
         {
-
+            GLWrapper.loadImageAsset(filePath);
         }
         public void LoadAssets(string[] filePath, bool showLoadingScreen)
         {
@@ -777,6 +777,7 @@ namespace GLDrawer
 
         //// <summary>renders all shapes to the screen</summary>
         public void Render() => renderNextFrame = true;
+
         /// <summary>stops drawaing a shape on the canvas</summary
         public void Remove(Shape s)
         {
@@ -989,10 +990,14 @@ namespace GLDrawer
         /// <summary>removes all shapes from the canvas</summary>
         public void Clear()
         {         
-            GLWrapper.clearShapes();
-            GORefs.ForEach(g => g.Destroy());
-            GORefs.Clear();
-            shapeRefs.Clear();
+
+            Invoke(delegate
+            {
+                GLWrapper.clearShapes();
+                GORefs.ForEach(g => g.Destroy());
+                GORefs.Clear();
+                shapeRefs.Clear();
+            });
         }
         public void Dispose()
         {

@@ -72,6 +72,7 @@ namespace GLDrawerDemos
             this.checkBox1 = new System.Windows.Forms.CheckBox();
             this.label2 = new System.Windows.Forms.Label();
             this.trackBar3 = new System.Windows.Forms.TrackBar();
+            this.timer2 = new System.Windows.Forms.Timer(this.components);
             ((System.ComponentModel.ISupportInitialize)(this.trackBar1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackBar2)).BeginInit();
             this.tabControl1.SuspendLayout();
@@ -519,6 +520,12 @@ namespace GLDrawerDemos
             this.trackBar3.TabIndex = 11;
             this.trackBar3.TickFrequency = 5;
             // 
+            // timer2
+            // 
+            this.timer2.Enabled = true;
+            this.timer2.Interval = 16;
+            this.timer2.Tick += new System.EventHandler(this.timer2_Tick);
+            // 
             // TestForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
@@ -595,5 +602,6 @@ namespace GLDrawerDemos
         private System.Windows.Forms.RadioButton rightRadio;
         private System.Windows.Forms.RadioButton centRadio;
         private System.Windows.Forms.RadioButton leftRadio;
+        private System.Windows.Forms.Timer timer2;
     }
 }
